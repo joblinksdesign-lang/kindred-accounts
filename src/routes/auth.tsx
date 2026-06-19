@@ -1,0 +1,145 @@
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
+import { Toaster } from "@/components/ui/sonner";
+import { TrendingUp, ShieldCheck, Sparkles } from "lucide-react";
+
+export const Route = createFileRoute("/auth")({
+  ssr: false,
+  head: () => ({ meta: [{ title: "Sign in — SmartInvoice Pro" }] }),
+  component: AuthPage,
+});
+
+function AuthPage() {
+  const navigate = useNavigate();
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) navigate({ to: "/dashboard", replace: true });
+    });
+  }, [navigate]);
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      if (mode === "signup") {
+        const { error } = await supabase.auth.signUp({
+          email, password,
+          options: { data: { full_name: name }, emailRedirectTo: window.location.origin },
+        });
+        if (error) throw error;
+        toast.success("Account created. Welcome!");
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        toast.success("Welcome back");
+      }
+      navigate({ to: "/dashboard", replace: true });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Authentication failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen grid md:grid-cols-2 bg-background">
+      <Toaster richColors position="top-right" />
+      {/* Brand panel */}
+      <div className="relative hidden md:flex flex-col justify-between p-12 text-white overflow-hidden gradient-emerald">
+        <div className="absolute -top-20 -right-20 h-96 w-96 rounded-full bg-white/5 blur-3xl" />
+        <div className="absolute -bottom-32 -left-10 h-80 w-80 rounded-full bg-[oklch(0.78_0.15_75)]/20 blur-3xl" />
+        <div className="relative z-10">
+          <div className="flex items-center gap-3">
+            <div className="grid h-12 w-12 place-items-center rounded-xl bg-white/15 backdrop-blur">
+              <span className="text-xl font-extrabold">GP</span>
+            </div>
+            <div>
+              <div className="text-lg font-bold leading-tight">Growth Point</div>
+              <div className="text-xs uppercase tracking-[0.18em] text-white/70">SmartInvoice Pro</div>
+            </div>
+          </div>
+        </div>
+        <div className="relative z-10 space-y-6">
+          <motion.h1
+            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
+            className="text-balance text-4xl font-extrabold leading-tight"
+          >
+            Run a smarter business — from invoice to inventory.
+          </motion.h1>
+          <p className="text-white/80 text-base max-w-md">
+            One place for quotations, invoices, receipts, stock and payments — built for SMEs, retailers, pharmacies and growing teams.
+          </p>
+          <div className="space-y-3 pt-4">
+            {[
+              { icon: TrendingUp, t: "Real-time dashboards", d: "Cash flow, top customers, low stock alerts." },
+              { icon: Sparkles, t: "Beautiful PDFs", d: "Multiple invoice and receipt templates." },
+              { icon: ShieldCheck, t: "Role-based access", d: "Admin, Accountant and Sales Agent roles." },
+            ].map((f) => (
+              <div key={f.t} className="flex items-start gap-3">
+                <div className="grid h-9 w-9 place-items-center rounded-lg bg-white/10"><f.icon className="h-4 w-4" /></div>
+                <div>
+                  <div className="text-sm font-semibold">{f.t}</div>
+                  <div className="text-xs text-white/70">{f.d}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="relative z-10 text-xs text-white/60">© {new Date().getFullYear()} Growth Point</div>
+      </div>
+
+      {/* Form */}
+      <div className="flex items-center justify-center p-6 md:p-12">
+        <Card className="w-full max-w-md p-8 shadow-elevated border-0">
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold">{mode === "signin" ? "Welcome back" : "Create your account"}</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              {mode === "signin" ? "Sign in to your workspace" : "The first user becomes the Administrator"}
+            </p>
+          </div>
+          <Tabs value={mode} onValueChange={(v) => setMode(v as "signin" | "signup")} className="mb-6">
+            <TabsList className="grid grid-cols-2 w-full">
+              <TabsTrigger value="signin">Sign in</TabsTrigger>
+              <TabsTrigger value="signup">Sign up</TabsTrigger>
+            </TabsList>
+            <TabsContent value="signin" />
+            <TabsContent value="signup" />
+          </Tabs>
+          <form onSubmit={submit} className="space-y-4">
+            {mode === "signup" && (
+              <div className="space-y-1.5">
+                <Label htmlFor="name">Full name</Label>
+                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
+              </div>
+            )}
+            <div className="space-y-1.5">
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="password">Password</Label>
+              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
+            </div>
+            <Button type="submit" className="w-full h-11 gradient-emerald text-white shadow-soft" disabled={loading}>
+              {loading ? "Please wait…" : mode === "signin" ? "Sign in" : "Create account"}
+            </Button>
+          </form>
+        </Card>
+      </div>
+    </div>
+  );
+}
