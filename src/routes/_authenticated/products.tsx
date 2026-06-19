@@ -59,7 +59,7 @@ function ProductsPage() {
         reorder_level: Number(form.reorder_level || 0),
       };
       if (editing) {
-        const { error } = await supabase.from("products").update(payload).eq("id", editing.id);
+        const { error } = await supabase.from("products").update(payload as never).eq("id", editing.id);
         if (error) throw error;
       } else {
         const { data: u } = await supabase.auth.getUser();

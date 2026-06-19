@@ -45,10 +45,10 @@ function CustomersPage() {
   );
 
   const upsert = useMutation({
-    mutationFn: async (form: Partial<Customer>) => {
-      const payload = { ...form } as Record<string, unknown>;
+    mutationFn: async (form: Record<string, unknown>) => {
+      const payload = { ...form };
       if (editing) {
-        const { error } = await supabase.from("customers").update(payload).eq("id", editing.id);
+        const { error } = await supabase.from("customers").update(payload as never).eq("id", editing.id);
         if (error) throw error;
       } else {
         const { data: u } = await supabase.auth.getUser();
@@ -80,7 +80,7 @@ function CustomersPage() {
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    upsert.mutate(Object.fromEntries(fd.entries()) as Partial<Customer>);
+    upsert.mutate(Object.fromEntries(fd.entries()));
   };
 
   return (
