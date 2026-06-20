@@ -101,7 +101,7 @@ function AdminPlans() {
       <PageHeader
         title="Subscription plans"
         subtitle="Define what each plan includes and how much it costs."
-        actions={<Button onClick={() => { setEditing(null); setOpen(true); }} className="gradient-emerald text-white"><Plus className="h-4 w-4 mr-1.5" />New plan</Button>}
+        action={<Button onClick={() => { setEditing(null); setOpen(true); }} className="gradient-emerald text-white"><Plus className="h-4 w-4 mr-1.5" />New plan</Button>}
       />
       <Card className="p-4 shadow-soft border-0">
         <div className="overflow-x-auto">

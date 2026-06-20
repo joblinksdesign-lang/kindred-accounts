@@ -60,7 +60,7 @@ function AdminTenants() {
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: TenantRow["status"] }) => {
-      const patch: Record<string, unknown> = { status };
+      const patch: { status: TenantRow["status"]; approved_at?: string; suspended_at?: string } = { status };
       if (status === "active") patch.approved_at = new Date().toISOString();
       if (status === "suspended") patch.suspended_at = new Date().toISOString();
       const { error } = await supabase.from("tenants").update(patch).eq("id", id);
