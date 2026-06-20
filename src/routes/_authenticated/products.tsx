@@ -15,6 +15,7 @@ import { PageHeader, ListToolbar, EmptyState } from "@/components/page-helpers";
 import { Plus, Pencil, Trash2, ArrowUpRight, ArrowDownRight, Sliders } from "lucide-react";
 import { toast } from "sonner";
 import { formatMoney, useCompanySettings } from "@/lib/company";
+import { useActiveTenantId } from "@/lib/tenant";
 
 export const Route = createFileRoute("/_authenticated/products")({
   head: () => ({ meta: [{ title: "Products & Inventory" }] }),
@@ -29,6 +30,7 @@ type Product = {
 
 function ProductsPage() {
   const qc = useQueryClient();
+  const tenantId = useActiveTenantId();
   const { data: company } = useCompanySettings();
   const sym = company?.currency_symbol || "$";
   const [q, setQ] = useState("");
