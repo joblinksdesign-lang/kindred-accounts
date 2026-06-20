@@ -63,7 +63,7 @@ function ProductsPage() {
         if (error) throw error;
       } else {
         const { data: u } = await supabase.auth.getUser();
-        const { error } = await supabase.from("products").insert({ ...payload, created_by: u.user?.id } as never);
+        const { error } = await supabase.from("products").insert({ ...payload, created_by: u.user?.id, tenant_id: tenantId } as never);
         if (error) throw error;
       }
     },
@@ -90,7 +90,7 @@ function ProductsPage() {
       const { error } = await supabase.from("stock_movements").insert({
         product_id: form.product_id, change_qty: form.change_qty,
         reason: form.reason as "stock_in" | "stock_out" | "adjustment" | "sale" | "return",
-        notes: form.notes, created_by: u.user?.id,
+        notes: form.notes, created_by: u.user?.id, tenant_id: tenantId,
       } as never);
       if (error) throw error;
     },

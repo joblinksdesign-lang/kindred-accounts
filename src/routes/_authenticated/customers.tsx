@@ -28,6 +28,7 @@ type Customer = {
 
 function CustomersPage() {
   const qc = useQueryClient();
+  const tenantId = useActiveTenantId();
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Customer | null>(null);
@@ -54,6 +55,7 @@ function CustomersPage() {
       } else {
         const { data: u } = await supabase.auth.getUser();
         payload.created_by = u.user?.id;
+        payload.tenant_id = tenantId;
         const { error } = await supabase.from("customers").insert(payload as never);
         if (error) throw error;
       }
