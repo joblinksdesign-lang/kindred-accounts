@@ -11,8 +11,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { PageHeader, ListToolbar, EmptyState } from "@/components/page-helpers";
 import { Plus, Mail, Phone, Trash2, Pencil } from "lucide-react";
-import { toast } from "sonner";
 import { formatDate } from "@/lib/company";
+import { useActiveTenantId } from "@/lib/tenant";
 
 export const Route = createFileRoute("/_authenticated/customers")({
   head: () => ({ meta: [{ title: "Customers" }] }),
