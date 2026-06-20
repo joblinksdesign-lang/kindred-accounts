@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
-export type AppRole = "admin" | "accountant" | "sales_agent";
+export type AppRole = "admin" | "accountant" | "sales_agent" | "super_admin";
 
 export function useCurrentUser() {
   const [user, setUser] = useState<User | null>(null);
@@ -18,6 +18,8 @@ export function useCurrentUser() {
       if (data.user) {
         const { data: r } = await supabase.from("user_roles").select("role").eq("user_id", data.user.id);
         if (mounted) setRoles((r ?? []).map((x) => x.role as AppRole));
+      } else {
+        setRoles([]);
       }
       setLoading(false);
     };
@@ -32,6 +34,12 @@ export function useCurrentUser() {
   }, []);
 
   const hasRole = (r: AppRole) => roles.includes(r);
-  const isAdmin = hasRole("admin");
-  return { user, roles, loading, hasRole, isAdmin };
+  return {
+    user,
+    roles,
+    loading,
+    hasRole,
+    isAdmin: hasRole("admin") || hasRole("super_admin"),
+    isSuperAdmin: hasRole("super_admin"),
+  };
 }

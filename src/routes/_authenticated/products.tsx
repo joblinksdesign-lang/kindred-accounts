@@ -15,6 +15,7 @@ import { PageHeader, ListToolbar, EmptyState } from "@/components/page-helpers";
 import { Plus, Pencil, Trash2, ArrowUpRight, ArrowDownRight, Sliders } from "lucide-react";
 import { toast } from "sonner";
 import { formatMoney, useCompanySettings } from "@/lib/company";
+import { useActiveTenantId } from "@/lib/tenant";
 
 export const Route = createFileRoute("/_authenticated/products")({
   head: () => ({ meta: [{ title: "Products & Inventory" }] }),
@@ -29,6 +30,7 @@ type Product = {
 
 function ProductsPage() {
   const qc = useQueryClient();
+  const tenantId = useActiveTenantId();
   const { data: company } = useCompanySettings();
   const sym = company?.currency_symbol || "$";
   const [q, setQ] = useState("");
@@ -63,7 +65,7 @@ function ProductsPage() {
         if (error) throw error;
       } else {
         const { data: u } = await supabase.auth.getUser();
-        const { error } = await supabase.from("products").insert({ ...payload, created_by: u.user?.id } as never);
+        const { error } = await supabase.from("products").insert({ ...payload, created_by: u.user?.id, tenant_id: tenantId } as never);
         if (error) throw error;
       }
     },
@@ -90,7 +92,7 @@ function ProductsPage() {
       const { error } = await supabase.from("stock_movements").insert({
         product_id: form.product_id, change_qty: form.change_qty,
         reason: form.reason as "stock_in" | "stock_out" | "adjustment" | "sale" | "return",
-        notes: form.notes, created_by: u.user?.id,
+        notes: form.notes, created_by: u.user?.id, tenant_id: tenantId,
       } as never);
       if (error) throw error;
     },

@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { PageHeader } from "@/components/page-helpers";
 import { ArrowLeft, Download, Plus, Send, Trash2 } from "lucide-react";
 import { formatMoney, formatDate, useCompanySettings } from "@/lib/company";
+import { useActiveTenantId } from "@/lib/tenant";
 import { generateInvoicePdf } from "@/lib/pdf";
 import { toast } from "sonner";
 
@@ -25,6 +26,7 @@ function InvoiceDetail() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const tenantId = useActiveTenantId();
   const { data: company } = useCompanySettings();
   const sym = company?.currency_symbol || "$";
   const [payOpen, setPayOpen] = useState(false);
@@ -62,6 +64,7 @@ function InvoiceDetail() {
     mutationFn: async (form: FormData) => {
       const { data: u } = await supabase.auth.getUser();
       const { error } = await supabase.from("payments").insert({
+        tenant_id: tenantId,
         invoice_id: id,
         amount: Number(form.get("amount")),
         method: form.get("method") as "cash" | "bank_transfer" | "mobile_money" | "credit_card" | "cheque",
