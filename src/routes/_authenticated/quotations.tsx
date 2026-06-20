@@ -15,6 +15,7 @@ import { PageHeader, ListToolbar, EmptyState } from "@/components/page-helpers";
 import { Plus, ArrowRight, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatMoney, formatDate, useCompanySettings } from "@/lib/company";
+import { useActiveTenantId } from "@/lib/tenant";
 
 export const Route = createFileRoute("/_authenticated/quotations")({
   head: () => ({ meta: [{ title: "Quotations" }] }),
@@ -25,6 +26,7 @@ type Line = { id: string; product_id: string | null; description: string; quanti
 
 function QuotationsPage() {
   const qc = useQueryClient();
+  const tenantId = useActiveTenantId();
   const { data: company } = useCompanySettings();
   const sym = company?.currency_symbol || "$";
   const [q, setQ] = useState("");
@@ -62,6 +64,7 @@ function QuotationsPage() {
       if (!customerId) throw new Error("Select a customer");
       const { data: u } = await supabase.auth.getUser();
       const { data: quote, error } = await supabase.from("quotations").insert({
+        tenant_id: tenantId,
         customer_id: customerId, valid_until: validUntil || null, status: "draft" as const,
         subtotal, tax_rate: taxRate, tax_amount: taxAmount, discount, total, notes,
         created_by: u.user?.id, quote_number: "",
@@ -69,6 +72,7 @@ function QuotationsPage() {
       if (error) throw error;
       const inserted = quote as { id: string };
       const items = lines.map((l) => ({
+        tenant_id: tenantId,
         quotation_id: inserted.id, product_id: l.product_id, description: l.description,
         quantity: l.quantity, unit_price: l.unit_price, line_total: l.quantity * l.unit_price,
       }));
@@ -90,6 +94,7 @@ function QuotationsPage() {
       if (!quote) throw new Error("Not found");
       const { data: u } = await supabase.auth.getUser();
       const { data: inv, error } = await supabase.from("invoices").insert({
+        tenant_id: tenantId,
         customer_id: quote.customer_id, status: "draft" as const,
         subtotal: quote.subtotal, tax_rate: quote.tax_rate, tax_amount: quote.tax_amount,
         discount: quote.discount, total: quote.total, balance: quote.total,
@@ -99,6 +104,7 @@ function QuotationsPage() {
       const insertedInv = inv as { id: string };
       const qi = (quote.quotation_items as Array<{ product_id: string | null; description: string; quantity: number; unit_price: number; line_total: number }>) ?? [];
       const items = qi.map((it) => ({
+        tenant_id: tenantId,
         invoice_id: insertedInv.id, product_id: it.product_id, description: it.description,
         quantity: it.quantity, unit_price: it.unit_price, line_total: it.line_total,
       }));

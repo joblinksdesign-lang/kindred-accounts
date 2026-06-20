@@ -12,6 +12,7 @@ import { PageHeader } from "@/components/page-helpers";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatMoney, useCompanySettings } from "@/lib/company";
+import { useActiveTenantId } from "@/lib/tenant";
 
 export const Route = createFileRoute("/_authenticated/invoices/new")({
   head: () => ({ meta: [{ title: "New invoice" }] }),
@@ -22,6 +23,7 @@ type Line = { id: string; product_id: string | null; description: string; quanti
 
 function NewInvoicePage() {
   const navigate = useNavigate();
+  const tenantId = useActiveTenantId();
   const { data: company } = useCompanySettings();
   const sym = company?.currency_symbol || "$";
 
@@ -74,6 +76,7 @@ function NewInvoicePage() {
       const { data: inv, error } = await supabase
         .from("invoices")
         .insert({
+          tenant_id: tenantId,
           customer_id: customerId,
           invoice_date: invoiceDate,
           due_date: dueDate || null,
@@ -87,6 +90,7 @@ function NewInvoicePage() {
       if (error) throw error;
       const inserted = inv as { id: string };
       const items = lines.map((l) => ({
+        tenant_id: tenantId,
         invoice_id: inserted.id, product_id: l.product_id, description: l.description,
         quantity: l.quantity, unit_price: l.unit_price, line_total: l.quantity * l.unit_price,
       }));
