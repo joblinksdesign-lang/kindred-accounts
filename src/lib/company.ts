@@ -1,8 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useActiveTenantId } from "@/lib/tenant";
 
 export type CompanySettings = {
   id: string;
+  tenant_id: string;
   company_name: string;
   legal_name: string | null;
   logo_url: string | null;
@@ -26,13 +28,15 @@ export type CompanySettings = {
 };
 
 export function useCompanySettings() {
+  const tenantId = useActiveTenantId();
   return useQuery<CompanySettings | null>({
-    queryKey: ["company_settings"],
+    queryKey: ["company_settings", tenantId],
+    enabled: !!tenantId,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("company_settings")
         .select("*")
-        .limit(1)
+        .eq("tenant_id", tenantId!)
         .maybeSingle();
       if (error) throw error;
       return data as unknown as CompanySettings | null;
