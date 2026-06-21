@@ -1,14 +1,19 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/page-helpers";
-import { Building2, Users, Clock, TrendingUp, Receipt } from "lucide-react";
+import { formatDate } from "@/lib/company";
+import { Building2, Users, Clock, TrendingUp, Receipt, ArrowRight } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   head: () => ({ meta: [{ title: "Super Admin — SmartInvoice Pro" }] }),
   component: AdminOverview,
 });
+
+type RecentTenant = { id: string; business_name: string; email: string; status: string; created_at: string };
 
 function AdminOverview() {
   const { data: stats } = useQuery({
