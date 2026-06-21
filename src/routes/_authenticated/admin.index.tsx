@@ -1,14 +1,19 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/page-helpers";
-import { Building2, Users, Clock, TrendingUp, Receipt } from "lucide-react";
+import { formatDate } from "@/lib/company";
+import { Building2, Users, Clock, TrendingUp, Receipt, ArrowRight } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   head: () => ({ meta: [{ title: "Super Admin — SmartInvoice Pro" }] }),
   component: AdminOverview,
 });
+
+type RecentTenant = { id: string; business_name: string; email: string; status: string; created_at: string };
 
 function AdminOverview() {
   const { data: stats } = useQuery({
@@ -41,6 +46,20 @@ function AdminOverview() {
       };
     },
   });
+
+  const { data: recent = [] } = useQuery({
+    queryKey: ["admin_recent_tenants"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("tenants")
+        .select("id, business_name, email, status, created_at")
+        .order("created_at", { ascending: false })
+        .limit(6);
+      if (error) throw error;
+      return (data ?? []) as RecentTenant[];
+    },
+  });
+
 
   const cards = [
     { label: "Total businesses", value: stats?.totalTenants ?? 0, icon: Building2, tone: "bg-primary/10 text-primary" },
@@ -91,6 +110,34 @@ function AdminOverview() {
                 </div>
               );
             })}
+          </div>
+        )}
+      </Card>
+
+      <Card className="mt-6 p-6 shadow-soft border-0">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Recent registrations</h2>
+          <Button asChild size="sm" variant="ghost">
+            <Link to="/admin/tenants">View all <ArrowRight className="ml-1 h-3 w-3" /></Link>
+          </Button>
+        </div>
+        {recent.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No businesses registered yet.</p>
+        ) : (
+          <div className="divide-y divide-border">
+            {recent.map((t) => (
+              <Link
+                key={t.id}
+                to="/admin/tenants"
+                className="flex items-center justify-between py-3 hover:bg-muted/40 -mx-2 px-2 rounded transition-colors"
+              >
+                <div>
+                  <div className="font-medium text-sm">{t.business_name}</div>
+                  <div className="text-xs text-muted-foreground">{t.email} • {formatDate(t.created_at)}</div>
+                </div>
+                <Badge variant="outline" className="capitalize text-xs">{t.status}</Badge>
+              </Link>
+            ))}
           </div>
         )}
       </Card>

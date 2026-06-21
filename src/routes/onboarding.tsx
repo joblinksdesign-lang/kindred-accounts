@@ -1,20 +1,35 @@
-import { createFileRoute, useNavigate, redirect } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, useNavigate, redirect, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
-import { Building2 } from "lucide-react";
+import { Building2, Clock, CheckCircle2, ArrowRight } from "lucide-react";
+
+type ExistingTenant = {
+  id: string;
+  business_name: string;
+  email: string;
+  status: "pending" | "active" | "suspended" | "expired" | "cancelled";
+  created_at: string;
+};
 
 export const Route = createFileRoute("/onboarding")({
   ssr: false,
   beforeLoad: async () => {
     const { data } = await supabase.auth.getUser();
     if (!data.user) throw redirect({ to: "/auth" });
+    // Super admins manage the platform — never run onboarding.
+    const { data: roles } = await supabase
+      .from("user_roles").select("role").eq("user_id", data.user.id);
+    if ((roles ?? []).some((r) => r.role === "super_admin")) {
+      throw redirect({ to: "/admin" });
+    }
   },
   head: () => ({ meta: [{ title: "Register your business — SmartInvoice Pro" }] }),
   component: OnboardingPage,
@@ -29,6 +44,26 @@ function OnboardingPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [currency, setCurrency] = useState("USD");
+  const [existing, setExisting] = useState<ExistingTenant | null>(null);
+  const [checking, setChecking] = useState(true);
+
+  const loadExisting = async () => {
+    setChecking(true);
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) return;
+    const { data } = await supabase
+      .from("tenant_users")
+      .select("tenants(id, business_name, email, status, created_at)")
+      .eq("user_id", user.user.id)
+      .eq("is_active", true)
+      .order("joined_at", { ascending: false })
+      .limit(1);
+    const row = (data ?? [])[0] as { tenants: ExistingTenant | null } | undefined;
+    setExisting(row?.tenants ?? null);
+    setChecking(false);
+  };
+
+  useEffect(() => { loadExisting(); }, []);
 
   const submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -45,14 +80,71 @@ function OnboardingPage() {
         _currency_symbol: symbol,
       });
       if (error) throw error;
-      toast.success("Business registered! Awaiting platform approval.");
-      navigate({ to: "/dashboard", replace: true });
+      toast.success("Business submitted! Awaiting platform approval.");
+      await loadExisting();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Registration failed");
     } finally {
       setLoading(false);
     }
   };
+
+  if (checking) {
+    return (
+      <div className="min-h-screen bg-background grid place-items-center p-6">
+        <p className="text-sm text-muted-foreground">Loading…</p>
+      </div>
+    );
+  }
+
+  if (existing) {
+    const isPending = existing.status === "pending";
+    const isActive = existing.status === "active";
+    return (
+      <div className="min-h-screen bg-background grid place-items-center p-6">
+        <Toaster richColors position="top-right" />
+        <Card className="w-full max-w-xl p-8 shadow-elevated border-0 text-center">
+          <div className={`mx-auto grid h-14 w-14 place-items-center rounded-full ${isActive ? "bg-emerald-500/10 text-emerald-600" : "bg-amber-500/10 text-amber-600"}`}>
+            {isActive ? <CheckCircle2 className="h-7 w-7" /> : <Clock className="h-7 w-7" />}
+          </div>
+          <h1 className="mt-4 text-2xl font-bold">
+            {isActive ? "Your business is approved" : "Submission received"}
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {isActive
+              ? "Welcome aboard. You can jump into your dashboard now."
+              : isPending
+                ? "Thanks! Your business details were submitted and are awaiting platform admin approval. You'll be notified once approved."
+                : `Status: ${existing.status}. Please contact support if this looks wrong.`}
+          </p>
+          <div className="mt-6 rounded-lg border border-border bg-muted/40 p-4 text-left">
+            <div className="text-xs uppercase tracking-wider text-muted-foreground">Business</div>
+            <div className="mt-1 flex items-center justify-between">
+              <div>
+                <div className="font-semibold">{existing.business_name}</div>
+                <div className="text-xs text-muted-foreground">{existing.email}</div>
+              </div>
+              <Badge variant="outline" className="capitalize">{existing.status}</Badge>
+            </div>
+          </div>
+          <div className="mt-6 flex gap-2 justify-center">
+            {isActive ? (
+              <Button asChild className="gradient-emerald text-white shadow-soft">
+                <Link to="/dashboard">Go to dashboard <ArrowRight className="ml-2 h-4 w-4" /></Link>
+              </Button>
+            ) : (
+              <>
+                <Button variant="outline" onClick={() => loadExisting()}>Refresh status</Button>
+                <Button asChild className="gradient-emerald text-white shadow-soft" onClick={() => navigate({ to: "/dashboard" })}>
+                  <span>Continue setup</span>
+                </Button>
+              </>
+            )}
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background grid place-items-center p-6">
@@ -97,10 +189,10 @@ function OnboardingPage() {
           </div>
           <div className="col-span-2 mt-2">
             <Button type="submit" disabled={loading} className="w-full h-11 gradient-emerald text-white shadow-soft">
-              {loading ? "Creating workspace…" : "Create business"}
+              {loading ? "Submitting…" : "Submit for approval"}
             </Button>
             <p className="mt-3 text-xs text-muted-foreground text-center">
-              Your business will be pending approval. You can start configuring it right away.
+              Your business will be pending approval by a platform admin.
             </p>
           </div>
         </form>
