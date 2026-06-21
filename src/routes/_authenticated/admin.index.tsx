@@ -47,6 +47,20 @@ function AdminOverview() {
     },
   });
 
+  const { data: recent = [] } = useQuery({
+    queryKey: ["admin_recent_tenants"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("tenants")
+        .select("id, business_name, email, status, created_at")
+        .order("created_at", { ascending: false })
+        .limit(6);
+      if (error) throw error;
+      return (data ?? []) as RecentTenant[];
+    },
+  });
+
+
   const cards = [
     { label: "Total businesses", value: stats?.totalTenants ?? 0, icon: Building2, tone: "bg-primary/10 text-primary" },
     { label: "Active", value: stats?.active ?? 0, icon: TrendingUp, tone: "bg-emerald-500/10 text-emerald-600" },
