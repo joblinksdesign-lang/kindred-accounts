@@ -55,33 +55,39 @@ function OnboardingPage() {
       if (!uid) { setExisting(null); return; }
 
       // Primary: tenants the user owns (covers pending tenants reliably).
-      const { data: owned } = await supabase
+      const { data: owned, error: ownedError } = await supabase
         .from("tenants")
         .select("id, business_name, email, status, created_at")
         .eq("owner_user_id", uid)
         .order("created_at", { ascending: false })
         .limit(1);
+      if (ownedError) throw ownedError;
       if (owned && owned.length > 0) {
         setExisting(owned[0] as ExistingTenant);
         return;
       }
 
       // Fallback: any tenant membership.
-      const { data: membership } = await supabase
+      const { data: membership, error: membershipError } = await supabase
         .from("tenant_users")
         .select("tenant_id")
         .eq("user_id", uid)
         .eq("is_active", true)
-        .order("joined_at", { ascending: false })
+        .order("created_at", { ascending: false })
         .limit(1);
+      if (membershipError) throw membershipError;
       const tid = membership?.[0]?.tenant_id;
       if (!tid) { setExisting(null); return; }
-      const { data: t } = await supabase
+      const { data: t, error: tenantError } = await supabase
         .from("tenants")
         .select("id, business_name, email, status, created_at")
         .eq("id", tid)
         .maybeSingle();
+      if (tenantError) throw tenantError;
       setExisting((t as ExistingTenant) ?? null);
+    } catch (err) {
+      console.error("Unable to load business registration", err);
+      setExisting(null);
     } finally {
       setChecking(false);
     }
@@ -95,9 +101,11 @@ function OnboardingPage() {
     const fd = new FormData(e.currentTarget);
     const symbol = CURRENCIES.find(([c]) => c === currency)?.[1] ?? "$";
     try {
-      const { error } = await supabase.rpc("register_business", {
-        _business_name: String(fd.get("business_name")),
-        _email: String(fd.get("email")),
+      const businessName = String(fd.get("business_name"));
+      const email = String(fd.get("email"));
+      const { data: tenantId, error } = await supabase.rpc("register_business", {
+        _business_name: businessName,
+        _email: email,
         _phone: String(fd.get("phone") || ""),
         _country: String(fd.get("country") || ""),
         _currency: currency,
@@ -105,6 +113,13 @@ function OnboardingPage() {
       });
       if (error) throw error;
       toast.success("Business submitted! Awaiting platform approval.");
+      setExisting({
+        id: String(tenantId ?? "pending"),
+        business_name: businessName,
+        email,
+        status: "pending",
+        created_at: new Date().toISOString(),
+      });
       await loadExisting();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Registration failed");
@@ -159,8 +174,8 @@ function OnboardingPage() {
             ) : (
               <>
                 <Button variant="outline" onClick={() => loadExisting()}>Refresh status</Button>
-                <Button asChild className="gradient-emerald text-white shadow-soft" onClick={() => navigate({ to: "/dashboard" })}>
-                  <span>Continue setup</span>
+                <Button variant="ghost" onClick={async () => { await supabase.auth.signOut(); navigate({ to: "/auth", replace: true }); }}>
+                  Sign out
                 </Button>
               </>
             )}

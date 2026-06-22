@@ -26,6 +26,17 @@ export const Route = createFileRoute("/_authenticated")({
       if (!memberships || memberships.length === 0) {
         throw redirect({ to: "/onboarding" });
       }
+
+      const tenantIds = memberships.map((m) => m.tenant_id);
+      const { data: activeTenants } = await supabase
+        .from("tenants")
+        .select("id")
+        .in("id", tenantIds)
+        .eq("status", "active")
+        .limit(1);
+      if (!activeTenants || activeTenants.length === 0) {
+        throw redirect({ to: "/onboarding" });
+      }
     }
 
     return { user: data.user, isSuper };
