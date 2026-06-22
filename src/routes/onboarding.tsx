@@ -49,18 +49,42 @@ function OnboardingPage() {
 
   const loadExisting = async () => {
     setChecking(true);
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) return;
-    const { data } = await supabase
-      .from("tenant_users")
-      .select("tenants(id, business_name, email, status, created_at)")
-      .eq("user_id", user.user.id)
-      .eq("is_active", true)
-      .order("joined_at", { ascending: false })
-      .limit(1);
-    const row = (data ?? [])[0] as { tenants: ExistingTenant | null } | undefined;
-    setExisting(row?.tenants ?? null);
-    setChecking(false);
+    try {
+      const { data: userRes } = await supabase.auth.getUser();
+      const uid = userRes.user?.id;
+      if (!uid) { setExisting(null); return; }
+
+      // Primary: tenants the user owns (covers pending tenants reliably).
+      const { data: owned } = await supabase
+        .from("tenants")
+        .select("id, business_name, email, status, created_at")
+        .eq("owner_user_id", uid)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (owned && owned.length > 0) {
+        setExisting(owned[0] as ExistingTenant);
+        return;
+      }
+
+      // Fallback: any tenant membership.
+      const { data: membership } = await supabase
+        .from("tenant_users")
+        .select("tenant_id")
+        .eq("user_id", uid)
+        .eq("is_active", true)
+        .order("joined_at", { ascending: false })
+        .limit(1);
+      const tid = membership?.[0]?.tenant_id;
+      if (!tid) { setExisting(null); return; }
+      const { data: t } = await supabase
+        .from("tenants")
+        .select("id, business_name, email, status, created_at")
+        .eq("id", tid)
+        .maybeSingle();
+      setExisting((t as ExistingTenant) ?? null);
+    } finally {
+      setChecking(false);
+    }
   };
 
   useEffect(() => { loadExisting(); }, []);
