@@ -89,9 +89,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "SmartInvoice Pro — Growth Point" },
       { name: "description", content: "Modern invoicing, receipts, inventory and reports for growing businesses." },
       { property: "og:title", content: "SmartInvoice Pro — Growth Point" },
-      { property: "og:description", content: "Run a smarter business — invoice, receipt, inventory and payment management." },
+      { property: "og:description", content: "Modern invoicing, receipts, inventory and reports for growing businesses." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
+      { name: "twitter:title", content: "SmartInvoice Pro — Growth Point" },
+      { name: "twitter:description", content: "Modern invoicing, receipts, inventory and reports for growing businesses." },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/ca92f33c-fceb-4c9d-8ae7-a11a65d4ce23" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/ca92f33c-fceb-4c9d-8ae7-a11a65d4ce23" },
     ],
     links: [
       {
