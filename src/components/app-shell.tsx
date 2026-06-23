@@ -103,6 +103,15 @@ function AppSidebar() {
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+                {role === "owner" && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={isActive("/billing")} tooltip="Billing">
+                      <Link to="/billing" className="flex items-center gap-2">
+                        <Sparkles className="h-4 w-4" /><span>Billing & Plan</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
