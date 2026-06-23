@@ -166,22 +166,27 @@ function OnboardingPage() {
               <Badge variant="outline" className="capitalize">{existing.status}</Badge>
             </div>
           </div>
-          <div className="mt-6 flex gap-2 justify-center">
-            {isActive ? (
+          <div className="mt-6 flex gap-2 justify-center flex-wrap">
+            {isActive && (
               <Button
-                onClick={() => navigate({ to: "/dashboard", replace: true })}
+                onClick={() => { window.location.href = "/dashboard"; }}
                 className="gradient-emerald text-white shadow-soft"
               >
                 Go to dashboard <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
-            ) : (
-              <>
-                <Button variant="outline" onClick={() => loadExisting()}>Refresh status</Button>
-                <Button variant="ghost" onClick={async () => { await supabase.auth.signOut(); navigate({ to: "/auth", replace: true }); }}>
-                  Sign out
-                </Button>
-              </>
             )}
+            {!isActive && (
+              <Button variant="outline" onClick={() => loadExisting()}>Refresh status</Button>
+            )}
+            <Button
+              variant="ghost"
+              onClick={async () => {
+                await supabase.auth.signOut();
+                navigate({ to: "/auth", replace: true });
+              }}
+            >
+              Sign out
+            </Button>
           </div>
         </Card>
       </div>
