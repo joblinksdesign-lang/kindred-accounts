@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, redirect, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, redirect } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -168,8 +168,11 @@ function OnboardingPage() {
           </div>
           <div className="mt-6 flex gap-2 justify-center">
             {isActive ? (
-              <Button asChild className="gradient-emerald text-white shadow-soft">
-                <Link to="/dashboard">Go to dashboard <ArrowRight className="ml-2 h-4 w-4" /></Link>
+              <Button
+                onClick={() => navigate({ to: "/dashboard", replace: true })}
+                className="gradient-emerald text-white shadow-soft"
+              >
+                Go to dashboard <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             ) : (
               <>
