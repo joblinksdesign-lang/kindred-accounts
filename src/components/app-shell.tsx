@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, Users, Package, FileText, Receipt, CreditCard, FileSignature,
-  BarChart3, Settings, LogOut, Bell, Search, Building2, ShieldCheck, LayoutGrid, Tag,
+  BarChart3, Settings, LogOut, Bell, Search, Building2, ShieldCheck, LayoutGrid, Tag, Sparkles,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
