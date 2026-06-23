@@ -96,7 +96,7 @@ function BillingPage() {
     <div className="p-6 space-y-6">
       <PageHeader
         title="Billing & Plan"
-        description="Upgrade or change your subscription at any time."
+        subtitle="Upgrade or change your subscription at any time."
       />
 
       {sub && currentPlan && (
