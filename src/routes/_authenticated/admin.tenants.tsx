@@ -84,6 +84,15 @@ function AdminTenants() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const deleteTenant = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("tenants").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("Business deleted"); qc.invalidateQueries({ queryKey: ["admin_tenants"] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const filtered = tenants.filter((t) => {
     if (filter !== "all" && t.status !== filter) return false;
     const term = q.toLowerCase();
