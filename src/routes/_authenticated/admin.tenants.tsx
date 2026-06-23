@@ -11,7 +11,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { PageHeader } from "@/components/page-helpers";
 import { toast } from "sonner";
 import { formatDate } from "@/lib/company";
-import { Check, X, Pause, Play } from "lucide-react";
+import { Check, X, Pause, Play, Trash2 } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/_authenticated/admin/tenants")({
   head: () => ({ meta: [{ title: "Businesses — Super Admin" }] }),
