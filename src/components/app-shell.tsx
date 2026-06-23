@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, Users, Package, FileText, Receipt, CreditCard, FileSignature,
-  BarChart3, Settings, LogOut, Bell, Search, Building2, ShieldCheck, LayoutGrid, Tag,
+  BarChart3, Settings, LogOut, Bell, Search, Building2, ShieldCheck, LayoutGrid, Tag, Sparkles,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
@@ -103,6 +103,15 @@ function AppSidebar() {
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+                {role === "owner" && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={isActive("/billing")} tooltip="Billing">
+                      <Link to="/billing" className="flex items-center gap-2">
+                        <Sparkles className="h-4 w-4" /><span>Billing & Plan</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
