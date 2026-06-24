@@ -90,17 +90,22 @@ function InvoiceDetail() {
   const payments = (invoice.payments as Array<{ id: string; amount: number; method: string; payment_date: string; reference: string | null }>) ?? [];
 
   const downloadPdf = () => {
-    const pdf = generateInvoicePdf({
-      number: invoice.invoice_number, date: formatDate(invoice.invoice_date),
-      dueDate: invoice.due_date ? formatDate(invoice.due_date) : null,
-      status: invoice.status, customer: cust,
-      items: items.map((it) => ({ description: it.description, quantity: Number(it.quantity), unit_price: Number(it.unit_price), line_total: Number(it.line_total) })),
-      subtotal: Number(invoice.subtotal), taxRate: Number(invoice.tax_rate),
-      taxAmount: Number(invoice.tax_amount), discount: Number(invoice.discount),
-      total: Number(invoice.total), amountPaid: Number(invoice.amount_paid), balance: Number(invoice.balance),
-      notes: invoice.notes,
-    }, company);
-    pdf.save(`${invoice.invoice_number}.pdf`);
+    try {
+      const pdf = generateInvoicePdf({
+        number: invoice.invoice_number, date: formatDate(invoice.invoice_date),
+        dueDate: invoice.due_date ? formatDate(invoice.due_date) : null,
+        status: invoice.status, customer: cust,
+        items: items.map((it) => ({ description: it.description, quantity: Number(it.quantity), unit_price: Number(it.unit_price), line_total: Number(it.line_total) })),
+        subtotal: Number(invoice.subtotal), taxRate: Number(invoice.tax_rate),
+        taxAmount: Number(invoice.tax_amount), discount: Number(invoice.discount),
+        total: Number(invoice.total), amountPaid: Number(invoice.amount_paid), balance: Number(invoice.balance),
+        notes: invoice.notes,
+      }, company);
+      pdf.save(`${invoice.invoice_number}.pdf`);
+    } catch (e) {
+      console.error("PDF generation failed", e);
+      toast.error(`Could not generate PDF: ${(e as Error).message}`);
+    }
   };
 
   return (

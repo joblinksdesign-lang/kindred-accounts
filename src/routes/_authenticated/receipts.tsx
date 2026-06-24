@@ -39,14 +39,18 @@ function ReceiptsPage() {
   });
 
   const download = (r: typeof receipts[0]) => {
-    if (!company) return;
-    const c = r.customers as { name: string; company_name: string | null; email: string | null };
-    const inv = r.invoices as { invoice_number?: string } | null;
-    const pdf = generateReceiptPdf({
-      number: r.receipt_number, date: formatDate(r.payment_date),
-      invoiceNumber: inv?.invoice_number ?? null, customer: c, amount: Number(r.amount), method: r.method,
-    }, company);
-    pdf.save(`${r.receipt_number}.pdf`);
+    if (!company) { console.warn("Company settings not loaded"); return; }
+    try {
+      const c = r.customers as { name: string; company_name: string | null; email: string | null };
+      const inv = r.invoices as { invoice_number?: string } | null;
+      const pdf = generateReceiptPdf({
+        number: r.receipt_number, date: formatDate(r.payment_date),
+        invoiceNumber: inv?.invoice_number ?? null, customer: c, amount: Number(r.amount), method: r.method,
+      }, company);
+      pdf.save(`${r.receipt_number}.pdf`);
+    } catch (e) {
+      console.error("PDF generation failed", e);
+    }
   };
 
   return (
