@@ -1,10 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { formatMoney, useCompanySettings, formatDate } from "@/lib/company";
 import {
   DollarSign, Users, Package, FileText, AlertTriangle, TrendingUp, Plus, ArrowUpRight,
@@ -14,6 +16,8 @@ import {
   PieChart, Pie, Cell, Legend,
 } from "recharts";
 
+type Period = "day" | "week" | "month";
+
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — SmartInvoice Pro" }] }),
   component: Dashboard,
@@ -22,35 +26,65 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 function Dashboard() {
   const { data: company } = useCompanySettings();
   const sym = company?.currency_symbol || "$";
+  const [period, setPeriod] = useState<Period>("month");
 
   const { data: stats } = useQuery({
-    queryKey: ["dashboard_stats"],
+    queryKey: ["dashboard_stats", period],
     queryFn: async () => {
       const [invoices, customers, products, payments] = await Promise.all([
         supabase.from("invoices").select("id,total,balance,status,invoice_date,invoice_number,customer_id,created_at").order("created_at", { ascending: false }),
         supabase.from("customers").select("id", { count: "exact", head: true }),
         supabase.from("products").select("id,name,quantity,reorder_level"),
-        supabase.from("payments").select("amount,payment_date,created_at").order("created_at", { ascending: false }).limit(50),
+        supabase.from("payments").select("amount,payment_date,created_at").order("created_at", { ascending: false }).limit(500),
       ]);
       const invs = invoices.data ?? [];
+      const pays = payments.data ?? [];
       const totalRevenue = invs.reduce((s, i) => s + Number(i.total) - Number(i.balance), 0);
       const outstanding = invs.reduce((s, i) => s + Number(i.balance), 0);
       const lowStock = (products.data ?? []).filter((p) => Number(p.quantity) <= Number(p.reorder_level));
-      const today = new Date().toISOString().slice(0, 10);
-      const todaySales = (payments.data ?? []).filter((p) => p.payment_date === today).reduce((s, p) => s + Number(p.amount), 0);
-      const month = new Date().toISOString().slice(0, 7);
-      const monthlySales = (payments.data ?? []).filter((p) => p.payment_date?.startsWith(month)).reduce((s, p) => s + Number(p.amount), 0);
 
-      // 6-month series
-      const months: { label: string; revenue: number }[] = [];
-      for (let i = 5; i >= 0; i--) {
-        const d = new Date();
-        d.setMonth(d.getMonth() - i);
-        const key = d.toISOString().slice(0, 7);
-        const label = d.toLocaleDateString(undefined, { month: "short" });
-        const revenue = invs.filter((x) => x.invoice_date?.startsWith(key)).reduce((s, x) => s + Number(x.total), 0);
-        months.push({ label, revenue });
+      // Period window
+      const now = new Date();
+      const start = new Date(now);
+      if (period === "day") start.setHours(0, 0, 0, 0);
+      else if (period === "week") { start.setDate(start.getDate() - 6); start.setHours(0,0,0,0); }
+      else { start.setDate(1); start.setHours(0,0,0,0); }
+      const startISO = start.toISOString().slice(0, 10);
+      const inPeriod = (d?: string | null) => !!d && d >= startISO;
+
+      const periodSales = pays.filter((p) => inPeriod(p.payment_date)).reduce((s, p) => s + Number(p.amount), 0);
+      const periodInvoiced = invs.filter((i) => inPeriod(i.invoice_date)).reduce((s, i) => s + Number(i.total), 0);
+      const periodInvoiceCount = invs.filter((i) => inPeriod(i.invoice_date)).length;
+
+      // Trend series based on period
+      const series: { label: string; revenue: number }[] = [];
+      if (period === "day") {
+        // 24 hours of today (use payment created_at)
+        for (let h = 0; h < 24; h++) {
+          const revenue = pays.filter((p) => {
+            const t = new Date(p.created_at);
+            return t.toDateString() === now.toDateString() && t.getHours() === h;
+          }).reduce((s, p) => s + Number(p.amount), 0);
+          series.push({ label: `${h}h`, revenue });
+        }
+      } else if (period === "week") {
+        for (let i = 6; i >= 0; i--) {
+          const d = new Date(now); d.setDate(d.getDate() - i);
+          const key = d.toISOString().slice(0, 10);
+          const label = d.toLocaleDateString(undefined, { weekday: "short" });
+          const revenue = invs.filter((x) => x.invoice_date === key).reduce((s, x) => s + Number(x.total), 0);
+          series.push({ label, revenue });
+        }
+      } else {
+        for (let i = 5; i >= 0; i--) {
+          const d = new Date(); d.setMonth(d.getMonth() - i);
+          const key = d.toISOString().slice(0, 7);
+          const label = d.toLocaleDateString(undefined, { month: "short" });
+          const revenue = invs.filter((x) => x.invoice_date?.startsWith(key)).reduce((s, x) => s + Number(x.total), 0);
+          series.push({ label, revenue });
+        }
       }
+
       const statusBreakdown = ["draft", "sent", "pending", "partial", "paid", "overdue"].map((s) => ({
         name: s,
         value: invs.filter((i) => i.status === s).length,
@@ -60,22 +94,25 @@ function Dashboard() {
         totalRevenue, outstanding, lowStock,
         totalCustomers: customers.count ?? 0,
         totalProducts: (products.data ?? []).length,
-        todaySales, monthlySales,
-        months, statusBreakdown,
+        periodSales, periodInvoiced, periodInvoiceCount,
+        series, statusBreakdown,
         recentInvoices: invs.slice(0, 6),
       };
     },
   });
 
+  const periodLabel = period === "day" ? "Today" : period === "week" ? "This week" : "This month";
+  const trendLabel = period === "day" ? "Last 24 hours" : period === "week" ? "Last 7 days" : "Last 6 months";
+
   const cards = [
     { label: "Total Revenue", value: formatMoney(stats?.totalRevenue, sym), icon: DollarSign, tone: "emerald" },
     { label: "Outstanding", value: formatMoney(stats?.outstanding, sym), icon: AlertTriangle, tone: "gold" },
-    { label: "Today's Sales", value: formatMoney(stats?.todaySales, sym), icon: TrendingUp, tone: "info" },
-    { label: "This Month", value: formatMoney(stats?.monthlySales, sym), icon: ArrowUpRight, tone: "emerald" },
+    { label: `${periodLabel} Sales`, value: formatMoney(stats?.periodSales, sym), icon: TrendingUp, tone: "info" },
+    { label: `${periodLabel} Invoiced`, value: formatMoney(stats?.periodInvoiced, sym), icon: ArrowUpRight, tone: "emerald" },
     { label: "Customers", value: stats?.totalCustomers ?? 0, icon: Users, tone: "muted" },
     { label: "Products", value: stats?.totalProducts ?? 0, icon: Package, tone: "muted" },
     { label: "Low Stock", value: stats?.lowStock.length ?? 0, icon: AlertTriangle, tone: "destructive" },
-    { label: "Invoices", value: stats?.recentInvoices?.length ?? 0, icon: FileText, tone: "muted" },
+    { label: `${periodLabel} Invoices`, value: stats?.periodInvoiceCount ?? 0, icon: FileText, tone: "muted" },
   ];
 
   const COLORS = ["#0B6E4F", "#F59E0B", "#3B82F6", "#8B5CF6", "#10B981", "#EF4444"];
@@ -87,7 +124,12 @@ function Dashboard() {
           <h1 className="text-2xl font-bold">Good day, {company?.company_name || "team"} 👋</h1>
           <p className="text-sm text-muted-foreground">Here's what's happening across your business today.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <ToggleGroup type="single" value={period} onValueChange={(v) => v && setPeriod(v as Period)} className="bg-muted/40 rounded-lg p-0.5">
+            <ToggleGroupItem value="day" size="sm" className="data-[state=on]:bg-background data-[state=on]:shadow-sm">Day</ToggleGroupItem>
+            <ToggleGroupItem value="week" size="sm" className="data-[state=on]:bg-background data-[state=on]:shadow-sm">Week</ToggleGroupItem>
+            <ToggleGroupItem value="month" size="sm" className="data-[state=on]:bg-background data-[state=on]:shadow-sm">Month</ToggleGroupItem>
+          </ToggleGroup>
           <Button asChild variant="outline"><Link to="/quotations">New quote</Link></Button>
           <Button asChild className="gradient-emerald text-white shadow-soft">
             <Link to="/invoices/new"><Plus className="h-4 w-4 mr-1.5" />New invoice</Link>
@@ -122,12 +164,12 @@ function Dashboard() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="font-semibold">Revenue trend</h3>
-              <p className="text-xs text-muted-foreground">Last 6 months — invoiced amounts</p>
+              <p className="text-xs text-muted-foreground">{trendLabel} — invoiced amounts</p>
             </div>
           </div>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={stats?.months ?? []}>
+              <AreaChart data={stats?.series ?? []}>
                 <defs>
                   <linearGradient id="rev" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="#0B6E4F" stopOpacity={0.4} />

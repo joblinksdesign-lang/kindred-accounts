@@ -90,6 +90,7 @@ function InvoiceDetail() {
   const payments = (invoice.payments as Array<{ id: string; amount: number; method: string; payment_date: string; reference: string | null }>) ?? [];
 
   const downloadPdf = () => {
+    let stage: "render" | "storage" | "response" = "render";
     try {
       const pdf = generateInvoicePdf({
         number: invoice.invoice_number, date: formatDate(invoice.invoice_date),
@@ -101,10 +102,22 @@ function InvoiceDetail() {
         total: Number(invoice.total), amountPaid: Number(invoice.amount_paid), balance: Number(invoice.balance),
         notes: invoice.notes,
       }, company);
-      pdf.save(`${invoice.invoice_number}.pdf`);
+      stage = "storage";
+      const blob = pdf.output("blob");
+      stage = "response";
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${invoice.invoice_number}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast.success("PDF downloaded");
     } catch (e) {
-      console.error("PDF generation failed", e);
-      toast.error(`Could not generate PDF: ${(e as Error).message}`);
+      console.error(`PDF ${stage} failed`, e);
+      const label = stage === "render" ? "render the PDF" : stage === "storage" ? "prepare the PDF file" : "deliver the download";
+      toast.error(`Failed to ${label} (${stage})`, { description: (e as Error).message });
     }
   };
 
