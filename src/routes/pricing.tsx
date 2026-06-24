@@ -111,11 +111,11 @@ function PricingPage() {
                   <p className="text-sm text-muted-foreground mt-1 min-h-[40px]">{p.description}</p>
                   <div className="mt-5">
                     <div className="flex items-baseline gap-1">
-                      <span className="text-4xl font-extrabold">${price.toFixed(0)}</span>
+                      <span className="text-4xl font-extrabold">USh {price.toLocaleString()}</span>
                       <span className="text-sm text-muted-foreground">/mo</span>
                     </div>
                     {annual && p.price_annual > 0 && (
-                      <div className="text-xs text-muted-foreground mt-1">Billed ${p.price_annual.toFixed(0)} yearly</div>
+                      <div className="text-xs text-muted-foreground mt-1">Billed USh {p.price_annual.toLocaleString()} yearly</div>
                     )}
                     {p.trial_days > 0 && (
                       <div className="text-xs text-primary mt-1 font-medium">{p.trial_days}-day free trial</div>

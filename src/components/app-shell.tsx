@@ -138,7 +138,7 @@ function AppSidebar() {
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border p-3">
         <div className="text-[10px] text-muted-foreground flex items-center gap-1.5">
-          {isSuperAdmin ? <><ShieldCheck className="h-3 w-3" />Super admin</> : <>{tenant?.currency || "USD"} • {tenant?.status}</>}
+          {isSuperAdmin ? <><ShieldCheck className="h-3 w-3" />Super admin</> : <>{tenant?.currency || "UGX"} • {tenant?.status}</>}
         </div>
       </SidebarFooter>
     </Sidebar>

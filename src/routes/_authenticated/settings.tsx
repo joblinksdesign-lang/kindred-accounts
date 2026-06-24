@@ -106,7 +106,7 @@ function SettingsPage() {
         <TabsContent value="invoicing">
           <Card className="p-6 shadow-soft border-0 space-y-3">
             <div className="grid grid-cols-2 gap-3">
-              <div><Label>Currency code</Label><Input value={String(form.currency || "USD")} onChange={(e) => set("currency", e.target.value)} maxLength={4} /></div>
+              <div><Label>Currency code</Label><Input value={String(form.currency || "UGX")} onChange={(e) => set("currency", e.target.value)} maxLength={4} /></div>
               <div><Label>Currency symbol</Label><Input value={String(form.currency_symbol || "$")} onChange={(e) => set("currency_symbol", e.target.value)} maxLength={4} /></div>
               <div><Label>Default tax rate %</Label><Input type="number" step="0.01" value={Number(form.default_tax_rate || 0)} onChange={(e) => set("default_tax_rate", Number(e.target.value))} /></div>
               <div></div>

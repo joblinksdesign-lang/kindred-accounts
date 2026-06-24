@@ -44,7 +44,7 @@ export function useCompanySettings() {
   });
 }
 
-export function formatMoney(amount: number | string | null | undefined, symbol = "$") {
+export function formatMoney(amount: number | string | null | undefined, symbol = "USh ") {
   const n = typeof amount === "string" ? parseFloat(amount) : amount ?? 0;
   return `${symbol}${(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
