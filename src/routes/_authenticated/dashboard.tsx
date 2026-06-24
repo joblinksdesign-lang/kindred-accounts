@@ -124,7 +124,12 @@ function Dashboard() {
           <h1 className="text-2xl font-bold">Good day, {company?.company_name || "team"} 👋</h1>
           <p className="text-sm text-muted-foreground">Here's what's happening across your business today.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <ToggleGroup type="single" value={period} onValueChange={(v) => v && setPeriod(v as Period)} className="bg-muted/40 rounded-lg p-0.5">
+            <ToggleGroupItem value="day" size="sm" className="data-[state=on]:bg-background data-[state=on]:shadow-sm">Day</ToggleGroupItem>
+            <ToggleGroupItem value="week" size="sm" className="data-[state=on]:bg-background data-[state=on]:shadow-sm">Week</ToggleGroupItem>
+            <ToggleGroupItem value="month" size="sm" className="data-[state=on]:bg-background data-[state=on]:shadow-sm">Month</ToggleGroupItem>
+          </ToggleGroup>
           <Button asChild variant="outline"><Link to="/quotations">New quote</Link></Button>
           <Button asChild className="gradient-emerald text-white shadow-soft">
             <Link to="/invoices/new"><Plus className="h-4 w-4 mr-1.5" />New invoice</Link>
