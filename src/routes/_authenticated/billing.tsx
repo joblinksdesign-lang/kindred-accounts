@@ -145,11 +145,11 @@ function BillingPage() {
               <p className="text-xs text-muted-foreground mt-1 min-h-[36px]">{p.description}</p>
               <div className="mt-4">
                 <div className="flex items-baseline gap-1">
-                  <span className="text-3xl font-extrabold">${price.toFixed(0)}</span>
+                  <span className="text-3xl font-extrabold">USh {price.toLocaleString()}</span>
                   <span className="text-xs text-muted-foreground">/mo</span>
                 </div>
                 {annual && p.price_annual > 0 && (
-                  <div className="text-[11px] text-muted-foreground mt-0.5">Billed ${p.price_annual.toFixed(0)} yearly</div>
+                  <div className="text-[11px] text-muted-foreground mt-0.5">Billed USh {p.price_annual.toLocaleString()} yearly</div>
                 )}
               </div>
               <ul className="mt-5 space-y-2 flex-1">
