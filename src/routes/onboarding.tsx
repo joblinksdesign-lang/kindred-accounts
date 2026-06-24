@@ -43,7 +43,7 @@ const CURRENCIES: Array<[string, string]> = [
 function OnboardingPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [currency, setCurrency] = useState("USD");
+  const [currency, setCurrency] = useState("UGX");
   const [existing, setExisting] = useState<ExistingTenant | null>(null);
   const [checking, setChecking] = useState(true);
 

@@ -37,7 +37,7 @@ export type ReceiptPdfData = {
   template?: string;
 };
 
-const money = (n: number, sym = "$") =>
+const money = (n: number, sym = "USh ") =>
   `${sym}${(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 function headerClassic(doc: jsPDF, company: CompanySettings, title: string, number: string) {
