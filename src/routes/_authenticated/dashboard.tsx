@@ -164,12 +164,12 @@ function Dashboard() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="font-semibold">Revenue trend</h3>
-              <p className="text-xs text-muted-foreground">Last 6 months — invoiced amounts</p>
+              <p className="text-xs text-muted-foreground">{trendLabel} — invoiced amounts</p>
             </div>
           </div>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={stats?.months ?? []}>
+              <AreaChart data={stats?.series ?? []}>
                 <defs>
                   <linearGradient id="rev" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="#0B6E4F" stopOpacity={0.4} />
