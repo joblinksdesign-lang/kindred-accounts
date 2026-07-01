@@ -32,9 +32,14 @@ function Dashboard() {
   const { data: company } = useCompanySettings();
   const sym = company?.currency_symbol || "$";
   const [period, setPeriod] = useState<Period>("month");
+  const [range, setRange] = useState<DateRange | undefined>();
+
+  const customFrom = period === "custom" && range?.from ? range.from : undefined;
+  const customTo = period === "custom" && range?.to ? range.to : undefined;
+  const rangeKey = `${customFrom?.toISOString() ?? ""}_${customTo?.toISOString() ?? ""}`;
 
   const { data: stats } = useQuery({
-    queryKey: ["dashboard_stats", period],
+    queryKey: ["dashboard_stats", period, rangeKey],
     queryFn: async () => {
       const [invoices, customers, products, payments] = await Promise.all([
         supabase.from("invoices").select("id,total,balance,status,invoice_date,invoice_number,customer_id,created_at").order("created_at", { ascending: false }),
@@ -51,11 +56,19 @@ function Dashboard() {
       // Period window
       const now = new Date();
       const start = new Date(now);
+      let endISO: string | null = null;
       if (period === "day") start.setHours(0, 0, 0, 0);
       else if (period === "week") { start.setDate(start.getDate() - 6); start.setHours(0,0,0,0); }
-      else { start.setDate(1); start.setHours(0,0,0,0); }
+      else if (period === "month") { start.setDate(1); start.setHours(0,0,0,0); }
+      else if (period === "custom" && customFrom && customTo) {
+        start.setTime(customFrom.getTime()); start.setHours(0,0,0,0);
+        endISO = customTo.toISOString().slice(0, 10);
+      } else {
+        // Custom selected but incomplete — fall back to month
+        start.setDate(1); start.setHours(0,0,0,0);
+      }
       const startISO = start.toISOString().slice(0, 10);
-      const inPeriod = (d?: string | null) => !!d && d >= startISO;
+      const inPeriod = (d?: string | null) => !!d && d >= startISO && (endISO ? d <= endISO : true);
 
       const periodSales = pays.filter((p) => inPeriod(p.payment_date)).reduce((s, p) => s + Number(p.amount), 0);
       const periodInvoiced = invs.filter((i) => inPeriod(i.invoice_date)).reduce((s, i) => s + Number(i.total), 0);
@@ -64,7 +77,6 @@ function Dashboard() {
       // Trend series based on period
       const series: { label: string; revenue: number }[] = [];
       if (period === "day") {
-        // 24 hours of today (use payment created_at)
         for (let h = 0; h < 24; h++) {
           const revenue = pays.filter((p) => {
             const t = new Date(p.created_at);
@@ -79,6 +91,30 @@ function Dashboard() {
           const label = d.toLocaleDateString(undefined, { weekday: "short" });
           const revenue = invs.filter((x) => x.invoice_date === key).reduce((s, x) => s + Number(x.total), 0);
           series.push({ label, revenue });
+        }
+      } else if (period === "custom" && customFrom && customTo) {
+        const msDay = 86400000;
+        const spanDays = Math.max(1, Math.round((customTo.getTime() - customFrom.getTime()) / msDay) + 1);
+        if (spanDays <= 31) {
+          for (let i = 0; i < spanDays; i++) {
+            const d = new Date(customFrom); d.setDate(d.getDate() + i);
+            const key = d.toISOString().slice(0, 10);
+            const label = format(d, "MMM d");
+            const revenue = invs.filter((x) => x.invoice_date === key).reduce((s, x) => s + Number(x.total), 0);
+            series.push({ label, revenue });
+          }
+        } else {
+          // bucket by month
+          const startM = new Date(customFrom.getFullYear(), customFrom.getMonth(), 1);
+          const endM = new Date(customTo.getFullYear(), customTo.getMonth(), 1);
+          const cur = new Date(startM);
+          while (cur <= endM) {
+            const key = cur.toISOString().slice(0, 7);
+            const label = format(cur, "MMM yyyy");
+            const revenue = invs.filter((x) => x.invoice_date?.startsWith(key)).reduce((s, x) => s + Number(x.total), 0);
+            series.push({ label, revenue });
+            cur.setMonth(cur.getMonth() + 1);
+          }
         }
       } else {
         for (let i = 5; i >= 0; i--) {
@@ -106,8 +142,18 @@ function Dashboard() {
     },
   });
 
-  const periodLabel = period === "day" ? "Today" : period === "week" ? "This week" : "This month";
-  const trendLabel = period === "day" ? "Last 24 hours" : period === "week" ? "Last 7 days" : "Last 6 months";
+  const periodLabel =
+    period === "day" ? "Today"
+    : period === "week" ? "This week"
+    : period === "month" ? "This month"
+    : "Custom range";
+  const trendLabel =
+    period === "day" ? "Last 24 hours"
+    : period === "week" ? "Last 7 days"
+    : period === "month" ? "Last 6 months"
+    : (customFrom && customTo)
+      ? `${format(customFrom, "MMM d, yyyy")} – ${format(customTo, "MMM d, yyyy")}`
+      : "Pick a date range";
 
   const cards = [
     { label: "Total Revenue", value: formatMoney(stats?.totalRevenue, sym), icon: DollarSign, tone: "emerald" },
