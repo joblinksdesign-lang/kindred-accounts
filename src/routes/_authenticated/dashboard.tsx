@@ -180,7 +180,34 @@ function Dashboard() {
             <ToggleGroupItem value="day" size="sm" className="data-[state=on]:bg-background data-[state=on]:shadow-sm">Day</ToggleGroupItem>
             <ToggleGroupItem value="week" size="sm" className="data-[state=on]:bg-background data-[state=on]:shadow-sm">Week</ToggleGroupItem>
             <ToggleGroupItem value="month" size="sm" className="data-[state=on]:bg-background data-[state=on]:shadow-sm">Month</ToggleGroupItem>
+            <ToggleGroupItem value="custom" size="sm" className="data-[state=on]:bg-background data-[state=on]:shadow-sm">Custom</ToggleGroupItem>
           </ToggleGroup>
+          {period === "custom" && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={cn("justify-start text-left font-normal", !range?.from && "text-muted-foreground")}
+                >
+                  <CalendarIcon className="h-4 w-4 mr-2" />
+                  {range?.from ? (
+                    range.to ? `${format(range.from, "MMM d")} – ${format(range.to, "MMM d, yyyy")}` : format(range.from, "MMM d, yyyy")
+                  ) : "Pick range"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <Calendar
+                  mode="range"
+                  selected={range}
+                  onSelect={setRange}
+                  numberOfMonths={2}
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
+          )}
           <Button asChild variant="outline"><Link to="/quotations">New quote</Link></Button>
           <Button asChild className="gradient-emerald text-white shadow-soft">
             <Link to="/invoices/new"><Plus className="h-4 w-4 mr-1.5" />New invoice</Link>
