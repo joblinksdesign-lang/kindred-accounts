@@ -40,17 +40,64 @@ export type ReceiptPdfData = {
 const money = (n: number, sym = "USh ") =>
   `${sym}${(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-function headerClassic(doc: jsPDF, company: CompanySettings, title: string, number: string) {
+export type LoadedLogo = { dataUrl: string; format: "PNG" | "JPEG" };
+
+export async function loadLogoDataUrl(url: string | null | undefined): Promise<LoadedLogo | null> {
+  if (!url) return null;
+  try {
+    const res = await fetch(url, { mode: "cors" });
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    const format: "PNG" | "JPEG" = /png/i.test(blob.type) ? "PNG" : "JPEG";
+    const dataUrl: string = await new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result as string);
+      r.onerror = () => reject(r.error);
+      r.readAsDataURL(blob);
+    });
+    return { dataUrl, format };
+  } catch (e) {
+    console.warn("Logo fetch failed", e);
+    return null;
+  }
+}
+
+function drawLogo(doc: jsPDF, logo: LoadedLogo | null, x: number, y: number, w: number, h: number) {
+  if (!logo) return;
+  try {
+    doc.addImage(logo.dataUrl, logo.format, x, y, w, h, undefined, "FAST");
+  } catch (e) {
+    console.warn("addImage failed", e);
+  }
+}
+
+/** Cross-platform PDF save that also works in mobile in-app WebViews. */
+export function savePdf(doc: jsPDF, filename: string) {
+  try {
+    doc.save(filename);
+  } catch (e) {
+    console.warn("doc.save failed, falling back to blob url", e);
+    const blob = doc.output("blob");
+    const url = URL.createObjectURL(blob);
+    const w = window.open(url, "_blank");
+    if (!w) window.location.href = url;
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  }
+}
+
+function headerClassic(doc: jsPDF, company: CompanySettings, title: string, number: string, logo: LoadedLogo | null) {
   // Emerald top band
   doc.setFillColor(11, 110, 79);
   doc.rect(0, 0, 210, 28, "F");
+  const nameX = logo ? 34 : 14;
+  if (logo) drawLogo(doc, logo, 14, 4, 18, 18);
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(22);
-  doc.text(company.company_name, 14, 14);
+  doc.text(company.company_name, nameX, 14);
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
-  doc.text([company.address, [company.city, company.country].filter(Boolean).join(", ")].filter(Boolean).join("  •  "), 14, 21);
+  doc.text([company.address, [company.city, company.country].filter(Boolean).join(", ")].filter(Boolean).join("  •  "), nameX, 21);
 
   doc.setTextColor(31, 41, 55);
   doc.setFont("helvetica", "bold");
@@ -61,7 +108,7 @@ function headerClassic(doc: jsPDF, company: CompanySettings, title: string, numb
   doc.text(`# ${number}`, 196, 25, { align: "right" });
 }
 
-function headerModern(doc: jsPDF, company: CompanySettings, title: string, number: string) {
+function headerModern(doc: jsPDF, company: CompanySettings, title: string, number: string, logo: LoadedLogo | null) {
   // Left accent bar
   doc.setFillColor(245, 158, 11);
   doc.rect(0, 0, 6, 297, "F");
@@ -74,22 +121,24 @@ function headerModern(doc: jsPDF, company: CompanySettings, title: string, numbe
   doc.setTextColor(100, 116, 139);
   doc.text(`# ${number}`, 14, 28);
 
+  if (logo) drawLogo(doc, logo, 174, 8, 22, 22);
   doc.setTextColor(11, 110, 79);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
-  doc.text(company.company_name, 196, 18, { align: "right" });
+  const rightY = logo ? 34 : 18;
+  doc.text(company.company_name, 196, rightY, { align: "right" });
   doc.setTextColor(100, 116, 139);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   const lines = [company.email, company.phone, company.address].filter(Boolean) as string[];
-  lines.forEach((l, i) => doc.text(l, 196, 24 + i * 4, { align: "right" }));
+  lines.forEach((l, i) => doc.text(l, 196, rightY + 6 + i * 4, { align: "right" }));
 }
 
-export function generateInvoicePdf(data: InvoicePdfData, company: CompanySettings): jsPDF {
+export function generateInvoicePdf(data: InvoicePdfData, company: CompanySettings, logo: LoadedLogo | null = null): jsPDF {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const template = data.template || company.invoice_template || "classic";
-  if (template === "modern") headerModern(doc, company, "Invoice", data.number);
-  else headerClassic(doc, company, "Invoice", data.number);
+  if (template === "modern") headerModern(doc, company, "Invoice", data.number, logo);
+  else headerClassic(doc, company, "Invoice", data.number, logo);
 
   const startY = template === "modern" ? 44 : 38;
   // Bill To + Meta
@@ -209,11 +258,11 @@ export function generateInvoicePdf(data: InvoicePdfData, company: CompanySetting
   return doc;
 }
 
-export function generateReceiptPdf(data: ReceiptPdfData, company: CompanySettings): jsPDF {
+export function generateReceiptPdf(data: ReceiptPdfData, company: CompanySettings, logo: LoadedLogo | null = null): jsPDF {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const template = data.template || company.receipt_template || "classic";
-  if (template === "modern") headerModern(doc, company, "Receipt", data.number);
-  else headerClassic(doc, company, "Receipt", data.number);
+  if (template === "modern") headerModern(doc, company, "Receipt", data.number, logo);
+  else headerClassic(doc, company, "Receipt", data.number, logo);
 
   const y = template === "modern" ? 50 : 44;
   doc.setTextColor(100, 116, 139);
