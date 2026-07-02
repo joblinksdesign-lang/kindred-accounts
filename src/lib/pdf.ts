@@ -74,7 +74,7 @@ function drawLogo(doc: jsPDF, logo: LoadedLogo | null, x: number, y: number, w: 
 /** Cross-platform PDF save that also works in mobile in-app WebViews. */
 export function savePdf(doc: jsPDF, filename: string) {
   try {
-    doc.save(filename, { returnPromise: false });
+    doc.save(filename);
   } catch (e) {
     console.warn("doc.save failed, falling back to blob url", e);
     const blob = doc.output("blob");
