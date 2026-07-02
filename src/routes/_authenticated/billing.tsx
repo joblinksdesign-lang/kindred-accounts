@@ -76,18 +76,26 @@ function BillingPage() {
 
   const changePlan = useMutation({
     mutationFn: async (planId: string) => {
-      if (!sub) throw new Error("No active subscription");
-      const { error } = await supabase
-        .from("subscriptions")
-        .update({ plan_id: planId, billing_cycle: annual ? "annual" : "monthly" })
-        .eq("id", sub.id);
-      if (error) throw error;
+      if (!tenantId) throw new Error("No active business selected");
+      const cycle = annual ? "annual" : "monthly";
+      if (sub) {
+        const { error } = await supabase
+          .from("subscriptions")
+          .update({ plan_id: planId, billing_cycle: cycle, status: "active" })
+          .eq("id", sub.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("subscriptions")
+          .insert({ tenant_id: tenantId, plan_id: planId, billing_cycle: cycle, status: "active" } as never);
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       toast.success("Plan updated");
       qc.invalidateQueries({ queryKey: ["my_subscription"] });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error("Could not switch plan", { description: e.message }),
   });
 
   const currentPlan = plans.find((p) => p.id === sub?.plan_id);
