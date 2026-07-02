@@ -124,7 +124,10 @@ function ReceiptsPage() {
                       <TableCell className="text-xs text-muted-foreground">{formatDate(r.payment_date)}</TableCell>
                       <TableCell><Badge variant="secondary" className="capitalize">{r.method.replace("_"," ")}</Badge></TableCell>
                       <TableCell className="text-right tabular-nums font-medium">{formatMoney(r.amount, sym)}</TableCell>
-                      <TableCell><Button size="icon" variant="ghost" onClick={() => download(r)}><Download className="h-4 w-4" /></Button></TableCell>
+                      <TableCell className="text-right">
+                        <Button size="icon" variant="ghost" title="A4 PDF" onClick={() => download(r)}><Download className="h-4 w-4" /></Button>
+                        <Button size="icon" variant="ghost" title="Thermal 80mm" onClick={() => downloadThermal(r)}><ReceiptIcon className="h-4 w-4" /></Button>
+                      </TableCell>
                     </TableRow>
                   );
                 })}
