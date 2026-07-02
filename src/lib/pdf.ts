@@ -85,17 +85,19 @@ export function savePdf(doc: jsPDF, filename: string) {
   }
 }
 
-function headerClassic(doc: jsPDF, company: CompanySettings, title: string, number: string) {
+function headerClassic(doc: jsPDF, company: CompanySettings, title: string, number: string, logo: LoadedLogo | null) {
   // Emerald top band
   doc.setFillColor(11, 110, 79);
   doc.rect(0, 0, 210, 28, "F");
+  const nameX = logo ? 34 : 14;
+  if (logo) drawLogo(doc, logo, 14, 4, 18, 18);
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(22);
-  doc.text(company.company_name, 14, 14);
+  doc.text(company.company_name, nameX, 14);
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
-  doc.text([company.address, [company.city, company.country].filter(Boolean).join(", ")].filter(Boolean).join("  •  "), 14, 21);
+  doc.text([company.address, [company.city, company.country].filter(Boolean).join(", ")].filter(Boolean).join("  •  "), nameX, 21);
 
   doc.setTextColor(31, 41, 55);
   doc.setFont("helvetica", "bold");
@@ -106,7 +108,7 @@ function headerClassic(doc: jsPDF, company: CompanySettings, title: string, numb
   doc.text(`# ${number}`, 196, 25, { align: "right" });
 }
 
-function headerModern(doc: jsPDF, company: CompanySettings, title: string, number: string) {
+function headerModern(doc: jsPDF, company: CompanySettings, title: string, number: string, logo: LoadedLogo | null) {
   // Left accent bar
   doc.setFillColor(245, 158, 11);
   doc.rect(0, 0, 6, 297, "F");
@@ -119,15 +121,17 @@ function headerModern(doc: jsPDF, company: CompanySettings, title: string, numbe
   doc.setTextColor(100, 116, 139);
   doc.text(`# ${number}`, 14, 28);
 
+  if (logo) drawLogo(doc, logo, 174, 8, 22, 22);
   doc.setTextColor(11, 110, 79);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
-  doc.text(company.company_name, 196, 18, { align: "right" });
+  const rightY = logo ? 34 : 18;
+  doc.text(company.company_name, 196, rightY, { align: "right" });
   doc.setTextColor(100, 116, 139);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   const lines = [company.email, company.phone, company.address].filter(Boolean) as string[];
-  lines.forEach((l, i) => doc.text(l, 196, 24 + i * 4, { align: "right" }));
+  lines.forEach((l, i) => doc.text(l, 196, rightY + 6 + i * 4, { align: "right" }));
 }
 
 export function generateInvoicePdf(data: InvoicePdfData, company: CompanySettings): jsPDF {
