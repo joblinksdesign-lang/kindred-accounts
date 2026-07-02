@@ -14,7 +14,7 @@ import { PageHeader } from "@/components/page-helpers";
 import { ArrowLeft, Download, Plus, Send, Trash2 } from "lucide-react";
 import { formatMoney, formatDate, useCompanySettings } from "@/lib/company";
 import { useActiveTenantId } from "@/lib/tenant";
-import { generateInvoicePdf } from "@/lib/pdf";
+import { generateInvoicePdf, loadLogoDataUrl, savePdf } from "@/lib/pdf";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/invoices/$id")({
