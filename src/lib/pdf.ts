@@ -40,6 +40,51 @@ export type ReceiptPdfData = {
 const money = (n: number, sym = "USh ") =>
   `${sym}${(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
+export type LoadedLogo = { dataUrl: string; format: "PNG" | "JPEG" };
+
+export async function loadLogoDataUrl(url: string | null | undefined): Promise<LoadedLogo | null> {
+  if (!url) return null;
+  try {
+    const res = await fetch(url, { mode: "cors" });
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    const format: "PNG" | "JPEG" = /png/i.test(blob.type) ? "PNG" : "JPEG";
+    const dataUrl: string = await new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result as string);
+      r.onerror = () => reject(r.error);
+      r.readAsDataURL(blob);
+    });
+    return { dataUrl, format };
+  } catch (e) {
+    console.warn("Logo fetch failed", e);
+    return null;
+  }
+}
+
+function drawLogo(doc: jsPDF, logo: LoadedLogo | null, x: number, y: number, w: number, h: number) {
+  if (!logo) return;
+  try {
+    doc.addImage(logo.dataUrl, logo.format, x, y, w, h, undefined, "FAST");
+  } catch (e) {
+    console.warn("addImage failed", e);
+  }
+}
+
+/** Cross-platform PDF save that also works in mobile in-app WebViews. */
+export function savePdf(doc: jsPDF, filename: string) {
+  try {
+    doc.save(filename, { returnPromise: false });
+  } catch (e) {
+    console.warn("doc.save failed, falling back to blob url", e);
+    const blob = doc.output("blob");
+    const url = URL.createObjectURL(blob);
+    const w = window.open(url, "_blank");
+    if (!w) window.location.href = url;
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  }
+}
+
 function headerClassic(doc: jsPDF, company: CompanySettings, title: string, number: string) {
   // Emerald top band
   doc.setFillColor(11, 110, 79);
