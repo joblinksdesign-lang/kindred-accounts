@@ -65,6 +65,32 @@ function ReceiptsPage() {
     }
   };
 
+  const downloadThermal = async (r: typeof receipts[0]) => {
+    if (!company) {
+      toast.error("Company settings not loaded", { description: "Refresh the page and try again." });
+      return;
+    }
+    try {
+      const c = r.customers as { name: string; company_name: string | null; email: string | null };
+      const inv = r.invoices as { invoice_number?: string } | null;
+      const logo = await loadLogoDataUrl(company.logo_url);
+      const pdf = generateThermalReceiptPdf({
+        number: r.receipt_number,
+        date: formatDate(r.payment_date),
+        invoiceNumber: inv?.invoice_number ?? null,
+        customer: c,
+        amount: Number(r.amount),
+        method: r.method,
+      }, company, logo);
+      savePdf(pdf, `${r.receipt_number}-thermal.pdf`);
+      toast.success("Thermal receipt downloaded");
+    } catch (e) {
+      console.error("Thermal receipt failed", e);
+      toast.error("Failed to generate thermal receipt", { description: (e as Error).message });
+    }
+  };
+
+
   return (
     <div>
       <PageHeader title="Receipts" subtitle="Auto-generated when invoices are fully paid." />
