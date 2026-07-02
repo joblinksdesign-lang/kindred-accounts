@@ -39,7 +39,7 @@ function ReceiptsPage() {
       || c?.name?.toLowerCase().includes(q.toLowerCase()) || c?.company_name?.toLowerCase().includes(q.toLowerCase());
   });
 
-  const download = (r: typeof receipts[0]) => {
+  const download = async (r: typeof receipts[0]) => {
     if (!company) {
       toast.error("Company settings not loaded", { description: "Refresh the page and try again." });
       return;
@@ -48,21 +48,14 @@ function ReceiptsPage() {
     try {
       const c = r.customers as { name: string; company_name: string | null; email: string | null };
       const inv = r.invoices as { invoice_number?: string } | null;
+      const logo = await loadLogoDataUrl(company.logo_url);
       const pdf = generateReceiptPdf({
         number: r.receipt_number, date: formatDate(r.payment_date),
         invoiceNumber: inv?.invoice_number ?? null, customer: c, amount: Number(r.amount), method: r.method,
-      }, company);
+      }, company, logo);
       stage = "storage";
-      const blob = pdf.output("blob");
       stage = "response";
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${r.receipt_number}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
+      savePdf(pdf, `${r.receipt_number}.pdf`);
       toast.success("Receipt downloaded");
     } catch (e) {
       console.error(`Receipt PDF ${stage} failed`, e);
