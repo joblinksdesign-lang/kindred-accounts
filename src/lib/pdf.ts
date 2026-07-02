@@ -258,11 +258,11 @@ export function generateInvoicePdf(data: InvoicePdfData, company: CompanySetting
   return doc;
 }
 
-export function generateReceiptPdf(data: ReceiptPdfData, company: CompanySettings): jsPDF {
+export function generateReceiptPdf(data: ReceiptPdfData, company: CompanySettings, logo: LoadedLogo | null = null): jsPDF {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const template = data.template || company.receipt_template || "classic";
-  if (template === "modern") headerModern(doc, company, "Receipt", data.number);
-  else headerClassic(doc, company, "Receipt", data.number);
+  if (template === "modern") headerModern(doc, company, "Receipt", data.number, logo);
+  else headerClassic(doc, company, "Receipt", data.number, logo);
 
   const y = template === "modern" ? 50 : 44;
   doc.setTextColor(100, 116, 139);
