@@ -310,3 +310,146 @@ export function generateReceiptPdf(data: ReceiptPdfData, company: CompanySetting
   doc.text(company.invoice_footer || "Thank you for your payment.", 105, 290, { align: "center" });
   return doc;
 }
+
+/**
+ * Thermal receipt (80mm roll). Auto-grows height to fit content.
+ * Monospace-style layout suitable for POS thermal printers.
+ */
+export function generateThermalReceiptPdf(
+  data: ReceiptPdfData,
+  company: CompanySettings,
+  logo: LoadedLogo | null = null,
+): jsPDF {
+  const W = 80; // mm width (80mm roll)
+  const M = 4;  // side margin
+  const innerW = W - M * 2;
+  const sym = company.currency_symbol || "USh ";
+
+  // Estimate height then create doc
+  const items = data.items ?? [];
+  const estLines =
+    18 + // header
+    items.reduce((n, it) => n + 1 + Math.ceil(it.description.length / 30), 0) +
+    (data.discount ? 1 : 0) +
+    (data.taxAmount ? 1 : 0) +
+    (data.invoiceNumber ? 1 : 0) +
+    8; // totals + footer
+  const H = Math.max(120, estLines * 4 + 30);
+
+  const doc = new jsPDF({ unit: "mm", format: [W, H] });
+  doc.setFont("courier", "normal");
+  let y = 6;
+
+  // Logo
+  if (logo) {
+    const lw = 20, lh = 20;
+    drawLogo(doc, logo, (W - lw) / 2, y, lw, lh);
+    y += lh + 2;
+  }
+
+  // Company name
+  doc.setFont("courier", "bold");
+  doc.setFontSize(11);
+  doc.text(company.company_name, W / 2, y, { align: "center" });
+  y += 4;
+
+  doc.setFont("courier", "normal");
+  doc.setFontSize(8);
+  const meta = [
+    [company.city, company.country].filter(Boolean).join(", "),
+    company.address || "",
+    company.phone || "",
+    company.tax_id ? `TIN: ${company.tax_id}` : "",
+  ].filter(Boolean);
+  meta.forEach((l) => {
+    doc.text(l, W / 2, y, { align: "center" });
+    y += 3.5;
+  });
+
+  y += 1;
+  doc.setLineDashPattern([0.6, 0.6], 0);
+  doc.line(M, y, W - M, y);
+  doc.setLineDashPattern([], 0);
+  y += 3;
+
+  // Receipt meta
+  doc.setFontSize(8);
+  const kv = (k: string, v: string) => {
+    doc.text(k, M, y);
+    doc.text(v, W - M, y, { align: "right" });
+    y += 3.5;
+  };
+  kv("Receipt", `#${data.number}`);
+  kv("Date", data.date);
+  if (data.invoiceNumber) kv("Invoice", data.invoiceNumber);
+  kv("Method", data.method.replace(/_/g, " "));
+  if (data.cashier) kv("Cashier", data.cashier);
+  const custName = data.customer.company || data.customer.name;
+  if (custName) kv("Customer", custName.slice(0, 22));
+
+  y += 1;
+  doc.setLineDashPattern([0.6, 0.6], 0);
+  doc.line(M, y, W - M, y);
+  doc.setLineDashPattern([], 0);
+  y += 3;
+
+  // Items
+  if (items.length) {
+    doc.setFont("courier", "bold");
+    doc.text("Item", M, y);
+    doc.text("Qty", M + innerW * 0.55, y, { align: "right" });
+    doc.text("Total", W - M, y, { align: "right" });
+    y += 3.5;
+    doc.setFont("courier", "normal");
+    items.forEach((it) => {
+      const desc = doc.splitTextToSize(it.description, innerW * 0.55);
+      desc.forEach((line: string, i: number) => {
+        doc.text(line, M, y);
+        if (i === 0) {
+          doc.text(`${it.quantity} x ${it.unit_price.toFixed(0)}`, M + innerW * 0.55, y, { align: "right" });
+          doc.text(money(it.line_total, sym), W - M, y, { align: "right" });
+        }
+        y += 3.5;
+      });
+    });
+    y += 1;
+    doc.setLineDashPattern([0.6, 0.6], 0);
+    doc.line(M, y, W - M, y);
+    doc.setLineDashPattern([], 0);
+    y += 3;
+  }
+
+  // Totals
+  const line = (k: string, v: string, bold = false) => {
+    doc.setFont("courier", bold ? "bold" : "normal");
+    doc.setFontSize(bold ? 10 : 8);
+    doc.text(k, M, y);
+    doc.text(v, W - M, y, { align: "right" });
+    y += bold ? 5 : 3.8;
+  };
+  if (typeof data.subtotal === "number") line("Subtotal", money(data.subtotal, sym));
+  if (data.discount) line("Discount", `- ${money(data.discount, sym)}`);
+  if (data.taxAmount) line("Tax", money(data.taxAmount, sym));
+  line("TOTAL PAID", money(data.amount, sym), true);
+
+  y += 2;
+  doc.setLineDashPattern([0.6, 0.6], 0);
+  doc.line(M, y, W - M, y);
+  doc.setLineDashPattern([], 0);
+  y += 4;
+
+  doc.setFont("courier", "normal");
+  doc.setFontSize(8);
+  const footer = company.invoice_footer || "Thank you for your payment!";
+  const fLines = doc.splitTextToSize(footer, innerW);
+  fLines.forEach((l: string) => {
+    doc.text(l, W / 2, y, { align: "center" });
+    y += 3.5;
+  });
+  y += 2;
+  doc.setFontSize(7);
+  doc.text("* * *", W / 2, y, { align: "center" });
+
+  return doc;
+}
+
