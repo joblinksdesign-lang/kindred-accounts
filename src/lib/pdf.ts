@@ -35,7 +35,13 @@ export type ReceiptPdfData = {
   amount: number;
   method: string;
   template?: string;
+  items?: { description: string; quantity: number; unit_price: number; line_total: number }[];
+  subtotal?: number;
+  taxAmount?: number;
+  discount?: number;
+  cashier?: string | null;
 };
+
 
 const money = (n: number, sym = "USh ") =>
   `${sym}${(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
