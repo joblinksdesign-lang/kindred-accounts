@@ -134,11 +134,11 @@ function headerModern(doc: jsPDF, company: CompanySettings, title: string, numbe
   lines.forEach((l, i) => doc.text(l, 196, rightY + 6 + i * 4, { align: "right" }));
 }
 
-export function generateInvoicePdf(data: InvoicePdfData, company: CompanySettings): jsPDF {
+export function generateInvoicePdf(data: InvoicePdfData, company: CompanySettings, logo: LoadedLogo | null = null): jsPDF {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const template = data.template || company.invoice_template || "classic";
-  if (template === "modern") headerModern(doc, company, "Invoice", data.number);
-  else headerClassic(doc, company, "Invoice", data.number);
+  if (template === "modern") headerModern(doc, company, "Invoice", data.number, logo);
+  else headerClassic(doc, company, "Invoice", data.number, logo);
 
   const startY = template === "modern" ? 44 : 38;
   // Bill To + Meta
