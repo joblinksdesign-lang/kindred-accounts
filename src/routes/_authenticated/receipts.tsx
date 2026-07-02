@@ -8,9 +8,10 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PageHeader, ListToolbar, EmptyState } from "@/components/page-helpers";
 import { formatMoney, formatDate, useCompanySettings } from "@/lib/company";
-import { generateReceiptPdf, loadLogoDataUrl, savePdf } from "@/lib/pdf";
+import { generateReceiptPdf, generateThermalReceiptPdf, loadLogoDataUrl, savePdf } from "@/lib/pdf";
 import { toast } from "sonner";
-import { Download } from "lucide-react";
+import { Download, Receipt as ReceiptIcon } from "lucide-react";
+
 
 export const Route = createFileRoute("/_authenticated/receipts")({
   head: () => ({ meta: [{ title: "Receipts" }] }),
@@ -64,6 +65,32 @@ function ReceiptsPage() {
     }
   };
 
+  const downloadThermal = async (r: typeof receipts[0]) => {
+    if (!company) {
+      toast.error("Company settings not loaded", { description: "Refresh the page and try again." });
+      return;
+    }
+    try {
+      const c = r.customers as { name: string; company_name: string | null; email: string | null };
+      const inv = r.invoices as { invoice_number?: string } | null;
+      const logo = await loadLogoDataUrl(company.logo_url);
+      const pdf = generateThermalReceiptPdf({
+        number: r.receipt_number,
+        date: formatDate(r.payment_date),
+        invoiceNumber: inv?.invoice_number ?? null,
+        customer: c,
+        amount: Number(r.amount),
+        method: r.method,
+      }, company, logo);
+      savePdf(pdf, `${r.receipt_number}-thermal.pdf`);
+      toast.success("Thermal receipt downloaded");
+    } catch (e) {
+      console.error("Thermal receipt failed", e);
+      toast.error("Failed to generate thermal receipt", { description: (e as Error).message });
+    }
+  };
+
+
   return (
     <div>
       <PageHeader title="Receipts" subtitle="Auto-generated when invoices are fully paid." />
@@ -97,7 +124,10 @@ function ReceiptsPage() {
                       <TableCell className="text-xs text-muted-foreground">{formatDate(r.payment_date)}</TableCell>
                       <TableCell><Badge variant="secondary" className="capitalize">{r.method.replace("_"," ")}</Badge></TableCell>
                       <TableCell className="text-right tabular-nums font-medium">{formatMoney(r.amount, sym)}</TableCell>
-                      <TableCell><Button size="icon" variant="ghost" onClick={() => download(r)}><Download className="h-4 w-4" /></Button></TableCell>
+                      <TableCell className="text-right">
+                        <Button size="icon" variant="ghost" title="A4 PDF" onClick={() => download(r)}><Download className="h-4 w-4" /></Button>
+                        <Button size="icon" variant="ghost" title="Thermal 80mm" onClick={() => downloadThermal(r)}><ReceiptIcon className="h-4 w-4" /></Button>
+                      </TableCell>
                     </TableRow>
                   );
                 })}
