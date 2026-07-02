@@ -1,0 +1,1 @@
+CREATE POLICY subs_owner_insert ON public.subscriptions FOR INSERT TO authenticated WITH CHECK (public.has_tenant_role(auth.uid(), tenant_id, ARRAY['owner'::tenant_role]));
