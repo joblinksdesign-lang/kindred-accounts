@@ -344,9 +344,10 @@ export function generateThermalReceiptPdf(
   data: ReceiptPdfData,
   company: CompanySettings,
   logo: LoadedLogo | null = null,
+  widthMm: 58 | 80 = 80,
 ): jsPDF {
-  const W = 80; // mm width (80mm roll)
-  const M = 4;  // side margin
+  const W = widthMm; // 58 or 80mm roll
+  const M = widthMm === 58 ? 3 : 4;
   const innerW = W - M * 2;
   const sym = company.currency_symbol || "USh ";
 
