@@ -65,7 +65,7 @@ function ReceiptsPage() {
     }
   };
 
-  const downloadThermal = async (r: typeof receipts[0]) => {
+  const downloadThermal = async (r: typeof receipts[0], widthMm: 58 | 80) => {
     if (!company) {
       toast.error("Company settings not loaded", { description: "Refresh the page and try again." });
       return;
@@ -81,9 +81,9 @@ function ReceiptsPage() {
         customer: c,
         amount: Number(r.amount),
         method: r.method,
-      }, company, logo);
-      savePdf(pdf, `${r.receipt_number}-thermal.pdf`);
-      toast.success("Thermal receipt downloaded");
+      }, company, logo, widthMm);
+      savePdf(pdf, `${r.receipt_number}-${widthMm}mm.pdf`);
+      toast.success(`${widthMm}mm receipt downloaded`);
     } catch (e) {
       console.error("Thermal receipt failed", e);
       toast.error("Failed to generate thermal receipt", { description: (e as Error).message });
