@@ -8,9 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PageHeader, ListToolbar, EmptyState } from "@/components/page-helpers";
 import { formatMoney, formatDate, useCompanySettings } from "@/lib/company";
-import { generateReceiptPdf, generateThermalReceiptPdf, loadLogoDataUrl, savePdf } from "@/lib/pdf";
+import { generateReceiptPdf, generateThermalReceiptPdf, loadLogoDataUrl, savePdf, printPdf } from "@/lib/pdf";
 import { toast } from "sonner";
-import { Download, Receipt as ReceiptIcon } from "lucide-react";
+import { Download, Printer, Receipt as ReceiptIcon } from "lucide-react";
 
 
 export const Route = createFileRoute("/_authenticated/receipts")({
