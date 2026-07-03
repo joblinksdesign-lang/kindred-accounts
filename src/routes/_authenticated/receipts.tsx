@@ -126,7 +126,8 @@ function ReceiptsPage() {
                       <TableCell className="text-right tabular-nums font-medium">{formatMoney(r.amount, sym)}</TableCell>
                       <TableCell className="text-right">
                         <Button size="icon" variant="ghost" title="A4 PDF" onClick={() => download(r)}><Download className="h-4 w-4" /></Button>
-                        <Button size="icon" variant="ghost" title="Thermal 80mm" onClick={() => downloadThermal(r)}><ReceiptIcon className="h-4 w-4" /></Button>
+                        <Button size="icon" variant="ghost" title="Thermal 80mm" onClick={() => downloadThermal(r, 80)}><ReceiptIcon className="h-4 w-4" /></Button>
+                        <Button size="sm" variant="ghost" title="Thermal 58mm" onClick={() => downloadThermal(r, 58)} className="px-2 text-xs font-semibold">58</Button>
                       </TableCell>
                     </TableRow>
                   );
