@@ -8,9 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PageHeader, ListToolbar, EmptyState } from "@/components/page-helpers";
 import { formatMoney, formatDate, useCompanySettings } from "@/lib/company";
-import { generateReceiptPdf, generateThermalReceiptPdf, loadLogoDataUrl, savePdf } from "@/lib/pdf";
+import { generateReceiptPdf, generateThermalReceiptPdf, loadLogoDataUrl, savePdf, printPdf } from "@/lib/pdf";
 import { toast } from "sonner";
-import { Download, Receipt as ReceiptIcon } from "lucide-react";
+import { Download, Printer, Receipt as ReceiptIcon } from "lucide-react";
 
 
 export const Route = createFileRoute("/_authenticated/receipts")({
@@ -28,7 +28,7 @@ function ReceiptsPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("receipts")
-        .select("*, customers(name, company_name, email), invoices(invoice_number)")
+        .select("*, customers(name, company_name, email), invoices(invoice_number, subtotal, tax_amount, discount, invoice_items(description, quantity, unit_price, line_total))")
         .order("created_at", { ascending: false });
       return data ?? [];
     },
@@ -40,55 +40,80 @@ function ReceiptsPage() {
       || c?.name?.toLowerCase().includes(q.toLowerCase()) || c?.company_name?.toLowerCase().includes(q.toLowerCase());
   });
 
-  const download = async (r: typeof receipts[0]) => {
-    if (!company) {
-      toast.error("Company settings not loaded", { description: "Refresh the page and try again." });
-      return;
-    }
-    let stage: "render" | "storage" | "response" = "render";
+  
+  type ReceiptRow = typeof receipts[number];
+  type InvoiceItem = { description: string; quantity: number; unit_price: number; line_total: number };
+  type InvoiceRel = { invoice_number?: string; subtotal?: number; tax_amount?: number; discount?: number; invoice_items?: InvoiceItem[] } | null;
+
+  const buildPayload = (r: ReceiptRow) => {
+    const c = r.customers as { name: string; company_name: string | null; email: string | null };
+    const inv = r.invoices as InvoiceRel;
+    const items = (inv?.invoice_items ?? []).map((it) => ({
+      description: it.description,
+      quantity: Number(it.quantity),
+      unit_price: Number(it.unit_price),
+      line_total: Number(it.line_total),
+    }));
+    return {
+      number: r.receipt_number,
+      date: formatDate(r.payment_date),
+      invoiceNumber: inv?.invoice_number ?? null,
+      customer: c,
+      amount: Number(r.amount),
+      method: r.method,
+      items,
+      subtotal: inv?.subtotal != null ? Number(inv.subtotal) : undefined,
+      taxAmount: inv?.tax_amount != null ? Number(inv.tax_amount) : undefined,
+      discount: inv?.discount != null ? Number(inv.discount) : undefined,
+    };
+  };
+
+  const download = async (r: ReceiptRow) => {
+    if (!company) { toast.error("Company settings not loaded"); return; }
     try {
-      const c = r.customers as { name: string; company_name: string | null; email: string | null };
-      const inv = r.invoices as { invoice_number?: string } | null;
       const logo = await loadLogoDataUrl(company.logo_url);
-      const pdf = generateReceiptPdf({
-        number: r.receipt_number, date: formatDate(r.payment_date),
-        invoiceNumber: inv?.invoice_number ?? null, customer: c, amount: Number(r.amount), method: r.method,
-      }, company, logo);
-      stage = "storage";
-      stage = "response";
+      const pdf = generateReceiptPdf(buildPayload(r), company, logo);
       savePdf(pdf, `${r.receipt_number}.pdf`);
       toast.success("Receipt downloaded");
     } catch (e) {
-      console.error(`Receipt PDF ${stage} failed`, e);
-      const label = stage === "render" ? "render the receipt" : stage === "storage" ? "prepare the file" : "deliver the download";
-      toast.error(`Failed to ${label} (${stage})`, { description: (e as Error).message });
+      toast.error("Failed to generate receipt", { description: (e as Error).message });
     }
   };
 
-  const downloadThermal = async (r: typeof receipts[0], widthMm: 58 | 80) => {
-    if (!company) {
-      toast.error("Company settings not loaded", { description: "Refresh the page and try again." });
-      return;
-    }
+  const print = async (r: ReceiptRow) => {
+    if (!company) { toast.error("Company settings not loaded"); return; }
     try {
-      const c = r.customers as { name: string; company_name: string | null; email: string | null };
-      const inv = r.invoices as { invoice_number?: string } | null;
       const logo = await loadLogoDataUrl(company.logo_url);
-      const pdf = generateThermalReceiptPdf({
-        number: r.receipt_number,
-        date: formatDate(r.payment_date),
-        invoiceNumber: inv?.invoice_number ?? null,
-        customer: c,
-        amount: Number(r.amount),
-        method: r.method,
-      }, company, logo, widthMm);
+      const pdf = generateReceiptPdf(buildPayload(r), company, logo);
+      printPdf(pdf);
+    } catch (e) {
+      toast.error("Failed to print receipt", { description: (e as Error).message });
+    }
+  };
+
+  const downloadThermal = async (r: ReceiptRow, widthMm: 58 | 80) => {
+    if (!company) { toast.error("Company settings not loaded"); return; }
+    try {
+      const logo = await loadLogoDataUrl(company.logo_url);
+      const pdf = generateThermalReceiptPdf(buildPayload(r), company, logo, widthMm);
       savePdf(pdf, `${r.receipt_number}-${widthMm}mm.pdf`);
       toast.success(`${widthMm}mm receipt downloaded`);
     } catch (e) {
-      console.error("Thermal receipt failed", e);
       toast.error("Failed to generate thermal receipt", { description: (e as Error).message });
     }
   };
+
+  const printThermal = async (r: ReceiptRow, widthMm: 58 | 80) => {
+    if (!company) { toast.error("Company settings not loaded"); return; }
+    try {
+      const logo = await loadLogoDataUrl(company.logo_url);
+      const pdf = generateThermalReceiptPdf(buildPayload(r), company, logo, widthMm);
+      printPdf(pdf);
+    } catch (e) {
+      toast.error("Failed to print receipt", { description: (e as Error).message });
+    }
+  };
+
 
 
   return (
@@ -125,9 +150,14 @@ function ReceiptsPage() {
                       <TableCell><Badge variant="secondary" className="capitalize">{r.method.replace("_"," ")}</Badge></TableCell>
                       <TableCell className="text-right tabular-nums font-medium">{formatMoney(r.amount, sym)}</TableCell>
                       <TableCell className="text-right">
-                        <Button size="icon" variant="ghost" title="A4 PDF" onClick={() => download(r)}><Download className="h-4 w-4" /></Button>
-                        <Button size="icon" variant="ghost" title="Thermal 80mm" onClick={() => downloadThermal(r, 80)}><ReceiptIcon className="h-4 w-4" /></Button>
-                        <Button size="sm" variant="ghost" title="Thermal 58mm" onClick={() => downloadThermal(r, 58)} className="px-2 text-xs font-semibold">58</Button>
+                        <div className="inline-flex items-center gap-0.5">
+                          <Button size="icon" variant="ghost" title="Download A4 PDF" onClick={() => download(r)}><Download className="h-4 w-4" /></Button>
+                          <Button size="icon" variant="ghost" title="Print A4" onClick={() => print(r)}><Printer className="h-4 w-4" /></Button>
+                          <Button size="icon" variant="ghost" title="Thermal 80mm" onClick={() => downloadThermal(r, 80)}><ReceiptIcon className="h-4 w-4" /></Button>
+                          <Button size="sm" variant="ghost" title="Print 80mm" onClick={() => printThermal(r, 80)} className="px-2 text-xs font-semibold">P80</Button>
+                          <Button size="sm" variant="ghost" title="Thermal 58mm" onClick={() => downloadThermal(r, 58)} className="px-2 text-xs font-semibold">58</Button>
+                          <Button size="sm" variant="ghost" title="Print 58mm" onClick={() => printThermal(r, 58)} className="px-2 text-xs font-semibold">P58</Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );

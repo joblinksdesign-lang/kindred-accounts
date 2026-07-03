@@ -312,28 +312,97 @@ export function generateReceiptPdf(data: ReceiptPdfData, company: CompanySetting
   doc.text(data.date, 130, y + 6);
   doc.text(data.method.replace(/_/g, " "), 170, y + 6);
 
+  let cursorY = y + 22;
+  // Items table (products purchased)
+  const items = data.items ?? [];
+  if (items.length) {
+    autoTable(doc, {
+      startY: cursorY,
+      head: [["Description", "Qty", "Unit Price", "Amount"]],
+      body: items.map((it) => [
+        it.description,
+        String(it.quantity),
+        money(it.unit_price, company.currency_symbol),
+        money(it.line_total, company.currency_symbol),
+      ]),
+      theme: "striped",
+      headStyles: { fillColor: [11, 110, 79], textColor: 255, fontStyle: "bold" },
+      styles: { font: "helvetica", fontSize: 10, cellPadding: 3 },
+      columnStyles: { 1: { halign: "right" }, 2: { halign: "right" }, 3: { halign: "right" } },
+      margin: { left: 14, right: 14 },
+    });
+    cursorY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 4;
+
+    // Sub-totals
+    const xLabel = 130, xVal = 196;
+    doc.setFontSize(10);
+    if (typeof data.subtotal === "number") {
+      doc.setTextColor(100, 116, 139);
+      doc.text("Subtotal", xLabel, cursorY);
+      doc.setTextColor(31, 41, 55);
+      doc.text(money(data.subtotal, company.currency_symbol), xVal, cursorY, { align: "right" });
+      cursorY += 5;
+    }
+    if (data.discount) {
+      doc.setTextColor(100, 116, 139);
+      doc.text("Discount", xLabel, cursorY);
+      doc.setTextColor(31, 41, 55);
+      doc.text(`- ${money(data.discount, company.currency_symbol)}`, xVal, cursorY, { align: "right" });
+      cursorY += 5;
+    }
+    if (data.taxAmount) {
+      doc.setTextColor(100, 116, 139);
+      doc.text("Tax", xLabel, cursorY);
+      doc.setTextColor(31, 41, 55);
+      doc.text(money(data.taxAmount, company.currency_symbol), xVal, cursorY, { align: "right" });
+      cursorY += 5;
+    }
+    cursorY += 2;
+  }
+
   // Amount box
   doc.setFillColor(245, 243, 238);
-  doc.rect(14, y + 22, 182, 30, "F");
+  doc.rect(14, cursorY, 182, 30, "F");
   doc.setTextColor(100, 116, 139);
   doc.setFontSize(10);
-  doc.text("AMOUNT RECEIVED", 20, y + 32);
+  doc.text("AMOUNT RECEIVED", 20, cursorY + 10);
   doc.setTextColor(11, 110, 79);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(28);
-  doc.text(money(data.amount, company.currency_symbol), 190, y + 44, { align: "right" });
+  doc.text(money(data.amount, company.currency_symbol), 190, cursorY + 22, { align: "right" });
+  cursorY += 36;
 
   if (data.invoiceNumber) {
     doc.setTextColor(100, 116, 139);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
-    doc.text(`Payment for invoice ${data.invoiceNumber}`, 14, y + 62);
+    doc.text(`Payment for invoice ${data.invoiceNumber}`, 14, cursorY + 4);
   }
 
   doc.setTextColor(100, 116, 139);
   doc.setFontSize(8);
   doc.text(company.invoice_footer || "Thank you for your payment.", 105, 290, { align: "center" });
   return doc;
+}
+
+/** Open the PDF in a new window and trigger the browser print dialog. */
+export function printPdf(doc: jsPDF) {
+  try {
+    const blob = doc.output("blob");
+    const url = URL.createObjectURL(blob);
+    const w = window.open(url, "_blank");
+    if (!w) {
+      window.location.href = url;
+      return;
+    }
+    const trigger = () => { try { w.focus(); w.print(); } catch { /* noop */ } };
+    w.addEventListener("load", trigger);
+    // Fallback for browsers that don't fire load on blob URLs
+    setTimeout(trigger, 900);
+    setTimeout(() => URL.revokeObjectURL(url), 120_000);
+  } catch (e) {
+    console.warn("printPdf failed", e);
+  }
 }
 
 /**
