@@ -40,7 +40,7 @@ function ReceiptsPage() {
       || c?.name?.toLowerCase().includes(q.toLowerCase()) || c?.company_name?.toLowerCase().includes(q.toLowerCase());
   });
 
-  const download = async (r: typeof receipts[0]) => {
+  
   type ReceiptRow = typeof receipts[number];
   type InvoiceItem = { description: string; quantity: number; unit_price: number; line_total: number };
   type InvoiceRel = { invoice_number?: string; subtotal?: number; tax_amount?: number; discount?: number; invoice_items?: InvoiceItem[] } | null;
