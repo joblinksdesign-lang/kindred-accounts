@@ -50,20 +50,45 @@ export type LoadedLogo = { dataUrl: string; format: "PNG" | "JPEG" };
 
 export async function loadLogoDataUrl(url: string | null | undefined): Promise<LoadedLogo | null> {
   if (!url) return null;
+  // Strategy 1 — direct fetch (works for CORS-enabled buckets)
   try {
-    const res = await fetch(url, { mode: "cors" });
-    if (!res.ok) return null;
-    const blob = await res.blob();
-    const format: "PNG" | "JPEG" = /png/i.test(blob.type) ? "PNG" : "JPEG";
-    const dataUrl: string = await new Promise((resolve, reject) => {
-      const r = new FileReader();
-      r.onload = () => resolve(r.result as string);
-      r.onerror = () => reject(r.error);
-      r.readAsDataURL(blob);
-    });
-    return { dataUrl, format };
+    const res = await fetch(url, { mode: "cors", cache: "no-cache" });
+    if (res.ok) {
+      const blob = await res.blob();
+      const format: "PNG" | "JPEG" = /png/i.test(blob.type) ? "PNG" : "JPEG";
+      const dataUrl: string = await new Promise((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(r.result as string);
+        r.onerror = () => reject(r.error);
+        r.readAsDataURL(blob);
+      });
+      return { dataUrl, format };
+    }
   } catch (e) {
-    console.warn("Logo fetch failed", e);
+    console.warn("Logo fetch failed, trying <img> fallback", e);
+  }
+  // Strategy 2 — load via <img crossOrigin=anonymous> and canvas
+  try {
+    const dataUrl: string = await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        try {
+          const canvas = document.createElement("canvas");
+          canvas.width = img.naturalWidth || 256;
+          canvas.height = img.naturalHeight || 256;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) return reject(new Error("canvas ctx unavailable"));
+          ctx.drawImage(img, 0, 0);
+          resolve(canvas.toDataURL("image/png"));
+        } catch (err) { reject(err); }
+      };
+      img.onerror = (err) => reject(err);
+      img.src = url + (url.includes("?") ? "&" : "?") + "t=" + Date.now();
+    });
+    return { dataUrl, format: "PNG" };
+  } catch (e) {
+    console.warn("Logo <img> fallback failed", e);
     return null;
   }
 }
