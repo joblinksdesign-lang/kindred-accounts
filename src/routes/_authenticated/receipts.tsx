@@ -28,7 +28,7 @@ function ReceiptsPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("receipts")
-        .select("*, customers(name, company_name, email), invoices(invoice_number)")
+        .select("*, customers(name, company_name, email), invoices(invoice_number, subtotal, tax_amount, discount, invoice_items(description, quantity, unit_price, line_total))")
         .order("created_at", { ascending: false });
       return data ?? [];
     },
