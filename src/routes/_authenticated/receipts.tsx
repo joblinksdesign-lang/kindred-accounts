@@ -150,9 +150,14 @@ function ReceiptsPage() {
                       <TableCell><Badge variant="secondary" className="capitalize">{r.method.replace("_"," ")}</Badge></TableCell>
                       <TableCell className="text-right tabular-nums font-medium">{formatMoney(r.amount, sym)}</TableCell>
                       <TableCell className="text-right">
-                        <Button size="icon" variant="ghost" title="A4 PDF" onClick={() => download(r)}><Download className="h-4 w-4" /></Button>
-                        <Button size="icon" variant="ghost" title="Thermal 80mm" onClick={() => downloadThermal(r, 80)}><ReceiptIcon className="h-4 w-4" /></Button>
-                        <Button size="sm" variant="ghost" title="Thermal 58mm" onClick={() => downloadThermal(r, 58)} className="px-2 text-xs font-semibold">58</Button>
+                        <div className="inline-flex items-center gap-0.5">
+                          <Button size="icon" variant="ghost" title="Download A4 PDF" onClick={() => download(r)}><Download className="h-4 w-4" /></Button>
+                          <Button size="icon" variant="ghost" title="Print A4" onClick={() => print(r)}><Printer className="h-4 w-4" /></Button>
+                          <Button size="icon" variant="ghost" title="Thermal 80mm" onClick={() => downloadThermal(r, 80)}><ReceiptIcon className="h-4 w-4" /></Button>
+                          <Button size="sm" variant="ghost" title="Print 80mm" onClick={() => printThermal(r, 80)} className="px-2 text-xs font-semibold">P80</Button>
+                          <Button size="sm" variant="ghost" title="Thermal 58mm" onClick={() => downloadThermal(r, 58)} className="px-2 text-xs font-semibold">58</Button>
+                          <Button size="sm" variant="ghost" title="Print 58mm" onClick={() => printThermal(r, 58)} className="px-2 text-xs font-semibold">P58</Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
