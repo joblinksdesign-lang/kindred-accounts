@@ -368,7 +368,7 @@ export function generateThermalReceiptPdf(
 
   // Logo
   if (logo) {
-    const lw = 20, lh = 20;
+    const lw = widthMm === 58 ? 14 : 20, lh = widthMm === 58 ? 14 : 20;
     drawLogo(doc, logo, (W - lw) / 2, y, lw, lh);
     y += lh + 2;
   }
