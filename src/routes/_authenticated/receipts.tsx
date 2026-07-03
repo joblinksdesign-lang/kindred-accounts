@@ -65,7 +65,7 @@ function ReceiptsPage() {
     }
   };
 
-  const downloadThermal = async (r: typeof receipts[0]) => {
+  const downloadThermal = async (r: typeof receipts[0], widthMm: 58 | 80) => {
     if (!company) {
       toast.error("Company settings not loaded", { description: "Refresh the page and try again." });
       return;
@@ -81,9 +81,9 @@ function ReceiptsPage() {
         customer: c,
         amount: Number(r.amount),
         method: r.method,
-      }, company, logo);
-      savePdf(pdf, `${r.receipt_number}-thermal.pdf`);
-      toast.success("Thermal receipt downloaded");
+      }, company, logo, widthMm);
+      savePdf(pdf, `${r.receipt_number}-${widthMm}mm.pdf`);
+      toast.success(`${widthMm}mm receipt downloaded`);
     } catch (e) {
       console.error("Thermal receipt failed", e);
       toast.error("Failed to generate thermal receipt", { description: (e as Error).message });
@@ -126,7 +126,8 @@ function ReceiptsPage() {
                       <TableCell className="text-right tabular-nums font-medium">{formatMoney(r.amount, sym)}</TableCell>
                       <TableCell className="text-right">
                         <Button size="icon" variant="ghost" title="A4 PDF" onClick={() => download(r)}><Download className="h-4 w-4" /></Button>
-                        <Button size="icon" variant="ghost" title="Thermal 80mm" onClick={() => downloadThermal(r)}><ReceiptIcon className="h-4 w-4" /></Button>
+                        <Button size="icon" variant="ghost" title="Thermal 80mm" onClick={() => downloadThermal(r, 80)}><ReceiptIcon className="h-4 w-4" /></Button>
+                        <Button size="sm" variant="ghost" title="Thermal 58mm" onClick={() => downloadThermal(r, 58)} className="px-2 text-xs font-semibold">58</Button>
                       </TableCell>
                     </TableRow>
                   );

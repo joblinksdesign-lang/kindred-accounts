@@ -64,6 +64,21 @@ function ReportsPage() {
 
   return (
     <div>
+      {company && (
+        <div className="flex items-center gap-3 mb-4">
+          {company.logo_url && (
+            <img
+              src={company.logo_url}
+              alt={`${company.company_name} logo`}
+              className="h-10 w-10 rounded object-contain bg-white border"
+            />
+          )}
+          <div>
+            <div className="font-semibold">{company.company_name}</div>
+            {company.address && <div className="text-xs text-muted-foreground">{company.address}</div>}
+          </div>
+        </div>
+      )}
       <PageHeader title="Reports" subtitle="Sales, payments, inventory and customer reports." />
       <Tabs defaultValue="sales" className="space-y-4">
         <TabsList>
