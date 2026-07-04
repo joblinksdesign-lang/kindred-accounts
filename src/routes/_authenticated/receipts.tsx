@@ -85,7 +85,7 @@ function ReceiptsPage() {
     try {
       const logo = await loadLogoDataUrl(company.logo_url);
       const pdf = generateReceiptPdf(buildPayload(r), company, logo);
-      printPdf(pdf);
+      printPdf(pdf, `${r.receipt_number}.pdf`);
     } catch (e) {
       toast.error("Failed to print receipt", { description: (e as Error).message });
     }
@@ -108,7 +108,7 @@ function ReceiptsPage() {
     try {
       const logo = await loadLogoDataUrl(company.logo_url);
       const pdf = generateThermalReceiptPdf(buildPayload(r), company, logo, widthMm);
-      printPdf(pdf);
+      printPdf(pdf, `${r.receipt_number}-${widthMm}mm.pdf`);
     } catch (e) {
       toast.error("Failed to print receipt", { description: (e as Error).message });
     }
