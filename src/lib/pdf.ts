@@ -102,13 +102,56 @@ function drawLogo(doc: jsPDF, logo: LoadedLogo | null, x: number, y: number, w: 
   }
 }
 
-/** Cross-platform PDF save that also works in mobile in-app WebViews. */
-export function savePdf(doc: jsPDF, filename: string) {
+function isMobile() {
+  if (typeof navigator === "undefined") return false;
+  return /Android|iPhone|iPad|iPod|Mobile|webOS|BlackBerry|IEMobile|Opera Mini/i.test(
+    navigator.userAgent,
+  );
+}
+
+/** Cross-platform PDF save that also works in mobile in-app WebViews.
+ *  On mobile, triggers a real anchor download so the OS shows its
+ *  download UI (folder chooser / "open with" / share sheet). If the
+ *  Web Share API supports files, it also offers the native share sheet
+ *  so users can pick "Save to Files", "Drive", etc. */
+export async function savePdf(doc: jsPDF, filename: string) {
+  const blob = doc.output("blob");
+  const file = new File([blob], filename, { type: "application/pdf" });
+
+  // Mobile: prefer native share sheet (lets user save to Files / Drive / print)
+  try {
+    const nav = navigator as Navigator & {
+      canShare?: (d: { files: File[] }) => boolean;
+      share?: (d: { files: File[]; title?: string }) => Promise<void>;
+    };
+    if (isMobile() && nav.canShare?.({ files: [file] }) && nav.share) {
+      await nav.share({ files: [file], title: filename });
+      return;
+    }
+  } catch (e) {
+    console.warn("share failed, falling back to download", e);
+  }
+
+  // Standard anchor download — browser shows its native download / save UI
+  try {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    return;
+  } catch (e) {
+    console.warn("anchor download failed, falling back to doc.save", e);
+  }
+
   try {
     doc.save(filename);
   } catch (e) {
-    console.warn("doc.save failed, falling back to blob url", e);
-    const blob = doc.output("blob");
+    console.warn("doc.save failed, opening blob url", e);
     const url = URL.createObjectURL(blob);
     const w = window.open(url, "_blank");
     if (!w) window.location.href = url;
@@ -385,21 +428,62 @@ export function generateReceiptPdf(data: ReceiptPdfData, company: CompanySetting
   return doc;
 }
 
-/** Open the PDF in a new window and trigger the browser print dialog. */
-export function printPdf(doc: jsPDF) {
-  try {
-    const blob = doc.output("blob");
+/** Trigger a native print dialog. On desktop: hidden iframe with the PDF.
+ *  On mobile: use Web Share API so the OS print / "Save to Files" sheet
+ *  opens (mobile browsers don't reliably print blob URLs). */
+export async function printPdf(doc: jsPDF, filename = "document.pdf") {
+  const blob = doc.output("blob");
+
+  // Mobile — share sheet lets the user pick "Print" or a printer app
+  if (isMobile()) {
+    try {
+      const file = new File([blob], filename, { type: "application/pdf" });
+      const nav = navigator as Navigator & {
+        canShare?: (d: { files: File[] }) => boolean;
+        share?: (d: { files: File[]; title?: string }) => Promise<void>;
+      };
+      if (nav.canShare?.({ files: [file] }) && nav.share) {
+        await nav.share({ files: [file], title: filename });
+        return;
+      }
+    } catch (e) {
+      console.warn("share for print failed", e);
+    }
+    // Fallback: open PDF so mobile browser's built-in viewer offers Print
     const url = URL.createObjectURL(blob);
     const w = window.open(url, "_blank");
-    if (!w) {
-      window.location.href = url;
-      return;
-    }
-    const trigger = () => { try { w.focus(); w.print(); } catch { /* noop */ } };
-    w.addEventListener("load", trigger);
-    // Fallback for browsers that don't fire load on blob URLs
-    setTimeout(trigger, 900);
+    if (!w) window.location.href = url;
     setTimeout(() => URL.revokeObjectURL(url), 120_000);
+    return;
+  }
+
+  // Desktop — hidden iframe triggers browser print dialog
+  try {
+    const url = URL.createObjectURL(blob);
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+    iframe.src = url;
+    document.body.appendChild(iframe);
+    const trigger = () => {
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      } catch (err) {
+        console.warn("iframe print failed, opening in new tab", err);
+        window.open(url, "_blank");
+      }
+    };
+    iframe.addEventListener("load", () => setTimeout(trigger, 200));
+    setTimeout(trigger, 1200);
+    setTimeout(() => {
+      iframe.remove();
+      URL.revokeObjectURL(url);
+    }, 120_000);
   } catch (e) {
     console.warn("printPdf failed", e);
   }
@@ -435,6 +519,29 @@ export function generateThermalReceiptPdf(
   doc.setFont("courier", "normal");
   let y = 6;
 
+  // Separator helpers — each visually distinct so sections read clearly
+  const dashed = () => {
+    y += 1;
+    doc.setLineDashPattern([0.6, 0.6], 0);
+    doc.setLineWidth(0.2);
+    doc.line(M, y, W - M, y);
+    doc.setLineDashPattern([], 0);
+    y += 3;
+  };
+  const solid = () => {
+    y += 1;
+    doc.setLineWidth(0.3);
+    doc.line(M, y, W - M, y);
+    y += 3;
+  };
+  const doubleLine = () => {
+    y += 1;
+    doc.setLineWidth(0.3);
+    doc.line(M, y, W - M, y);
+    doc.line(M, y + 0.8, W - M, y + 0.8);
+    y += 3.5;
+  };
+
   // Logo
   if (logo) {
     const lw = widthMm === 58 ? 14 : 20, lh = widthMm === 58 ? 14 : 20;
@@ -461,11 +568,7 @@ export function generateThermalReceiptPdf(
     y += 3.5;
   });
 
-  y += 1;
-  doc.setLineDashPattern([0.6, 0.6], 0);
-  doc.line(M, y, W - M, y);
-  doc.setLineDashPattern([], 0);
-  y += 3;
+  solid(); // company block → meta
 
   // Receipt meta
   doc.setFontSize(8);
@@ -482,11 +585,7 @@ export function generateThermalReceiptPdf(
   const custName = data.customer.company || data.customer.name;
   if (custName) kv("Customer", custName.slice(0, 22));
 
-  y += 1;
-  doc.setLineDashPattern([0.6, 0.6], 0);
-  doc.line(M, y, W - M, y);
-  doc.setLineDashPattern([], 0);
-  y += 3;
+  dashed(); // meta → items
 
   // Items
   if (items.length) {
@@ -494,9 +593,12 @@ export function generateThermalReceiptPdf(
     doc.text("Item", M, y);
     doc.text("Qty", M + innerW * 0.55, y, { align: "right" });
     doc.text("Total", W - M, y, { align: "right" });
-    y += 3.5;
+    y += 1;
+    doc.setLineWidth(0.2);
+    doc.line(M, y, W - M, y);
+    y += 3;
     doc.setFont("courier", "normal");
-    items.forEach((it) => {
+    items.forEach((it, idx) => {
       const desc = doc.splitTextToSize(it.description, innerW * 0.55);
       desc.forEach((line: string, i: number) => {
         doc.text(line, M, y);
@@ -506,12 +608,15 @@ export function generateThermalReceiptPdf(
         }
         y += 3.5;
       });
+      // Thin dotted separator between items (skip after last)
+      if (idx < items.length - 1) {
+        doc.setLineDashPattern([0.3, 0.6], 0);
+        doc.setLineWidth(0.1);
+        doc.line(M + 2, y - 1, W - M - 2, y - 1);
+        doc.setLineDashPattern([], 0);
+      }
     });
-    y += 1;
-    doc.setLineDashPattern([0.6, 0.6], 0);
-    doc.line(M, y, W - M, y);
-    doc.setLineDashPattern([], 0);
-    y += 3;
+    dashed(); // items → totals
   }
 
   // Totals
@@ -525,13 +630,10 @@ export function generateThermalReceiptPdf(
   if (typeof data.subtotal === "number") line("Subtotal", money(data.subtotal, sym));
   if (data.discount) line("Discount", `- ${money(data.discount, sym)}`);
   if (data.taxAmount) line("Tax", money(data.taxAmount, sym));
+  doubleLine(); // emphasized separator before grand total
   line("TOTAL PAID", money(data.amount, sym), true);
 
-  y += 2;
-  doc.setLineDashPattern([0.6, 0.6], 0);
-  doc.line(M, y, W - M, y);
-  doc.setLineDashPattern([], 0);
-  y += 4;
+  solid(); // totals → footer
 
   doc.setFont("courier", "normal");
   doc.setFontSize(8);
