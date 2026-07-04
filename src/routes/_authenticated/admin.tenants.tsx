@@ -93,6 +93,56 @@ function AdminTenants() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const { data: pendingReqs = [] } = useQuery({
+    queryKey: ["pending_plan_requests"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("subscriptions")
+        .select("id, tenant_id, plan_id, pending_plan_id, pending_billing_cycle, pending_requested_at, tenants(business_name, email), pending_plan:plans!subscriptions_pending_plan_id_fkey(name), current_plan:plans!subscriptions_plan_id_fkey(name)")
+        .not("pending_plan_id", "is", null)
+        .order("pending_requested_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as unknown as Array<{
+        id: string; tenant_id: string; plan_id: string; pending_plan_id: string;
+        pending_billing_cycle: "monthly" | "annual"; pending_requested_at: string;
+        tenants: { business_name: string; email: string } | null;
+        pending_plan: { name: string } | null;
+        current_plan: { name: string } | null;
+      }>;
+    },
+  });
+
+  const approveRequest = useMutation({
+    mutationFn: async (row: { id: string; pending_plan_id: string; pending_billing_cycle: "monthly" | "annual"; tenant_id: string }) => {
+      const { error } = await supabase.from("subscriptions").update({
+        plan_id: row.pending_plan_id,
+        billing_cycle: row.pending_billing_cycle,
+        status: "active",
+        pending_plan_id: null,
+        pending_billing_cycle: null,
+        pending_requested_at: null,
+      }).eq("id", row.id);
+      if (error) throw error;
+      await supabase.from("tenants").update({ plan_id: row.pending_plan_id }).eq("id", row.tenant_id);
+    },
+    onSuccess: () => {
+      toast.success("Plan activated");
+      qc.invalidateQueries({ queryKey: ["pending_plan_requests"] });
+      qc.invalidateQueries({ queryKey: ["admin_tenants"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const denyRequest = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("subscriptions").update({
+        pending_plan_id: null, pending_billing_cycle: null, pending_requested_at: null,
+      }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("Request denied"); qc.invalidateQueries({ queryKey: ["pending_plan_requests"] }); },
+  });
+
   const filtered = tenants.filter((t) => {
     if (filter !== "all" && t.status !== filter) return false;
     const term = q.toLowerCase();
