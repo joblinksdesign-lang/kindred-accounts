@@ -21,12 +21,12 @@ function AdminOverview() {
     queryFn: async () => {
       const [tenants, subs, invoices, users] = await Promise.all([
         supabase.from("tenants").select("id, status, created_at"),
-        supabase.from("subscriptions").select("id, status, plan_id, plans(name, price_monthly)"),
+        supabase.from("subscriptions").select("id, status, plan_id, plans:plan_id(name, price_monthly)"),
         supabase.from("invoices").select("id, total"),
         supabase.from("tenant_users").select("user_id"),
       ]);
       const tenantsData = tenants.data ?? [];
-      const subsData = (subs.data ?? []) as Array<{ status: string; plans: { name: string; price_monthly: number } | null }>;
+      const subsData = (subs.data ?? []) as unknown as Array<{ status: string; plans: { name: string; price_monthly: number } | null }>;
       const invoicesData = (invoices.data ?? []) as Array<{ total: number }>;
       const mrr = subsData
         .filter((s) => s.status === "active" || s.status === "trialing")
