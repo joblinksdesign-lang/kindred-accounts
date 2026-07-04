@@ -169,9 +169,7 @@ function Topbar() {
         <Input placeholder="Search…" className="h-9 pl-8 bg-background" />
       </div>
       <div className="ml-auto flex items-center gap-2">
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-4 w-4" />
-        </Button>
+        <NotificationBell />
         <div className="flex items-center gap-2 rounded-lg border bg-background px-2 py-1">
           <Avatar className="h-7 w-7">
             <AvatarFallback className="text-xs bg-primary text-primary-foreground">{initials}</AvatarFallback>
