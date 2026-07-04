@@ -102,13 +102,56 @@ function drawLogo(doc: jsPDF, logo: LoadedLogo | null, x: number, y: number, w: 
   }
 }
 
-/** Cross-platform PDF save that also works in mobile in-app WebViews. */
-export function savePdf(doc: jsPDF, filename: string) {
+function isMobile() {
+  if (typeof navigator === "undefined") return false;
+  return /Android|iPhone|iPad|iPod|Mobile|webOS|BlackBerry|IEMobile|Opera Mini/i.test(
+    navigator.userAgent,
+  );
+}
+
+/** Cross-platform PDF save that also works in mobile in-app WebViews.
+ *  On mobile, triggers a real anchor download so the OS shows its
+ *  download UI (folder chooser / "open with" / share sheet). If the
+ *  Web Share API supports files, it also offers the native share sheet
+ *  so users can pick "Save to Files", "Drive", etc. */
+export async function savePdf(doc: jsPDF, filename: string) {
+  const blob = doc.output("blob");
+  const file = new File([blob], filename, { type: "application/pdf" });
+
+  // Mobile: prefer native share sheet (lets user save to Files / Drive / print)
+  try {
+    const nav = navigator as Navigator & {
+      canShare?: (d: { files: File[] }) => boolean;
+      share?: (d: { files: File[]; title?: string }) => Promise<void>;
+    };
+    if (isMobile() && nav.canShare?.({ files: [file] }) && nav.share) {
+      await nav.share({ files: [file], title: filename });
+      return;
+    }
+  } catch (e) {
+    console.warn("share failed, falling back to download", e);
+  }
+
+  // Standard anchor download — browser shows its native download / save UI
+  try {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    return;
+  } catch (e) {
+    console.warn("anchor download failed, falling back to doc.save", e);
+  }
+
   try {
     doc.save(filename);
   } catch (e) {
-    console.warn("doc.save failed, falling back to blob url", e);
-    const blob = doc.output("blob");
+    console.warn("doc.save failed, opening blob url", e);
     const url = URL.createObjectURL(blob);
     const w = window.open(url, "_blank");
     if (!w) window.location.href = url;
