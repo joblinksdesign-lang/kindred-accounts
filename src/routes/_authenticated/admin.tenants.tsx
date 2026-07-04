@@ -48,7 +48,7 @@ function AdminTenants() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("tenants")
-        .select("id, business_name, email, phone, country, currency, status, plan_id, created_at, approved_at, plans(name)")
+        .select("id, business_name, email, phone, country, currency, status, plan_id, created_at, approved_at, plans:plan_id(name)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as unknown as TenantRow[];
