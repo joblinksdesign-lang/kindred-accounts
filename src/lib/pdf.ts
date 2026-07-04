@@ -519,6 +519,29 @@ export function generateThermalReceiptPdf(
   doc.setFont("courier", "normal");
   let y = 6;
 
+  // Separator helpers — each visually distinct so sections read clearly
+  const dashed = () => {
+    y += 1;
+    doc.setLineDashPattern([0.6, 0.6], 0);
+    doc.setLineWidth(0.2);
+    doc.line(M, y, W - M, y);
+    doc.setLineDashPattern([], 0);
+    y += 3;
+  };
+  const solid = () => {
+    y += 1;
+    doc.setLineWidth(0.3);
+    doc.line(M, y, W - M, y);
+    y += 3;
+  };
+  const doubleLine = () => {
+    y += 1;
+    doc.setLineWidth(0.3);
+    doc.line(M, y, W - M, y);
+    doc.line(M, y + 0.8, W - M, y + 0.8);
+    y += 3.5;
+  };
+
   // Logo
   if (logo) {
     const lw = widthMm === 58 ? 14 : 20, lh = widthMm === 58 ? 14 : 20;
@@ -545,11 +568,7 @@ export function generateThermalReceiptPdf(
     y += 3.5;
   });
 
-  y += 1;
-  doc.setLineDashPattern([0.6, 0.6], 0);
-  doc.line(M, y, W - M, y);
-  doc.setLineDashPattern([], 0);
-  y += 3;
+  solid(); // company block → meta
 
   // Receipt meta
   doc.setFontSize(8);
@@ -566,11 +585,7 @@ export function generateThermalReceiptPdf(
   const custName = data.customer.company || data.customer.name;
   if (custName) kv("Customer", custName.slice(0, 22));
 
-  y += 1;
-  doc.setLineDashPattern([0.6, 0.6], 0);
-  doc.line(M, y, W - M, y);
-  doc.setLineDashPattern([], 0);
-  y += 3;
+  dashed(); // meta → items
 
   // Items
   if (items.length) {
@@ -578,9 +593,12 @@ export function generateThermalReceiptPdf(
     doc.text("Item", M, y);
     doc.text("Qty", M + innerW * 0.55, y, { align: "right" });
     doc.text("Total", W - M, y, { align: "right" });
-    y += 3.5;
+    y += 1;
+    doc.setLineWidth(0.2);
+    doc.line(M, y, W - M, y);
+    y += 3;
     doc.setFont("courier", "normal");
-    items.forEach((it) => {
+    items.forEach((it, idx) => {
       const desc = doc.splitTextToSize(it.description, innerW * 0.55);
       desc.forEach((line: string, i: number) => {
         doc.text(line, M, y);
@@ -590,12 +608,15 @@ export function generateThermalReceiptPdf(
         }
         y += 3.5;
       });
+      // Thin dotted separator between items (skip after last)
+      if (idx < items.length - 1) {
+        doc.setLineDashPattern([0.3, 0.6], 0);
+        doc.setLineWidth(0.1);
+        doc.line(M + 2, y - 1, W - M - 2, y - 1);
+        doc.setLineDashPattern([], 0);
+      }
     });
-    y += 1;
-    doc.setLineDashPattern([0.6, 0.6], 0);
-    doc.line(M, y, W - M, y);
-    doc.setLineDashPattern([], 0);
-    y += 3;
+    dashed(); // items → totals
   }
 
   // Totals
@@ -609,13 +630,10 @@ export function generateThermalReceiptPdf(
   if (typeof data.subtotal === "number") line("Subtotal", money(data.subtotal, sym));
   if (data.discount) line("Discount", `- ${money(data.discount, sym)}`);
   if (data.taxAmount) line("Tax", money(data.taxAmount, sym));
+  doubleLine(); // emphasized separator before grand total
   line("TOTAL PAID", money(data.amount, sym), true);
 
-  y += 2;
-  doc.setLineDashPattern([0.6, 0.6], 0);
-  doc.line(M, y, W - M, y);
-  doc.setLineDashPattern([], 0);
-  y += 4;
+  solid(); // totals → footer
 
   doc.setFont("courier", "normal");
   doc.setFontSize(8);
