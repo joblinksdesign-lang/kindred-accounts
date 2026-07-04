@@ -428,21 +428,62 @@ export function generateReceiptPdf(data: ReceiptPdfData, company: CompanySetting
   return doc;
 }
 
-/** Open the PDF in a new window and trigger the browser print dialog. */
-export function printPdf(doc: jsPDF) {
-  try {
-    const blob = doc.output("blob");
+/** Trigger a native print dialog. On desktop: hidden iframe with the PDF.
+ *  On mobile: use Web Share API so the OS print / "Save to Files" sheet
+ *  opens (mobile browsers don't reliably print blob URLs). */
+export async function printPdf(doc: jsPDF, filename = "document.pdf") {
+  const blob = doc.output("blob");
+
+  // Mobile — share sheet lets the user pick "Print" or a printer app
+  if (isMobile()) {
+    try {
+      const file = new File([blob], filename, { type: "application/pdf" });
+      const nav = navigator as Navigator & {
+        canShare?: (d: { files: File[] }) => boolean;
+        share?: (d: { files: File[]; title?: string }) => Promise<void>;
+      };
+      if (nav.canShare?.({ files: [file] }) && nav.share) {
+        await nav.share({ files: [file], title: filename });
+        return;
+      }
+    } catch (e) {
+      console.warn("share for print failed", e);
+    }
+    // Fallback: open PDF so mobile browser's built-in viewer offers Print
     const url = URL.createObjectURL(blob);
     const w = window.open(url, "_blank");
-    if (!w) {
-      window.location.href = url;
-      return;
-    }
-    const trigger = () => { try { w.focus(); w.print(); } catch { /* noop */ } };
-    w.addEventListener("load", trigger);
-    // Fallback for browsers that don't fire load on blob URLs
-    setTimeout(trigger, 900);
+    if (!w) window.location.href = url;
     setTimeout(() => URL.revokeObjectURL(url), 120_000);
+    return;
+  }
+
+  // Desktop — hidden iframe triggers browser print dialog
+  try {
+    const url = URL.createObjectURL(blob);
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+    iframe.src = url;
+    document.body.appendChild(iframe);
+    const trigger = () => {
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      } catch (err) {
+        console.warn("iframe print failed, opening in new tab", err);
+        window.open(url, "_blank");
+      }
+    };
+    iframe.addEventListener("load", () => setTimeout(trigger, 200));
+    setTimeout(trigger, 1200);
+    setTimeout(() => {
+      iframe.remove();
+      URL.revokeObjectURL(url);
+    }, 120_000);
   } catch (e) {
     console.warn("printPdf failed", e);
   }
