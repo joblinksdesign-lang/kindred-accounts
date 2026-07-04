@@ -152,6 +152,28 @@ function AdminTenants() {
   return (
     <div>
       <PageHeader title="Businesses" subtitle="Approve, suspend and manage every business on the platform." />
+
+      {pendingReqs.length > 0 && (
+        <Card className="p-4 mb-4 border-amber-500/40 bg-amber-500/5">
+          <div className="text-sm font-semibold mb-2">Pending plan requests ({pendingReqs.length})</div>
+          <div className="space-y-2">
+            {pendingReqs.map((r) => (
+              <div key={r.id} className="flex flex-wrap items-center justify-between gap-2 text-sm border-b last:border-0 pb-2 last:pb-0">
+                <div>
+                  <b>{r.tenants?.business_name}</b> wants to switch{" "}
+                  {r.current_plan?.name ? <>from <b>{r.current_plan.name}</b> </> : null}
+                  to <b>{r.pending_plan?.name}</b> ({r.pending_billing_cycle})
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={() => approveRequest.mutate({ id: r.id, pending_plan_id: r.pending_plan_id, pending_billing_cycle: r.pending_billing_cycle, tenant_id: r.tenant_id })}>Activate</Button>
+                  <Button size="sm" variant="outline" onClick={() => denyRequest.mutate(r.id)}>Deny</Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
       <Card className="p-4 shadow-soft border-0">
         <div className="flex flex-col md:flex-row gap-3 mb-4">
           <Input placeholder="Search businesses…" value={q} onChange={(e) => setQ(e.target.value)} className="md:max-w-sm" />
