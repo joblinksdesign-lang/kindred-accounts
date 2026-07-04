@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, Users, Package, FileText, Receipt, CreditCard, FileSignature,
-  BarChart3, Settings, LogOut, Bell, Search, Building2, ShieldCheck, LayoutGrid, Tag, Sparkles,
+  BarChart3, Settings, LogOut, Search, Building2, ShieldCheck, LayoutGrid, Tag, Sparkles,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Toaster } from "@/components/ui/sonner";
+import { NotificationBell } from "@/components/notification-bell";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser } from "@/lib/use-current-user";
 import { useActiveTenant } from "@/lib/tenant";
@@ -168,9 +169,7 @@ function Topbar() {
         <Input placeholder="Search…" className="h-9 pl-8 bg-background" />
       </div>
       <div className="ml-auto flex items-center gap-2">
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-4 w-4" />
-        </Button>
+        <NotificationBell />
         <div className="flex items-center gap-2 rounded-lg border bg-background px-2 py-1">
           <Avatar className="h-7 w-7">
             <AvatarFallback className="text-xs bg-primary text-primary-foreground">{initials}</AvatarFallback>

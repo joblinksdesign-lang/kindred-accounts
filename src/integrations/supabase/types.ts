@@ -826,6 +826,11 @@ export type Database = {
           current_period_end: string | null
           current_period_start: string
           id: string
+          pending_billing_cycle:
+            | Database["public"]["Enums"]["billing_cycle"]
+            | null
+          pending_plan_id: string | null
+          pending_requested_at: string | null
           plan_id: string
           status: Database["public"]["Enums"]["subscription_status"]
           tenant_id: string
@@ -839,6 +844,11 @@ export type Database = {
           current_period_end?: string | null
           current_period_start?: string
           id?: string
+          pending_billing_cycle?:
+            | Database["public"]["Enums"]["billing_cycle"]
+            | null
+          pending_plan_id?: string | null
+          pending_requested_at?: string | null
           plan_id: string
           status?: Database["public"]["Enums"]["subscription_status"]
           tenant_id: string
@@ -852,6 +862,11 @@ export type Database = {
           current_period_end?: string | null
           current_period_start?: string
           id?: string
+          pending_billing_cycle?:
+            | Database["public"]["Enums"]["billing_cycle"]
+            | null
+          pending_plan_id?: string | null
+          pending_requested_at?: string | null
           plan_id?: string
           status?: Database["public"]["Enums"]["subscription_status"]
           tenant_id?: string
@@ -859,6 +874,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "subscriptions_pending_plan_id_fkey"
+            columns: ["pending_plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "subscriptions_plan_id_fkey"
             columns: ["plan_id"]
@@ -1051,6 +1073,27 @@ export type Database = {
         Args: { _kind: string; _tenant: string }
         Returns: string
       }
+      notify_super_admins: {
+        Args: {
+          _link: string
+          _message: string
+          _tenant: string
+          _title: string
+          _type: string
+        }
+        Returns: undefined
+      }
+      notify_tenant_admins: {
+        Args: {
+          _link: string
+          _message: string
+          _tenant: string
+          _title: string
+          _type: string
+        }
+        Returns: undefined
+      }
+      refresh_tenant_alerts: { Args: { _tenant: string }; Returns: undefined }
       register_business: {
         Args: {
           _business_name: string
