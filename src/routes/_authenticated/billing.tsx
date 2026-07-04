@@ -153,6 +153,21 @@ function BillingPage() {
         </Card>
       )}
 
+      {sub?.pending_plan_id && (
+        <Card className="p-4 flex flex-wrap items-center justify-between gap-3 border-amber-500/40 bg-amber-500/5">
+          <div className="text-sm">
+            <span className="font-semibold">Pending approval:</span>{" "}
+            switch to <b>{plans.find((p) => p.id === sub.pending_plan_id)?.name ?? "new plan"}</b>{" "}
+            ({sub.pending_billing_cycle}). Waiting for admin activation.
+          </div>
+          {isOwner && (
+            <Button size="sm" variant="outline" onClick={() => cancelRequest.mutate()} disabled={cancelRequest.isPending}>
+              Cancel request
+            </Button>
+          )}
+        </Card>
+      )}
+
       {!isOwner && (
         <Card className="p-4 text-sm text-muted-foreground">
           Only the business owner can change the plan.
@@ -163,6 +178,7 @@ function BillingPage() {
         {plans.map((p) => {
           const price = annual ? p.price_annual / 12 : p.price_monthly;
           const isCurrent = sub?.plan_id === p.id && (sub?.billing_cycle === (annual ? "annual" : "monthly"));
+          const isPending = sub?.pending_plan_id === p.id;
           const highlight = p.slug === "professional";
           return (
             <Card key={p.id} className={`p-6 flex flex-col border ${highlight ? "border-primary ring-1 ring-primary/30" : ""}`}>
@@ -187,13 +203,13 @@ function BillingPage() {
                 ))}
               </ul>
               <Button
-                className={`mt-5 w-full ${highlight && !isCurrent ? "gradient-emerald text-white" : ""}`}
-                variant={isCurrent ? "secondary" : highlight ? "default" : "outline"}
-                disabled={!isOwner || isCurrent || changePlan.isPending}
-                onClick={() => changePlan.mutate(p.id)}
+                className={`mt-5 w-full ${highlight && !isCurrent && !isPending ? "gradient-emerald text-white" : ""}`}
+                variant={isCurrent ? "secondary" : isPending ? "outline" : highlight ? "default" : "outline"}
+                disabled={!isOwner || isCurrent || isPending || requestPlan.isPending}
+                onClick={() => requestPlan.mutate(p.id)}
               >
-                {isCurrent ? "Current plan" : (
-                  <>Switch to {p.name} <ArrowRight className="ml-1.5 h-4 w-4" /></>
+                {isCurrent ? "Current plan" : isPending ? "Pending approval" : (
+                  <>Request {p.name} <ArrowRight className="ml-1.5 h-4 w-4" /></>
                 )}
               </Button>
             </Card>
