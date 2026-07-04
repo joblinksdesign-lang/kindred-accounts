@@ -37,6 +37,9 @@ type Subscription = {
   status: string;
   billing_cycle: "monthly" | "annual";
   current_period_end: string | null;
+  pending_plan_id: string | null;
+  pending_billing_cycle: "monthly" | "annual" | null;
+  pending_requested_at: string | null;
 };
 
 function BillingPage() {
@@ -64,7 +67,7 @@ function BillingPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("subscriptions")
-        .select("id, plan_id, status, billing_cycle, current_period_end")
+        .select("id, plan_id, status, billing_cycle, current_period_end, pending_plan_id, pending_billing_cycle, pending_requested_at")
         .eq("tenant_id", tenantId!)
         .order("created_at", { ascending: false })
         .limit(1)
@@ -74,28 +77,43 @@ function BillingPage() {
     },
   });
 
-  const changePlan = useMutation({
+  const requestPlan = useMutation({
     mutationFn: async (planId: string) => {
       if (!tenantId) throw new Error("No active business selected");
       const cycle = annual ? "annual" : "monthly";
       if (sub) {
         const { error } = await supabase
           .from("subscriptions")
-          .update({ plan_id: planId, billing_cycle: cycle, status: "active" })
+          .update({ pending_plan_id: planId, pending_billing_cycle: cycle, pending_requested_at: new Date().toISOString() })
           .eq("id", sub.id);
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from("subscriptions")
-          .insert({ tenant_id: tenantId, plan_id: planId, billing_cycle: cycle, status: "active" } as never);
+          .insert({ tenant_id: tenantId, plan_id: planId, billing_cycle: cycle, status: "trialing", pending_plan_id: planId, pending_billing_cycle: cycle, pending_requested_at: new Date().toISOString() } as never);
         if (error) throw error;
       }
     },
     onSuccess: () => {
-      toast.success("Plan updated");
+      toast.success("Plan change requested", { description: "Waiting for admin approval." });
       qc.invalidateQueries({ queryKey: ["my_subscription"] });
     },
-    onError: (e: Error) => toast.error("Could not switch plan", { description: e.message }),
+    onError: (e: Error) => toast.error("Could not request plan", { description: e.message }),
+  });
+
+  const cancelRequest = useMutation({
+    mutationFn: async () => {
+      if (!sub) return;
+      const { error } = await supabase
+        .from("subscriptions")
+        .update({ pending_plan_id: null, pending_billing_cycle: null, pending_requested_at: null })
+        .eq("id", sub.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Request cancelled");
+      qc.invalidateQueries({ queryKey: ["my_subscription"] });
+    },
   });
 
   const currentPlan = plans.find((p) => p.id === sub?.plan_id);
