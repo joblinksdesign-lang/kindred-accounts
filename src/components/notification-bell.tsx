@@ -137,7 +137,14 @@ export function NotificationBell() {
             </button>
           ))}
         </div>
+        <button
+          onClick={() => navigate({ to: "/notifications" })}
+          className="block w-full border-t px-3 py-2 text-center text-xs font-medium text-primary hover:bg-accent transition"
+        >
+          View all notifications
+        </button>
       </DropdownMenuContent>
     </DropdownMenu>
   );
 }
+
