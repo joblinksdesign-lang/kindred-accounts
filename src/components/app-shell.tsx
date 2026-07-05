@@ -28,6 +28,7 @@ const workspaceNav = [
   { title: "Receipts", to: "/receipts", icon: Receipt },
   { title: "Payments", to: "/payments", icon: CreditCard },
   { title: "Reports", to: "/reports", icon: BarChart3 },
+  { title: "Notifications", to: "/notifications", icon: Bell },
 ] as const;
 
 const adminNav = [
