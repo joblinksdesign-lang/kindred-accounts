@@ -215,6 +215,8 @@ function Dashboard() {
         </div>
       </div>
 
+      <PlanLimitBanner />
+
       {/* KPI grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {cards.map((c, i) => (
