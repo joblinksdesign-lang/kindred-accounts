@@ -162,8 +162,7 @@ function NotificationsPage() {
       <PageHeader
         title="Notifications"
         subtitle={`${unreadCount} unread of ${items.length} total`}
-        icon={<Bell className="h-5 w-5" />}
-        actions={
+        action={
           unreadCount > 0 ? (
             <Button variant="outline" size="sm" onClick={() => markAll.mutate()} disabled={markAll.isPending}>
               <CheckCheck className="h-4 w-4 mr-1.5" /> Mark all read
