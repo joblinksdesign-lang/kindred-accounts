@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, Users, Package, FileText, Receipt, CreditCard, FileSignature,
-  BarChart3, Settings, LogOut, Search, Building2, ShieldCheck, LayoutGrid, Tag, Sparkles,
+  BarChart3, Settings, LogOut, Search, Building2, ShieldCheck, LayoutGrid, Tag, Sparkles, Bell,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
@@ -28,6 +28,7 @@ const workspaceNav = [
   { title: "Receipts", to: "/receipts", icon: Receipt },
   { title: "Payments", to: "/payments", icon: CreditCard },
   { title: "Reports", to: "/reports", icon: BarChart3 },
+  { title: "Notifications", to: "/notifications", icon: Bell },
 ] as const;
 
 const adminNav = [

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -77,28 +77,67 @@ function BillingPage() {
     },
   });
 
+  // Live-refresh subscription when super admin approves/denies the pending request
+  useEffect(() => {
+    if (!tenantId) return;
+    const ch = supabase
+      .channel(`sub-live-${tenantId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "subscriptions", filter: `tenant_id=eq.${tenantId}` },
+        () => qc.invalidateQueries({ queryKey: ["my_subscription", tenantId] }),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(ch);
+    };
+  }, [tenantId, qc]);
+
+
   const requestPlan = useMutation({
     mutationFn: async (planId: string) => {
       if (!tenantId) throw new Error("No active business selected");
+      if (!isOwner) throw new Error("Only the business owner can change the plan");
       const cycle = annual ? "annual" : "monthly";
       if (sub) {
+        // Same plan + cycle already active → nothing to do
+        if (sub.plan_id === planId && sub.billing_cycle === cycle && !sub.pending_plan_id) {
+          throw new Error("You are already on this plan");
+        }
         const { error } = await supabase
           .from("subscriptions")
-          .update({ pending_plan_id: planId, pending_billing_cycle: cycle, pending_requested_at: new Date().toISOString() })
+          .update({
+            pending_plan_id: planId,
+            pending_billing_cycle: cycle,
+            pending_requested_at: new Date().toISOString(),
+          })
           .eq("id", sub.id);
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from("subscriptions")
-          .insert({ tenant_id: tenantId, plan_id: planId, billing_cycle: cycle, status: "trialing", pending_plan_id: planId, pending_billing_cycle: cycle, pending_requested_at: new Date().toISOString() } as never);
+          .insert({
+            tenant_id: tenantId,
+            plan_id: planId,
+            billing_cycle: cycle,
+            status: "trialing",
+            pending_plan_id: planId,
+            pending_billing_cycle: cycle,
+            pending_requested_at: new Date().toISOString(),
+          } as never);
         if (error) throw error;
       }
     },
     onSuccess: () => {
-      toast.success("Plan change requested", { description: "Waiting for admin approval." });
+      toast.success("Plan change request submitted", {
+        description: "Your request has been sent to the super admin for approval. You'll be notified once activated.",
+      });
       qc.invalidateQueries({ queryKey: ["my_subscription"] });
     },
-    onError: (e: Error) => toast.error("Could not request plan", { description: e.message }),
+    onError: (e: Error) =>
+      toast.error("Could not submit plan request", {
+        description: e.message || "Please try again in a moment.",
+      }),
   });
 
   const cancelRequest = useMutation({
