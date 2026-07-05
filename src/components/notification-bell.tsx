@@ -33,12 +33,32 @@ export function NotificationBell() {
   useEffect(() => {
     if (!tenantId || isSuperAdmin) return;
     supabase.rpc("refresh_tenant_alerts", { _tenant: tenantId });
+    const t = setInterval(() => {
+      supabase.rpc("refresh_tenant_alerts", { _tenant: tenantId });
+    }, 60_000);
+    return () => clearInterval(t);
   }, [tenantId, isSuperAdmin]);
+
+  // Realtime subscription so the badge updates instantly
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel("notifications-bell")
+      .on("postgres_changes", { event: "*", schema: "public", table: "notifications" }, () => {
+        qc.invalidateQueries({ queryKey: ["notifications"] });
+        qc.invalidateQueries({ queryKey: ["notifications_all"] });
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, qc]);
 
   const { data: items = [] } = useQuery({
     queryKey: ["notifications", user?.id, tenantId, isSuperAdmin],
     enabled: !!user,
-    refetchInterval: 30_000,
+    refetchInterval: 20_000,
+    refetchOnWindowFocus: true,
     queryFn: async () => {
       let q = supabase
         .from("notifications")
