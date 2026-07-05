@@ -77,6 +77,23 @@ function BillingPage() {
     },
   });
 
+  // Live-refresh subscription when super admin approves/denies the pending request
+  useEffect(() => {
+    if (!tenantId) return;
+    const ch = supabase
+      .channel(`sub-live-${tenantId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "subscriptions", filter: `tenant_id=eq.${tenantId}` },
+        () => qc.invalidateQueries({ queryKey: ["my_subscription", tenantId] }),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(ch);
+    };
+  }, [tenantId, qc]);
+
+
   const requestPlan = useMutation({
     mutationFn: async (planId: string) => {
       if (!tenantId) throw new Error("No active business selected");
