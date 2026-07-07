@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/page-helpers";
-import { formatMoney, useCompanySettings } from "@/lib/company";
+import { formatMoney, useCompanyLogoUrl, useCompanySettings } from "@/lib/company";
 import { BarChart, Bar, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
 
 export const Route = createFileRoute("/_authenticated/reports")({
@@ -14,6 +14,7 @@ export const Route = createFileRoute("/_authenticated/reports")({
 
 function ReportsPage() {
   const { data: company } = useCompanySettings();
+  const { data: logoUrl } = useCompanyLogoUrl(company);
   const sym = company?.currency_symbol || "$";
 
   const { data } = useQuery({
@@ -66,9 +67,9 @@ function ReportsPage() {
     <div>
       {company && (
         <div className="flex items-center gap-3 mb-4">
-          {company.logo_url && (
+          {logoUrl && (
             <img
-              src={company.logo_url}
+              src={logoUrl}
               alt={`${company.company_name} logo`}
               className="h-10 w-10 rounded object-contain bg-white border"
             />

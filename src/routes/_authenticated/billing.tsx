@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useRouterState } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -44,6 +44,7 @@ type Subscription = {
 
 function BillingPage() {
   const qc = useQueryClient();
+  const subscriptionParam = useRouterState({ select: (s) => s.location.search.subscription as string | undefined });
   const { tenantId, role } = useActiveTenant();
   const [annual, setAnnual] = useState(false);
   const isOwner = role === "owner";
@@ -165,7 +166,7 @@ function BillingPage() {
       />
 
       {sub && currentPlan && (
-        <Card className="p-5 flex flex-wrap items-center justify-between gap-3">
+        <Card className={`p-5 flex flex-wrap items-center justify-between gap-3 ${subscriptionParam === sub.id ? "border-primary/40 bg-primary/5 ring-1 ring-primary/30" : ""}`}>
           <div>
             <div className="text-xs uppercase tracking-wider text-muted-foreground">Current plan</div>
             <div className="text-lg font-bold flex items-center gap-2">

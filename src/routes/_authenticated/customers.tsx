@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useRouterState } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,6 +28,7 @@ type Customer = {
 
 function CustomersPage() {
   const qc = useQueryClient();
+  const customerParam = useRouterState({ select: (s) => s.location.search.customer as string | undefined });
   const tenantId = useActiveTenantId();
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
@@ -117,7 +118,7 @@ function CustomersPage() {
               </TableHeader>
               <TableBody>
                 {filtered.map((c) => (
-                  <TableRow key={c.id}>
+                  <TableRow key={c.id} className={customerParam === c.id ? "bg-primary/10 ring-1 ring-primary/30" : ""}>
                     <TableCell>
                       <div className="font-medium">{c.name}</div>
                       <div className="text-xs text-muted-foreground">{c.company_name}</div>

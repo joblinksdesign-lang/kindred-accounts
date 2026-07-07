@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PageHeader, ListToolbar, EmptyState } from "@/components/page-helpers";
 import { formatMoney, formatDate, useCompanySettings } from "@/lib/company";
-import { generateReceiptPdf, generateThermalReceiptPdf, loadLogoDataUrl, savePdf, printPdf } from "@/lib/pdf";
+import { generateReceiptPdf, generateThermalReceiptPdf, loadCompanyLogo, savePdf, printPdf } from "@/lib/pdf";
 import { toast } from "sonner";
 import { Download, Printer, Receipt as ReceiptIcon } from "lucide-react";
 
@@ -71,7 +71,7 @@ function ReceiptsPage() {
   const download = async (r: ReceiptRow) => {
     if (!company) { toast.error("Company settings not loaded"); return; }
     try {
-      const logo = await loadLogoDataUrl(company.logo_url);
+      const logo = await loadCompanyLogo(company);
       const pdf = generateReceiptPdf(buildPayload(r), company, logo);
       savePdf(pdf, `${r.receipt_number}.pdf`);
       toast.success("Receipt downloaded");
@@ -83,7 +83,7 @@ function ReceiptsPage() {
   const print = async (r: ReceiptRow) => {
     if (!company) { toast.error("Company settings not loaded"); return; }
     try {
-      const logo = await loadLogoDataUrl(company.logo_url);
+      const logo = await loadCompanyLogo(company);
       const pdf = generateReceiptPdf(buildPayload(r), company, logo);
       printPdf(pdf, `${r.receipt_number}.pdf`);
     } catch (e) {
@@ -94,7 +94,7 @@ function ReceiptsPage() {
   const downloadThermal = async (r: ReceiptRow, widthMm: 58 | 80) => {
     if (!company) { toast.error("Company settings not loaded"); return; }
     try {
-      const logo = await loadLogoDataUrl(company.logo_url);
+      const logo = await loadCompanyLogo(company);
       const pdf = generateThermalReceiptPdf(buildPayload(r), company, logo, widthMm);
       savePdf(pdf, `${r.receipt_number}-${widthMm}mm.pdf`);
       toast.success(`${widthMm}mm receipt downloaded`);
@@ -106,7 +106,7 @@ function ReceiptsPage() {
   const printThermal = async (r: ReceiptRow, widthMm: 58 | 80) => {
     if (!company) { toast.error("Company settings not loaded"); return; }
     try {
-      const logo = await loadLogoDataUrl(company.logo_url);
+      const logo = await loadCompanyLogo(company);
       const pdf = generateThermalReceiptPdf(buildPayload(r), company, logo, widthMm);
       printPdf(pdf, `${r.receipt_number}-${widthMm}mm.pdf`);
     } catch (e) {

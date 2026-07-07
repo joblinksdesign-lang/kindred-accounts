@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useRouterState } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,6 +30,7 @@ type Product = {
 
 function ProductsPage() {
   const qc = useQueryClient();
+  const productParam = useRouterState({ select: (s) => s.location.search.product as string | undefined });
   const tenantId = useActiveTenantId();
   const { data: company } = useCompanySettings();
   const sym = company?.currency_symbol || "$";
@@ -151,7 +152,7 @@ function ProductsPage() {
                   const low = Number(p.quantity) <= Number(p.reorder_level);
                   const out = Number(p.quantity) <= 0;
                   return (
-                    <TableRow key={p.id}>
+                    <TableRow key={p.id} className={productParam === p.id ? "bg-primary/10 ring-1 ring-primary/30" : ""}>
                       <TableCell>
                         <div className="font-medium">{p.name}</div>
                         <div className="text-xs text-muted-foreground">{p.category}</div>

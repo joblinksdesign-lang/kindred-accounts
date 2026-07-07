@@ -1,5 +1,6 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -9,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/page-helpers";
 import { useCurrentUser } from "@/lib/use-current-user";
 import { useActiveTenantId } from "@/lib/tenant";
+import { getNotificationHref } from "@/lib/notification-links";
+import { refreshTenantAlerts } from "@/lib/notifications.functions";
 import { Bell, CheckCheck, Search, Trash2, Filter } from "lucide-react";
 import { toast } from "sonner";
 
@@ -46,16 +49,16 @@ type FilterKey = (typeof FILTERS)[number]["key"];
 
 function NotificationsPage() {
   const qc = useQueryClient();
-  const navigate = useNavigate();
   const { user, isSuperAdmin } = useCurrentUser();
   const tenantId = useActiveTenantId();
+  const refreshAlerts = useServerFn(refreshTenantAlerts);
   const [filter, setFilter] = useState<FilterKey>("all");
   const [q, setQ] = useState("");
 
   useEffect(() => {
     if (!tenantId || isSuperAdmin) return;
-    supabase.rpc("refresh_tenant_alerts", { _tenant: tenantId });
-  }, [tenantId, isSuperAdmin]);
+    refreshAlerts({ data: { tenantId } }).catch(() => null);
+  }, [tenantId, isSuperAdmin, refreshAlerts]);
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ["notifications_all", user?.id, tenantId, isSuperAdmin],
@@ -65,6 +68,7 @@ function NotificationsPage() {
       let query = supabase
         .from("notifications")
         .select("id, type, title, message, link, read_at, created_at, tenant_id")
+        .or(`user_id.eq.${user!.id},user_id.is.null`)
         .order("created_at", { ascending: false })
         .limit(200);
       if (!isSuperAdmin && tenantId) query = query.eq("tenant_id", tenantId);
@@ -145,7 +149,7 @@ function NotificationsPage() {
 
   const openItem = (n: Notification) => {
     if (!n.read_at) markRead.mutate(n.id);
-    if (n.link) navigate({ to: n.link });
+    window.location.assign(getNotificationHref(n));
   };
 
   const badgeColor = (type: string) => {

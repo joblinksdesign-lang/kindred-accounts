@@ -14,7 +14,7 @@ import { PageHeader } from "@/components/page-helpers";
 import { ArrowLeft, Download, Plus, Send, Trash2 } from "lucide-react";
 import { formatMoney, formatDate, useCompanySettings } from "@/lib/company";
 import { useActiveTenantId } from "@/lib/tenant";
-import { generateInvoicePdf, loadLogoDataUrl, savePdf } from "@/lib/pdf";
+import { generateInvoicePdf, loadCompanyLogo, savePdf } from "@/lib/pdf";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/invoices/$id")({
@@ -92,7 +92,7 @@ function InvoiceDetail() {
   const downloadPdf = async () => {
     let stage: "render" | "storage" | "response" = "render";
     try {
-      const logo = await loadLogoDataUrl(company.logo_url);
+      const logo = await loadCompanyLogo(company);
       const pdf = generateInvoicePdf({
         number: invoice.invoice_number, date: formatDate(invoice.invoice_date),
         dueDate: invoice.due_date ? formatDate(invoice.due_date) : null,

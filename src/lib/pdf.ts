@@ -1,6 +1,7 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { CompanySettings } from "./company";
+import { supabase } from "@/integrations/supabase/client";
 
 export type InvoicePdfData = {
   number: string;
@@ -48,6 +49,40 @@ const money = (n: number, sym = "USh ") =>
 
 export type LoadedLogo = { dataUrl: string; format: "PNG" | "JPEG" };
 
+const blobToDataUrl = (blob: Blob) =>
+  new Promise<string>((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result as string);
+    r.onerror = () => reject(r.error);
+    r.readAsDataURL(blob);
+  });
+
+const imageBlobToPngDataUrl = (blob: Blob) =>
+  new Promise<string>((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.naturalWidth || 256;
+        canvas.height = img.naturalHeight || 256;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) throw new Error("canvas ctx unavailable");
+        ctx.drawImage(img, 0, 0);
+        resolve(canvas.toDataURL("image/png"));
+      } catch (err) {
+        reject(err);
+      } finally {
+        URL.revokeObjectURL(objectUrl);
+      }
+    };
+    img.onerror = (err) => {
+      URL.revokeObjectURL(objectUrl);
+      reject(err);
+    };
+    img.src = objectUrl;
+  });
+
 export async function loadLogoDataUrl(url: string | null | undefined): Promise<LoadedLogo | null> {
   if (!url) return null;
   // Strategy 1 — direct fetch (works for CORS-enabled buckets)
@@ -55,14 +90,9 @@ export async function loadLogoDataUrl(url: string | null | undefined): Promise<L
     const res = await fetch(url, { mode: "cors", cache: "no-cache" });
     if (res.ok) {
       const blob = await res.blob();
-      const format: "PNG" | "JPEG" = /png/i.test(blob.type) ? "PNG" : "JPEG";
-      const dataUrl: string = await new Promise((resolve, reject) => {
-        const r = new FileReader();
-        r.onload = () => resolve(r.result as string);
-        r.onerror = () => reject(r.error);
-        r.readAsDataURL(blob);
-      });
-      return { dataUrl, format };
+      if (/jpe?g/i.test(blob.type)) return { dataUrl: await blobToDataUrl(blob), format: "JPEG" };
+      if (/png/i.test(blob.type)) return { dataUrl: await blobToDataUrl(blob), format: "PNG" };
+      return { dataUrl: await imageBlobToPngDataUrl(blob), format: "PNG" };
     }
   } catch (e) {
     console.warn("Logo fetch failed, trying <img> fallback", e);
@@ -93,12 +123,37 @@ export async function loadLogoDataUrl(url: string | null | undefined): Promise<L
   }
 }
 
+export async function loadCompanyLogo(company: CompanySettings): Promise<LoadedLogo | null> {
+  if (company.logo_path) {
+    const { data, error } = await supabase.storage
+      .from("company-assets")
+      .createSignedUrl(company.logo_path, 60 * 60);
+    if (!error && data?.signedUrl) {
+      const storedLogo = await loadLogoDataUrl(data.signedUrl);
+      if (storedLogo) return storedLogo;
+    }
+  }
+  return loadLogoDataUrl(company.logo_url);
+}
+
 function drawLogo(doc: jsPDF, logo: LoadedLogo | null, x: number, y: number, w: number, h: number) {
   if (!logo) return;
   try {
     doc.addImage(logo.dataUrl, logo.format, x, y, w, h, undefined, "FAST");
   } catch (e) {
     console.warn("addImage failed", e);
+  }
+}
+
+function drawWatermark(doc: jsPDF, logo: LoadedLogo | null, pageWidth = 210, pageHeight = 297) {
+  if (!logo) return;
+  const anyDoc = doc as jsPDF & { GState?: new (opts: { opacity: number }) => unknown; setGState?: (state: unknown) => void };
+  try {
+    if (anyDoc.GState && anyDoc.setGState) anyDoc.setGState(new anyDoc.GState({ opacity: 0.055 }));
+    drawLogo(doc, logo, (pageWidth - 92) / 2, (pageHeight - 92) / 2, 92, 92);
+    if (anyDoc.GState && anyDoc.setGState) anyDoc.setGState(new anyDoc.GState({ opacity: 1 }));
+  } catch (e) {
+    console.warn("watermark failed", e);
   }
 }
 
@@ -210,6 +265,7 @@ function headerModern(doc: jsPDF, company: CompanySettings, title: string, numbe
 
 export function generateInvoicePdf(data: InvoicePdfData, company: CompanySettings, logo: LoadedLogo | null = null): jsPDF {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
+  drawWatermark(doc, logo);
   const template = data.template || company.invoice_template || "classic";
   if (template === "modern") headerModern(doc, company, "Invoice", data.number, logo);
   else headerClassic(doc, company, "Invoice", data.number, logo);
@@ -334,6 +390,7 @@ export function generateInvoicePdf(data: InvoicePdfData, company: CompanySetting
 
 export function generateReceiptPdf(data: ReceiptPdfData, company: CompanySettings, logo: LoadedLogo | null = null): jsPDF {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
+  drawWatermark(doc, logo);
   const template = data.template || company.receipt_template || "classic";
   if (template === "modern") headerModern(doc, company, "Receipt", data.number, logo);
   else headerClassic(doc, company, "Receipt", data.number, logo);

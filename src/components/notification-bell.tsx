@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +10,8 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser } from "@/lib/use-current-user";
 import { useActiveTenantId } from "@/lib/tenant";
-import { useNavigate } from "@tanstack/react-router";
+import { getNotificationHref } from "@/lib/notification-links";
+import { refreshTenantAlerts } from "@/lib/notifications.functions";
 
 type Notification = {
   id: string;
@@ -25,19 +27,19 @@ type Notification = {
 
 export function NotificationBell() {
   const qc = useQueryClient();
-  const navigate = useNavigate();
   const { user, isSuperAdmin } = useCurrentUser();
   const tenantId = useActiveTenantId();
+  const refreshAlerts = useServerFn(refreshTenantAlerts);
 
   // Refresh derived alerts (low stock, overdue, expiring) periodically
   useEffect(() => {
     if (!tenantId || isSuperAdmin) return;
-    supabase.rpc("refresh_tenant_alerts", { _tenant: tenantId });
+    refreshAlerts({ data: { tenantId } }).catch(() => null);
     const t = setInterval(() => {
-      supabase.rpc("refresh_tenant_alerts", { _tenant: tenantId });
+      refreshAlerts({ data: { tenantId } }).catch(() => null);
     }, 60_000);
     return () => clearInterval(t);
-  }, [tenantId, isSuperAdmin]);
+  }, [tenantId, isSuperAdmin, refreshAlerts]);
 
   // Realtime subscription so the badge updates instantly
   useEffect(() => {
@@ -63,6 +65,7 @@ export function NotificationBell() {
       let q = supabase
         .from("notifications")
         .select("id, tenant_id, user_id, type, title, message, link, read_at, created_at")
+        .or(`user_id.eq.${user!.id},user_id.is.null`)
         .order("created_at", { ascending: false })
         .limit(30);
       if (!isSuperAdmin && tenantId) q = q.eq("tenant_id", tenantId);
@@ -78,7 +81,10 @@ export function NotificationBell() {
     mutationFn: async (id: string) => {
       await supabase.from("notifications").update({ read_at: new Date().toISOString() }).eq("id", id);
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["notifications"] });
+      qc.invalidateQueries({ queryKey: ["notifications_all"] });
+    },
   });
 
   const markAll = useMutation({
@@ -120,7 +126,7 @@ export function NotificationBell() {
               key={n.id}
               onClick={() => {
                 if (!n.read_at) markRead.mutate(n.id);
-                if (n.link) navigate({ to: n.link });
+                window.location.assign(getNotificationHref(n));
               }}
               className={`w-full text-left px-3 py-2 border-b hover:bg-accent transition ${!n.read_at ? "bg-primary/5" : ""}`}
             >
@@ -138,7 +144,7 @@ export function NotificationBell() {
           ))}
         </div>
         <button
-          onClick={() => navigate({ to: "/notifications" })}
+          onClick={() => window.location.assign("/notifications")}
           className="block w-full border-t px-3 py-2 text-center text-xs font-medium text-primary hover:bg-accent transition"
         >
           View all notifications

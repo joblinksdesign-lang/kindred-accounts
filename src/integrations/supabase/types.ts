@@ -30,6 +30,7 @@ export type Database = {
           invoice_prefix: string
           invoice_template: string
           legal_name: string | null
+          logo_path: string | null
           logo_url: string | null
           payment_instructions: string | null
           phone: string | null
@@ -56,6 +57,7 @@ export type Database = {
           invoice_prefix?: string
           invoice_template?: string
           legal_name?: string | null
+          logo_path?: string | null
           logo_url?: string | null
           payment_instructions?: string | null
           phone?: string | null
@@ -82,6 +84,7 @@ export type Database = {
           invoice_prefix?: string
           invoice_template?: string
           legal_name?: string | null
+          logo_path?: string | null
           logo_url?: string | null
           payment_instructions?: string | null
           phone?: string | null
