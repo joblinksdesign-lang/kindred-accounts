@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useRouterState } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,6 +40,8 @@ const STATUS_COLORS: Record<string, string> = {
 
 function AdminTenants() {
   const qc = useQueryClient();
+  const tenantParam = useRouterState({ select: (s) => s.location.search.tenant as string | undefined });
+  const subscriptionParam = useRouterState({ select: (s) => s.location.search.subscription as string | undefined });
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<string>("all");
 
@@ -158,7 +160,7 @@ function AdminTenants() {
           <div className="text-sm font-semibold mb-2">Pending plan requests ({pendingReqs.length})</div>
           <div className="space-y-2">
             {pendingReqs.map((r) => (
-              <div key={r.id} className="flex flex-wrap items-center justify-between gap-2 text-sm border-b last:border-0 pb-2 last:pb-0">
+              <div key={r.id} className={`flex flex-wrap items-center justify-between gap-2 text-sm border-b last:border-0 pb-2 last:pb-0 ${subscriptionParam === r.id ? "rounded-md bg-primary/10 px-2 ring-1 ring-primary/30" : ""}`}>
                 <div>
                   <b>{r.tenants?.business_name}</b> wants to switch{" "}
                   {r.current_plan?.name ? <>from <b>{r.current_plan.name}</b> </> : null}
@@ -203,7 +205,7 @@ function AdminTenants() {
             </TableHeader>
             <TableBody>
               {filtered.map((t) => (
-                <TableRow key={t.id}>
+                <TableRow key={t.id} className={tenantParam === t.id ? "bg-primary/10 ring-1 ring-primary/30" : ""}>
                   <TableCell>
                     <div className="font-medium">{t.business_name}</div>
                     <div className="text-xs text-muted-foreground">{t.email}</div>

@@ -8,11 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PageHeader } from "@/components/page-helpers";
-import { useCompanySettings } from "@/lib/company";
+import { useCompanyLogoUrl, useCompanySettings } from "@/lib/company";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { useEffect, useState } from "react";
-import { Building2, Palette, FileText } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Building2, Palette, FileText, Upload, X } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [{ title: "Settings" }] }),
@@ -22,6 +22,8 @@ export const Route = createFileRoute("/_authenticated/settings")({
 function SettingsPage() {
   const qc = useQueryClient();
   const { data: company } = useCompanySettings();
+  const { data: logoPreview } = useCompanyLogoUrl(company);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState<Record<string, unknown>>({});
 
   useEffect(() => { if (company) setForm(company as unknown as Record<string, unknown>); }, [company]);
@@ -39,6 +41,50 @@ function SettingsPage() {
   });
 
   const set = (k: string, v: unknown) => setForm((p) => ({ ...p, [k]: v }));
+
+  const uploadLogo = useMutation({
+    mutationFn: async (file: File) => {
+      if (!company) throw new Error("Company settings not loaded");
+      if (!file.type.startsWith("image/")) throw new Error("Choose an image file");
+      const ext = (file.name.split(".").pop() || "png").toLowerCase().replace(/[^a-z0-9]/g, "") || "png";
+      const path = `${company.tenant_id}/company-logo.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from("company-assets")
+        .upload(path, file, { upsert: true, contentType: file.type });
+      if (uploadError) throw uploadError;
+      const { error: updateError } = await supabase
+        .from("company_settings")
+        .update({ logo_path: path, logo_url: null } as never)
+        .eq("id", company.id);
+      if (updateError) throw updateError;
+      return path;
+    },
+    onSuccess: (path) => {
+      setForm((p) => ({ ...p, logo_path: path, logo_url: null }));
+      toast.success("Logo uploaded");
+      qc.invalidateQueries({ queryKey: ["company_settings"] });
+      qc.invalidateQueries({ queryKey: ["company_logo_url"] });
+    },
+    onError: (e: Error) => toast.error("Logo upload failed", { description: e.message }),
+  });
+
+  const removeLogo = useMutation({
+    mutationFn: async () => {
+      if (!company) throw new Error("Company settings not loaded");
+      const { error } = await supabase
+        .from("company_settings")
+        .update({ logo_path: null, logo_url: null } as never)
+        .eq("id", company.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      setForm((p) => ({ ...p, logo_path: null, logo_url: null }));
+      toast.success("Logo removed");
+      qc.invalidateQueries({ queryKey: ["company_settings"] });
+      qc.invalidateQueries({ queryKey: ["company_logo_url"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   if (!company) return <div className="p-8 text-sm text-muted-foreground">Loading…</div>;
 
@@ -98,7 +144,46 @@ function SettingsPage() {
               <div className="col-span-2"><Label>Address</Label><Input value={String(form.address || "")} onChange={(e) => set("address", e.target.value)} /></div>
               <div><Label>City</Label><Input value={String(form.city || "")} onChange={(e) => set("city", e.target.value)} /></div>
               <div><Label>Country</Label><Input value={String(form.country || "")} onChange={(e) => set("country", e.target.value)} /></div>
-              <div className="col-span-2"><Label>Logo URL</Label><Input value={String(form.logo_url || "")} onChange={(e) => set("logo_url", e.target.value)} placeholder="https://…" /></div>
+              <div className="col-span-2 space-y-2">
+                <Label>Business logo</Label>
+                <div className="flex flex-col gap-3 rounded-lg border bg-background p-3 sm:flex-row sm:items-center">
+                  <div className="grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-md border bg-card">
+                    {logoPreview ? (
+                      <img src={logoPreview} alt={`${company.company_name} logo`} className="h-full w-full object-contain p-1" />
+                    ) : (
+                      <Building2 className="h-7 w-7 text-muted-foreground" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-medium">Upload a logo for invoices, receipts, reports, and watermarks.</div>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) uploadLogo.mutate(file);
+                          e.currentTarget.value = "";
+                        }}
+                      />
+                      <Button type="button" size="sm" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={uploadLogo.isPending}>
+                        <Upload className="mr-1.5 h-4 w-4" />{uploadLogo.isPending ? "Uploading…" : "Upload logo"}
+                      </Button>
+                      {(form.logo_path || form.logo_url) && (
+                        <Button type="button" size="sm" variant="ghost" onClick={() => removeLogo.mutate()} disabled={removeLogo.isPending}>
+                          <X className="mr-1.5 h-4 w-4" />Remove
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <Label>Logo URL fallback</Label>
+                  <Input value={String(form.logo_url || "")} onChange={(e) => set("logo_url", e.target.value)} placeholder="https://…" />
+                </div>
+              </div>
             </div>
           </Card>
         </TabsContent>
