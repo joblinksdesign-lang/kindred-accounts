@@ -171,7 +171,7 @@ function SettingsPage() {
                       <Button type="button" size="sm" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={uploadLogo.isPending}>
                         <Upload className="mr-1.5 h-4 w-4" />{uploadLogo.isPending ? "Uploading…" : "Upload logo"}
                       </Button>
-                      {(form.logo_path || form.logo_url) && (
+                      {Boolean(form.logo_path || form.logo_url) && (
                         <Button type="button" size="sm" variant="ghost" onClick={() => removeLogo.mutate()} disabled={removeLogo.isPending}>
                           <X className="mr-1.5 h-4 w-4" />Remove
                         </Button>
