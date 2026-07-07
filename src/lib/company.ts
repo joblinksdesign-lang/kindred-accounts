@@ -8,6 +8,7 @@ export type CompanySettings = {
   company_name: string;
   legal_name: string | null;
   logo_url: string | null;
+  logo_path: string | null;
   email: string | null;
   phone: string | null;
   website: string | null;
@@ -40,6 +41,23 @@ export function useCompanySettings() {
         .maybeSingle();
       if (error) throw error;
       return data as unknown as CompanySettings | null;
+    },
+  });
+}
+
+export function useCompanyLogoUrl(company: Pick<CompanySettings, "logo_path" | "logo_url"> | null | undefined) {
+  return useQuery<string | null>({
+    queryKey: ["company_logo_url", company?.logo_path, company?.logo_url],
+    enabled: !!company?.logo_path || !!company?.logo_url,
+    staleTime: 50 * 60 * 1000,
+    queryFn: async () => {
+      if (company?.logo_path) {
+        const { data, error } = await supabase.storage
+          .from("company-assets")
+          .createSignedUrl(company.logo_path, 60 * 60);
+        if (!error && data?.signedUrl) return data.signedUrl;
+      }
+      return company?.logo_url ?? null;
     },
   });
 }
