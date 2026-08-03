@@ -28,6 +28,26 @@ function AuthPage() {
   const [forgotOpen, setForgotOpen] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotLoading, setForgotLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  const signInWithGoogle = async () => {
+    setGoogleLoading(true);
+    try {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) {
+        toast.error(result.error.message || "Google sign-in failed");
+        return;
+      }
+      if (result.redirected) return;
+      navigate({ to: "/", replace: true });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Google sign-in failed");
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
 
   const sendReset = async () => {
     if (!forgotEmail) return toast.error("Enter your email");
