@@ -578,7 +578,7 @@ export function generateThermalReceiptPdf(
   const items = data.items ?? [];
   const estLines =
     18 + // header
-    items.reduce((n, it) => n + 1 + Math.ceil(it.description.length / 30), 0) +
+    items.reduce((n, it) => n + 2 + Math.ceil(it.description.length / (widthMm === 58 ? 22 : 32)), 0) +
     (data.discount ? 1 : 0) +
     (data.taxAmount ? 1 : 0) +
     (data.invoiceNumber ? 1 : 0) +
