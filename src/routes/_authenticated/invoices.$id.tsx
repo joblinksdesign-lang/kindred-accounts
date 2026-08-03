@@ -161,22 +161,40 @@ function InvoiceDetail() {
           </div>
         </div>
 
-        <div className="rounded-lg border overflow-hidden">
-          <div className="grid grid-cols-12 gap-2 px-3 py-2 bg-muted/50 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-            <div className="col-span-6">Description</div>
-            <div className="col-span-2 text-right">Qty</div>
-            <div className="col-span-2 text-right">Unit price</div>
-            <div className="col-span-2 text-right">Total</div>
+        <div className="rounded-xl border overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-2.5 bg-muted/40 border-b">
+            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Items</div>
+            <div className="text-xs text-muted-foreground">{items.length} {items.length === 1 ? "item" : "items"}</div>
           </div>
-          {items.map((it, i) => (
-            <div key={i} className="grid grid-cols-12 gap-2 px-3 py-3 border-t text-sm">
-              <div className="col-span-6">{it.description}</div>
-              <div className="col-span-2 text-right tabular-nums">{Number(it.quantity)}</div>
-              <div className="col-span-2 text-right tabular-nums">{formatMoney(it.unit_price, sym)}</div>
-              <div className="col-span-2 text-right tabular-nums font-medium">{formatMoney(it.line_total, sym)}</div>
-            </div>
-          ))}
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[560px] text-sm">
+              <thead>
+                <tr className="border-b bg-muted/20 text-[11px] uppercase tracking-wider text-muted-foreground">
+                  <th className="w-10 px-4 py-2.5 text-left font-semibold">#</th>
+                  <th className="px-3 py-2.5 text-left font-semibold">Description</th>
+                  <th className="px-3 py-2.5 text-right font-semibold">Qty</th>
+                  <th className="px-3 py-2.5 text-right font-semibold">Unit price</th>
+                  <th className="px-4 py-2.5 text-right font-semibold">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((it, i) => (
+                  <tr key={i} className="border-b last:border-0 odd:bg-muted/10 hover:bg-accent/40 transition-colors">
+                    <td className="px-4 py-3 text-xs text-muted-foreground tabular-nums">{i + 1}</td>
+                    <td className="px-3 py-3 font-medium">{it.description}</td>
+                    <td className="px-3 py-3 text-right tabular-nums">{Number(it.quantity)}</td>
+                    <td className="px-3 py-3 text-right tabular-nums text-muted-foreground">{formatMoney(it.unit_price, sym)}</td>
+                    <td className="px-4 py-3 text-right tabular-nums font-semibold">{formatMoney(it.line_total, sym)}</td>
+                  </tr>
+                ))}
+                {items.length === 0 && (
+                  <tr><td colSpan={5} className="px-4 py-8 text-center text-sm text-muted-foreground">No items on this invoice</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
+
 
         <div className="grid md:grid-cols-2 gap-6 mt-6">
           <div>
