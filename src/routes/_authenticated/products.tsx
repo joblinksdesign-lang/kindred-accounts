@@ -327,6 +327,51 @@ function ProductsPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Manage categories & suppliers */}
+      <Dialog open={listsOpen} onOpenChange={setListsOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader><DialogTitle>Categories & suppliers</DialogTitle></DialogHeader>
+          <div className="grid gap-6 sm:grid-cols-2">
+            {([
+              { kind: "category" as const, label: "Categories", items: categories, value: newCategory, set: setNewCategory },
+              { kind: "supplier" as const, label: "Suppliers", items: suppliers, value: newSupplier, set: setNewSupplier },
+            ]).map((group) => (
+              <div key={group.kind} className="space-y-2">
+                <Label>{group.label}</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={group.value}
+                    onChange={(e) => group.set(e.target.value)}
+                    placeholder={`Add ${group.kind}`}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") { e.preventDefault(); addAttribute.mutate({ kind: group.kind, name: group.value }); }
+                    }}
+                  />
+                  <Button type="button" onClick={() => addAttribute.mutate({ kind: group.kind, name: group.value })} disabled={addAttribute.isPending}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="rounded-lg border divide-y max-h-64 overflow-y-auto">
+                  {group.items.length === 0 ? (
+                    <div className="px-3 py-4 text-xs text-muted-foreground">Nothing added yet.</div>
+                  ) : group.items.map((it) => (
+                    <div key={it.id} className="flex items-center justify-between gap-2 px-3 py-1.5">
+                      <span className="text-sm truncate">{it.name}</span>
+                      <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" onClick={() => removeAttribute.mutate(it.id)}>
+                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setListsOpen(false)}>Done</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
