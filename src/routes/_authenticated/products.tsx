@@ -38,6 +38,9 @@ function ProductsPage() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [movement, setMovement] = useState<Product | null>(null);
+  const [listsOpen, setListsOpen] = useState(false);
+  const [newCategory, setNewCategory] = useState("");
+  const [newSupplier, setNewSupplier] = useState("");
 
   const { data: products = [] } = useQuery({
     queryKey: ["products"],
@@ -48,9 +51,49 @@ function ProductsPage() {
     },
   });
 
+  const { data: attributes = [] } = useQuery({
+    queryKey: ["product_attributes"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("product_attributes")
+        .select("id, kind, name")
+        .order("name");
+      if (error) throw error;
+      return data as { id: string; kind: string; name: string }[];
+    },
+  });
+
+  const categories = attributes.filter((a) => a.kind === "category");
+  const suppliers = attributes.filter((a) => a.kind === "supplier");
+
+  const addAttribute = useMutation({
+    mutationFn: async ({ kind, name }: { kind: "category" | "supplier"; name: string }) => {
+      const clean = name.trim();
+      if (!clean) throw new Error("Enter a name");
+      const { error } = await supabase.from("product_attributes").insert({ tenant_id: tenantId, kind, name: clean } as never);
+      if (error) throw error;
+    },
+    onSuccess: (_d, v) => {
+      toast.success(v.kind === "category" ? "Category added" : "Supplier added");
+      if (v.kind === "category") setNewCategory(""); else setNewSupplier("");
+      qc.invalidateQueries({ queryKey: ["product_attributes"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const removeAttribute = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("product_attributes").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("Removed"); qc.invalidateQueries({ queryKey: ["product_attributes"] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const filtered = products.filter((p) =>
     [p.name, p.sku, p.category, p.supplier].some((v) => v?.toLowerCase().includes(q.toLowerCase()))
   );
+
 
   const upsert = useMutation({
     mutationFn: async (form: Record<string, unknown>) => {
