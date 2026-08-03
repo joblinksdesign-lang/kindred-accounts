@@ -66,6 +66,7 @@ function ProductsPage() {
   const categories = attributes.filter((a) => a.kind === "category");
   const suppliers = attributes.filter((a) => a.kind === "supplier");
 
+
   const addAttribute = useMutation({
     mutationFn: async ({ kind, name }: { kind: "category" | "supplier"; name: string }) => {
       const clean = name.trim();
