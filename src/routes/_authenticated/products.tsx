@@ -176,6 +176,36 @@ function ProductsPage() {
   return (
     <div>
       <PageHeader title="Products & Inventory" subtitle="Track stock levels, prices and reorder thresholds in real time." />
+
+      {/* Categories & suppliers */}
+      <Card className="p-4 shadow-soft border-0 mb-4">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 mb-3 sm:flex sm:justify-between">
+          <div className="min-w-0">
+            <div className="font-semibold truncate">Categories & suppliers</div>
+            <div className="text-xs text-muted-foreground">Manage the lists shown when adding a product.</div>
+          </div>
+          <Button size="sm" variant="outline" className="shrink-0" onClick={() => setListsOpen(true)}>
+            <Plus className="h-4 w-4 mr-1.5" />Manage
+          </Button>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Categories</div>
+            <div className="flex flex-wrap gap-1.5">
+              {categories.length === 0 ? <span className="text-xs text-muted-foreground">None yet</span>
+                : categories.map((c) => <Badge key={c.id} variant="secondary">{c.name}</Badge>)}
+            </div>
+          </div>
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Suppliers</div>
+            <div className="flex flex-wrap gap-1.5">
+              {suppliers.length === 0 ? <span className="text-xs text-muted-foreground">None yet</span>
+                : suppliers.map((s) => <Badge key={s.id} variant="outline">{s.name}</Badge>)}
+            </div>
+          </div>
+        </div>
+      </Card>
+
       <Card className="p-4 shadow-soft border-0">
         <ListToolbar
           query={q} onQuery={setQ} placeholder="Search by name, SKU, category…"
