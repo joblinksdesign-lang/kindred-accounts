@@ -310,9 +310,16 @@ export function generateInvoicePdf(data: InvoicePdfData, company: CompanySetting
     ]),
     theme: "striped",
     headStyles: { fillColor: [11, 110, 79], textColor: 255, fontStyle: "bold" },
-    styles: { font: "helvetica", fontSize: 10, cellPadding: 3 },
-    columnStyles: { 1: { halign: "right" }, 2: { halign: "right" }, 3: { halign: "right" } },
+    styles: { font: "helvetica", fontSize: 10, cellPadding: 3, overflow: "linebreak", valign: "middle" },
+    columnStyles: {
+      0: { halign: "left", cellWidth: "auto" },
+      1: { halign: "right", cellWidth: 20 },
+      2: { halign: "right", cellWidth: 34 },
+      3: { halign: "right", cellWidth: 34 },
+    },
+    didParseCell: (d) => { if (d.section === "head" && d.column.index > 0) d.cell.styles.halign = "right"; },
     margin: { left: 14, right: 14 },
+
   });
 
   // Totals box
@@ -427,8 +434,14 @@ export function generateReceiptPdf(data: ReceiptPdfData, company: CompanySetting
       ]),
       theme: "striped",
       headStyles: { fillColor: [11, 110, 79], textColor: 255, fontStyle: "bold" },
-      styles: { font: "helvetica", fontSize: 10, cellPadding: 3 },
-      columnStyles: { 1: { halign: "right" }, 2: { halign: "right" }, 3: { halign: "right" } },
+      styles: { font: "helvetica", fontSize: 10, cellPadding: 3, overflow: "linebreak", valign: "middle" },
+      columnStyles: {
+        0: { halign: "left", cellWidth: "auto" },
+        1: { halign: "right", cellWidth: 20 },
+        2: { halign: "right", cellWidth: 34 },
+        3: { halign: "right", cellWidth: 34 },
+      },
+      didParseCell: (d) => { if (d.section === "head" && d.column.index > 0) d.cell.styles.halign = "right"; },
       margin: { left: 14, right: 14 },
     });
     cursorY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 4;
@@ -565,7 +578,7 @@ export function generateThermalReceiptPdf(
   const items = data.items ?? [];
   const estLines =
     18 + // header
-    items.reduce((n, it) => n + 1 + Math.ceil(it.description.length / 30), 0) +
+    items.reduce((n, it) => n + 2 + Math.ceil(it.description.length / (widthMm === 58 ? 22 : 32)), 0) +
     (data.discount ? 1 : 0) +
     (data.taxAmount ? 1 : 0) +
     (data.invoiceNumber ? 1 : 0) +
@@ -644,37 +657,39 @@ export function generateThermalReceiptPdf(
 
   dashed(); // meta → items
 
-  // Items
+  // Items — description on its own full-width line, then a qty x price / amount row
   if (items.length) {
     doc.setFont("courier", "bold");
-    doc.text("Item", M, y);
-    doc.text("Qty", M + innerW * 0.55, y, { align: "right" });
-    doc.text("Total", W - M, y, { align: "right" });
+    doc.setFontSize(8);
+    doc.text("ITEM", M, y);
+    doc.text("AMOUNT", W - M, y, { align: "right" });
     y += 1;
     doc.setLineWidth(0.2);
     doc.line(M, y, W - M, y);
-    y += 3;
+    y += 3.5;
     doc.setFont("courier", "normal");
     items.forEach((it, idx) => {
-      const desc = doc.splitTextToSize(it.description, innerW * 0.55);
-      desc.forEach((line: string, i: number) => {
+      const desc = doc.splitTextToSize(it.description, innerW);
+      desc.forEach((line: string) => {
         doc.text(line, M, y);
-        if (i === 0) {
-          doc.text(`${it.quantity} x ${it.unit_price.toFixed(0)}`, M + innerW * 0.55, y, { align: "right" });
-          doc.text(money(it.line_total, sym), W - M, y, { align: "right" });
-        }
-        y += 3.5;
+        y += 3.4;
       });
+      const qtyLabel = `  ${it.quantity} x ${money(it.unit_price, sym)}`;
+      doc.text(qtyLabel, M, y);
+      doc.text(money(it.line_total, sym), W - M, y, { align: "right" });
+      y += 3.6;
       // Thin dotted separator between items (skip after last)
       if (idx < items.length - 1) {
         doc.setLineDashPattern([0.3, 0.6], 0);
         doc.setLineWidth(0.1);
-        doc.line(M + 2, y - 1, W - M - 2, y - 1);
+        doc.line(M + 2, y - 1.2, W - M - 2, y - 1.2);
         doc.setLineDashPattern([], 0);
+        y += 1;
       }
     });
     dashed(); // items → totals
   }
+
 
   // Totals
   const line = (k: string, v: string, bold = false) => {
