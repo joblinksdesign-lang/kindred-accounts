@@ -125,34 +125,38 @@ function NewInvoicePage() {
             <Label className="text-base">Line items</Label>
             <Button type="button" variant="outline" size="sm" onClick={addLine}><Plus className="h-4 w-4 mr-1.5" />Add line</Button>
           </div>
-          <div className="rounded-lg border overflow-hidden">
-            <div className="grid grid-cols-12 gap-2 px-3 py-2 bg-muted/50 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-              <div className="col-span-5">Description</div>
-              <div className="col-span-2 text-right">Qty</div>
-              <div className="col-span-2 text-right">Unit price</div>
-              <div className="col-span-2 text-right">Total</div>
-              <div className="col-span-1"></div>
-            </div>
-            {lines.map((l) => (
-              <div key={l.id} className="grid grid-cols-12 gap-2 items-center px-3 py-2 border-t">
-                <div className="col-span-5 space-y-1">
-                  <Select value={l.product_id ?? ""} onValueChange={(v) => onPickProduct(l.id, v)}>
-                    <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Pick product (optional)" /></SelectTrigger>
-                    <SelectContent>
-                      {products.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                  <Input value={l.description} onChange={(e) => updateLine(l.id, { description: e.target.value })} placeholder="Description" className="h-8" />
-                </div>
-                <div className="col-span-2"><Input type="number" step="0.01" className="h-8 text-right" value={l.quantity} onChange={(e) => updateLine(l.id, { quantity: Number(e.target.value) })} /></div>
-                <div className="col-span-2"><Input type="number" step="0.01" className="h-8 text-right" value={l.unit_price} onChange={(e) => updateLine(l.id, { unit_price: Number(e.target.value) })} /></div>
-                <div className="col-span-2 text-right tabular-nums font-medium">{formatMoney(l.quantity * l.unit_price, sym)}</div>
-                <div className="col-span-1 text-right">
-                  <Button size="icon" variant="ghost" onClick={() => removeLine(l.id)} disabled={lines.length === 1}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                </div>
+          <div className="rounded-lg border overflow-x-auto">
+            <div className="min-w-[760px]">
+              <div className="grid grid-cols-12 gap-2 px-3 py-2 bg-muted/50 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <div className="col-span-5">Description</div>
+                <div className="col-span-2 text-right">Qty</div>
+                <div className="col-span-2 text-right">Unit price</div>
+                <div className="col-span-2 text-right">Total</div>
+                <div className="col-span-1"></div>
               </div>
-            ))}
+              {lines.map((l) => (
+                <div key={l.id} className="grid grid-cols-12 gap-2 items-center px-3 py-2 border-t">
+                  <div className="col-span-5 space-y-1">
+                    <Select value={l.product_id ?? ""} onValueChange={(v) => onPickProduct(l.id, v)}>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Pick product (optional)" /></SelectTrigger>
+                      <SelectContent>
+                        {products.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <Input value={l.description} onChange={(e) => updateLine(l.id, { description: e.target.value })} placeholder="Description" className="h-8" />
+                  </div>
+                  <div className="col-span-2"><Input type="number" step="0.01" className="h-8 text-right" value={l.quantity} onChange={(e) => updateLine(l.id, { quantity: Number(e.target.value) })} /></div>
+                  <div className="col-span-2"><Input type="number" step="0.01" className="h-8 text-right" value={l.unit_price} onChange={(e) => updateLine(l.id, { unit_price: Number(e.target.value) })} /></div>
+                  <div className="col-span-2 text-right tabular-nums font-medium">{formatMoney(l.quantity * l.unit_price, sym)}</div>
+                  <div className="col-span-1 text-right">
+                    <Button size="icon" variant="ghost" onClick={() => removeLine(l.id)} disabled={lines.length === 1}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
+          <p className="mt-1.5 text-[11px] text-muted-foreground sm:hidden">Swipe sideways to see all columns.</p>
+
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
