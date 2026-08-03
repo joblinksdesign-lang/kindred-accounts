@@ -310,9 +310,16 @@ export function generateInvoicePdf(data: InvoicePdfData, company: CompanySetting
     ]),
     theme: "striped",
     headStyles: { fillColor: [11, 110, 79], textColor: 255, fontStyle: "bold" },
-    styles: { font: "helvetica", fontSize: 10, cellPadding: 3 },
-    columnStyles: { 1: { halign: "right" }, 2: { halign: "right" }, 3: { halign: "right" } },
+    styles: { font: "helvetica", fontSize: 10, cellPadding: 3, overflow: "linebreak", valign: "middle" },
+    columnStyles: {
+      0: { halign: "left", cellWidth: "auto" },
+      1: { halign: "right", cellWidth: 20 },
+      2: { halign: "right", cellWidth: 34 },
+      3: { halign: "right", cellWidth: 34 },
+    },
+    didParseCell: (d) => { if (d.section === "head" && d.column.index > 0) d.cell.styles.halign = "right"; },
     margin: { left: 14, right: 14 },
+
   });
 
   // Totals box
