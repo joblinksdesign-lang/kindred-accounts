@@ -22,7 +22,7 @@ export function getNotificationHref(notification: NotificationLinkLike) {
     }
   }
 
-  if (kind === "business_registered" && notification.tenant_id) {
+  if ((kind === "business_registered" || kind === "plan_request") && notification.tenant_id) {
     return `/admin/tenants?tenant=${encode(notification.tenant_id)}`;
   }
 
