@@ -230,8 +230,26 @@ function ProductsPage() {
             <div className="col-span-2"><Label>Name *</Label><Input name="name" defaultValue={editing?.name} required /></div>
             <div><Label>SKU</Label><Input name="sku" defaultValue={editing?.sku ?? ""} /></div>
             <div><Label>Barcode</Label><Input name="barcode" defaultValue={editing?.barcode ?? ""} /></div>
-            <div><Label>Category</Label><Input name="category" defaultValue={editing?.category ?? ""} /></div>
-            <div><Label>Supplier</Label><Input name="supplier" defaultValue={editing?.supplier ?? ""} /></div>
+            <div>
+              <Label>Category</Label>
+              <Select name="category" defaultValue={editing?.category ?? ""}>
+                <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                <SelectContent>
+                  {categoryOptions.length === 0 && <div className="px-2 py-3 text-xs text-muted-foreground">No categories yet — add some in “Categories & suppliers”.</div>}
+                  {categoryOptions.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Supplier</Label>
+              <Select name="supplier" defaultValue={editing?.supplier ?? ""}>
+                <SelectTrigger><SelectValue placeholder="Select supplier" /></SelectTrigger>
+                <SelectContent>
+                  {supplierOptions.length === 0 && <div className="px-2 py-3 text-xs text-muted-foreground">No suppliers yet — add some in “Categories & suppliers”.</div>}
+                  {supplierOptions.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
             <div><Label>Unit price ({sym})</Label><Input name="unit_price" type="number" step="0.01" defaultValue={editing?.unit_price ?? 0} required /></div>
             <div><Label>Cost price ({sym})</Label><Input name="cost_price" type="number" step="0.01" defaultValue={editing?.cost_price ?? 0} /></div>
             <div><Label>Quantity</Label><Input name="quantity" type="number" step="1" defaultValue={editing?.quantity ?? 0} /></div>
