@@ -51,6 +51,10 @@ function AdminTenants() {
   const subscriptionParam = useRouterState({ select: (s) => s.location.search.subscription as string | undefined });
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<string>("all");
+  const [purgeTarget, setPurgeTarget] = useState<{ id: string; name: string } | null>(null);
+  const [purgePassword, setPurgePassword] = useState("");
+  const purgeFn = useServerFn(purgeTenantData);
+
 
   const { data: tenants = [] } = useQuery({
     queryKey: ["admin_tenants"],
