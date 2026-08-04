@@ -1,22 +1,29 @@
 import { createFileRoute, useRouterState } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
 import { PageHeader } from "@/components/page-helpers";
 import { toast } from "sonner";
 import { formatDate } from "@/lib/company";
-import { Check, X, Pause, Play, Trash2 } from "lucide-react";
+import { Check, X, Pause, Play, Trash2, Eraser } from "lucide-react";
+import { purgeTenantData } from "@/lib/admin.functions";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+
 
 export const Route = createFileRoute("/_authenticated/admin/tenants")({
   head: () => ({ meta: [{ title: "Businesses — Super Admin" }] }),
@@ -44,6 +51,10 @@ function AdminTenants() {
   const subscriptionParam = useRouterState({ select: (s) => s.location.search.subscription as string | undefined });
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<string>("all");
+  const [purgeTarget, setPurgeTarget] = useState<{ id: string; name: string } | null>(null);
+  const [purgePassword, setPurgePassword] = useState("");
+  const purgeFn = useServerFn(purgeTenantData);
+
 
   const { data: tenants = [] } = useQuery({
     queryKey: ["admin_tenants"],
@@ -94,6 +105,21 @@ function AdminTenants() {
     onSuccess: () => { toast.success("Business deleted"); qc.invalidateQueries({ queryKey: ["admin_tenants"] }); },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  const purgeTenant = useMutation({
+    mutationFn: async () => {
+      if (!purgeTarget) return;
+      await purgeFn({ data: { tenantId: purgeTarget.id, password: purgePassword } });
+    },
+    onSuccess: () => {
+      toast.success("Business data emptied", { description: `${purgeTarget?.name} now starts from a clean slate.` });
+      setPurgeTarget(null);
+      setPurgePassword("");
+      qc.invalidateQueries({ queryKey: ["admin_tenants"] });
+    },
+    onError: (e: Error) => toast.error("Could not empty database", { description: e.message }),
+  });
+
 
   const { data: pendingReqs = [] } = useQuery({
     queryKey: ["pending_plan_requests"],
@@ -244,7 +270,16 @@ function AdminTenants() {
                         <Play className="h-4 w-4 text-emerald-600" />
                       </Button>
                     )}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      title="Empty database"
+                      onClick={() => { setPurgePassword(""); setPurgeTarget({ id: t.id, name: t.business_name }); }}
+                    >
+                      <Eraser className="h-4 w-4 text-amber-600" />
+                    </Button>
                     <AlertDialog>
+
                       <AlertDialogTrigger asChild>
                         <Button size="sm" variant="ghost" title="Delete business">
                           <Trash2 className="h-4 w-4 text-red-600" />
@@ -279,6 +314,41 @@ function AdminTenants() {
           </Table>
         </div>
       </Card>
+
+      <Dialog open={!!purgeTarget} onOpenChange={(o) => { if (!o) { setPurgeTarget(null); setPurgePassword(""); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Empty database for {purgeTarget?.name}?</DialogTitle>
+            <DialogDescription>
+              This erases all invoices, receipts, payments, quotations, products, stock history,
+              customers and notifications for this business. The business and its users stay intact.
+              Confirm with your admin password to continue.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="purge-password">Admin password</Label>
+            <Input
+              id="purge-password"
+              type="password"
+              autoComplete="current-password"
+              value={purgePassword}
+              onChange={(e) => setPurgePassword(e.target.value)}
+              placeholder="Enter your password"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPurgeTarget(null)}>Cancel</Button>
+            <Button
+              className="bg-red-600 hover:bg-red-700 text-white"
+              disabled={!purgePassword || purgeTenant.isPending}
+              onClick={() => purgeTenant.mutate()}
+            >
+              {purgeTenant.isPending ? "Emptying…" : "Empty database"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+
   );
 }
