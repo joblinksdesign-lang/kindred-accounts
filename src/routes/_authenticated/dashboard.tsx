@@ -219,7 +219,7 @@ function Dashboard() {
       <PlanLimitBanner />
 
       {/* KPI grid */}
-      <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {cards.map((c, i) => (
           <motion.div key={c.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
             <Card className="p-4 shadow-soft border-0 h-full overflow-hidden">
