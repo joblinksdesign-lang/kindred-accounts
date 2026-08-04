@@ -219,13 +219,13 @@ function Dashboard() {
       <PlanLimitBanner />
 
       {/* KPI grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3">
         {cards.map((c, i) => (
           <motion.div key={c.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}>
-            <Card className="p-4 shadow-soft border-0 h-full">
-              <div className="flex items-start justify-between">
-                <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{c.label}</div>
-                <div className={`grid h-8 w-8 place-items-center rounded-lg ${
+            <Card className="p-4 shadow-soft border-0 h-full overflow-hidden">
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
+                <div className="min-w-0 text-[11px] font-medium text-muted-foreground uppercase tracking-wide leading-tight break-words">{c.label}</div>
+                <div className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg ${
                   c.tone === "emerald" ? "bg-primary/10 text-primary"
                   : c.tone === "gold" ? "bg-[var(--gold)]/15 text-[var(--gold-foreground)]"
                   : c.tone === "info" ? "bg-blue-500/10 text-blue-600"
@@ -233,11 +233,17 @@ function Dashboard() {
                   : "bg-muted text-muted-foreground"
                 }`}><c.icon className="h-4 w-4" /></div>
               </div>
-              <div className="mt-3 text-2xl font-bold tracking-tight">{c.value}</div>
+              <div
+                title={String(c.value)}
+                className="mt-3 min-w-0 text-lg sm:text-xl xl:text-2xl font-bold tracking-tight tabular-nums leading-tight break-words [overflow-wrap:anywhere]"
+              >
+                {c.value}
+              </div>
             </Card>
           </motion.div>
         ))}
       </div>
+
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
