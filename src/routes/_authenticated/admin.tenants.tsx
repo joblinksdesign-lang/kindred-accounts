@@ -270,7 +270,16 @@ function AdminTenants() {
                         <Play className="h-4 w-4 text-emerald-600" />
                       </Button>
                     )}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      title="Empty database"
+                      onClick={() => { setPurgePassword(""); setPurgeTarget({ id: t.id, name: t.business_name }); }}
+                    >
+                      <Eraser className="h-4 w-4 text-amber-600" />
+                    </Button>
                     <AlertDialog>
+
                       <AlertDialogTrigger asChild>
                         <Button size="sm" variant="ghost" title="Delete business">
                           <Trash2 className="h-4 w-4 text-red-600" />
