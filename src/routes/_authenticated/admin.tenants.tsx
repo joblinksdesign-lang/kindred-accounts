@@ -106,6 +106,21 @@ function AdminTenants() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const purgeTenant = useMutation({
+    mutationFn: async () => {
+      if (!purgeTarget) return;
+      await purgeFn({ data: { tenantId: purgeTarget.id, password: purgePassword } });
+    },
+    onSuccess: () => {
+      toast.success("Business data emptied", { description: `${purgeTarget?.name} now starts from a clean slate.` });
+      setPurgeTarget(null);
+      setPurgePassword("");
+      qc.invalidateQueries({ queryKey: ["admin_tenants"] });
+    },
+    onError: (e: Error) => toast.error("Could not empty database", { description: e.message }),
+  });
+
+
   const { data: pendingReqs = [] } = useQuery({
     queryKey: ["pending_plan_requests"],
     queryFn: async () => {
