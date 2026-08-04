@@ -314,6 +314,41 @@ function AdminTenants() {
           </Table>
         </div>
       </Card>
+
+      <Dialog open={!!purgeTarget} onOpenChange={(o) => { if (!o) { setPurgeTarget(null); setPurgePassword(""); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Empty database for {purgeTarget?.name}?</DialogTitle>
+            <DialogDescription>
+              This erases all invoices, receipts, payments, quotations, products, stock history,
+              customers and notifications for this business. The business and its users stay intact.
+              Confirm with your admin password to continue.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="purge-password">Admin password</Label>
+            <Input
+              id="purge-password"
+              type="password"
+              autoComplete="current-password"
+              value={purgePassword}
+              onChange={(e) => setPurgePassword(e.target.value)}
+              placeholder="Enter your password"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPurgeTarget(null)}>Cancel</Button>
+            <Button
+              className="bg-red-600 hover:bg-red-700 text-white"
+              disabled={!purgePassword || purgeTenant.isPending}
+              onClick={() => purgeTenant.mutate()}
+            >
+              {purgeTenant.isPending ? "Emptying…" : "Empty database"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+
   );
 }
