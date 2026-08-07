@@ -499,11 +499,11 @@ export function generateInvoicePdf(data: InvoicePdfData, company: CompanySetting
     y += 6;
   }
   // Total band
-  doc.setFillColor(11, 110, 79);
+  doc.setFillColor(accent[0], accent[1], accent[2]);
   doc.rect(xLabel - 4, y - 4, 70, 10, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
-  doc.text("TOTAL", xLabel, y + 2);
+  doc.text(bold ? "G. TOTAL" : "TOTAL", xLabel, y + 2);
   doc.text(money(data.total, company.currency_symbol), xVal, y + 2, { align: "right" });
   y += 10;
 
@@ -514,14 +514,14 @@ export function generateInvoicePdf(data: InvoicePdfData, company: CompanySetting
     doc.setTextColor(31, 41, 55);
     doc.text(money(data.amountPaid, company.currency_symbol), xVal, y + 4, { align: "right" });
     y += 6;
-    doc.setTextColor(245, 158, 11);
+    doc.setTextColor(accent[0], accent[1], accent[2]);
     doc.setFont("helvetica", "bold");
     doc.text("Balance Due", xLabel, y + 4);
     doc.text(money(data.balance, company.currency_symbol), xVal, y + 4, { align: "right" });
   }
 
   // Footer
-  let fy = 270;
+  const fy = bold ? 240 : 270;
   if (data.notes) {
     doc.setTextColor(100, 116, 139);
     doc.setFont("helvetica", "bold");
@@ -535,14 +535,24 @@ export function generateInvoicePdf(data: InvoicePdfData, company: CompanySetting
     doc.setTextColor(100, 116, 139);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9);
-    doc.text("PAYMENT INSTRUCTIONS", 130, fy);
+    doc.text("PAYMENT DETAILS:", bold ? 14 : 130, bold ? fy + 20 : fy);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(31, 41, 55);
-    doc.text(doc.splitTextToSize(company.payment_instructions, 70), 130, fy + 4);
+    doc.text(doc.splitTextToSize(company.payment_instructions, bold ? 100 : 70), bold ? 14 : 130, (bold ? fy + 20 : fy) + 4);
   }
-  doc.setTextColor(100, 116, 139);
-  doc.setFontSize(8);
-  doc.text(company.invoice_footer || "Thank you for your business.", 105, 290, { align: "center" });
+  if (bold) {
+    footerBold(doc, company);
+    doc.setTextColor(DARK[0], DARK[1], DARK[2]);
+    doc.setFont("helvetica", "bolditalic");
+    doc.setFontSize(12);
+    doc.text(company.invoice_footer || "Thank you for your business!", 14, 262);
+    doc.setFont("helvetica", "normal");
+  } else {
+    doc.setTextColor(100, 116, 139);
+    doc.setFontSize(8);
+    doc.text(company.invoice_footer || "Thank you for your business.", 105, 290, { align: "center" });
+  }
+
 
   return doc;
 }
