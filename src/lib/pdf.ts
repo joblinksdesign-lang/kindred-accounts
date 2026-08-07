@@ -486,7 +486,7 @@ export function generateInvoicePdf(data: InvoicePdfData, company: CompanySetting
   }
   if (data.taxAmount > 0) {
     doc.setTextColor(100, 116, 139);
-    doc.text(`Tax (${data.taxRate}%)`, xLabel, y);
+    doc.text(Number.isFinite(Number(data.taxRate)) ? `Tax (${Number(data.taxRate)}%)` : "Tax", xLabel, y);
     doc.setTextColor(31, 41, 55);
     doc.text(money(data.taxAmount, company.currency_symbol), xVal, y, { align: "right" });
     y += 6;
