@@ -327,8 +327,9 @@ function footerBold(doc: jsPDF, company: CompanySettings) {
 
 
 function headerModern(doc: jsPDF, company: CompanySettings, title: string, number: string, logo: LoadedLogo | null) {
+  const [r, g, b] = accentOf(company);
   // Left accent bar
-  doc.setFillColor(245, 158, 11);
+  doc.setFillColor(r, g, b);
   doc.rect(0, 0, 6, 297, "F");
   doc.setTextColor(31, 41, 55);
   doc.setFont("helvetica", "bold");
@@ -340,7 +341,7 @@ function headerModern(doc: jsPDF, company: CompanySettings, title: string, numbe
   doc.text(`# ${number}`, 14, 28);
 
   if (logo) drawLogo(doc, logo, 174, 8, 22, 22);
-  doc.setTextColor(11, 110, 79);
+  doc.setTextColor(r, g, b);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
   const rightY = logo ? 34 : 18;
@@ -355,18 +356,28 @@ function headerModern(doc: jsPDF, company: CompanySettings, title: string, numbe
 export function generateInvoicePdf(data: InvoicePdfData, company: CompanySettings, logo: LoadedLogo | null = null): jsPDF {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   drawWatermark(doc, logo);
+  const accent = accentOf(company);
   const template = data.template || company.invoice_template || "classic";
-  if (template === "modern") headerModern(doc, company, "Invoice", data.number, logo);
+  const bold = template === "bold";
+  if (bold) {
+    headerBold(doc, company, "Invoice", data.number, logo, [
+      ["Invoice No.", data.number],
+      ["Invoice Date:", data.date],
+      ["Due Date:", data.dueDate || "—"],
+    ]);
+  } else if (template === "modern") headerModern(doc, company, "Invoice", data.number, logo);
   else headerClassic(doc, company, "Invoice", data.number, logo);
 
-  const startY = template === "modern" ? 44 : 38;
+  const startY = bold ? 70 : template === "modern" ? 44 : 38;
   // Bill To + Meta
   doc.setTextColor(100, 116, 139);
   doc.setFontSize(9);
   doc.setFont("helvetica", "bold");
-  doc.text("BILL TO", 14, startY);
-  doc.text("INVOICE DATE", 130, startY);
-  doc.text("DUE DATE", 170, startY);
+  doc.text(bold ? "INVOICE TO:" : "BILL TO", 14, startY);
+  if (!bold) {
+    doc.text("INVOICE DATE", 130, startY);
+    doc.text("DUE DATE", 170, startY);
+  }
 
   doc.setTextColor(31, 41, 55);
   doc.setFont("helvetica", "bold");
@@ -384,32 +395,84 @@ export function generateInvoicePdf(data: InvoicePdfData, company: CompanySetting
   custLines.forEach((l, i) => doc.text(l, 14, startY + 11 + i * 4));
 
   doc.setFontSize(10);
-  doc.text(data.date, 130, startY + 6);
-  doc.text(data.dueDate || "—", 170, startY + 6);
+  if (!bold) {
+    doc.text(data.date, 130, startY + 6);
+    doc.text(data.dueDate || "—", 170, startY + 6);
+  } else {
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9.5);
+    doc.text("Invoice No.", 150, startY, { align: "right" });
+    doc.text("Date:", 150, startY + 6, { align: "right" });
+    doc.setFont("helvetica", "normal");
+    doc.text(data.number, 196, startY, { align: "right" });
+    doc.text(data.date, 196, startY + 6, { align: "right" });
+  }
 
   // Items
   autoTable(doc, {
-    startY: startY + 36,
-    head: [["Description", "Qty", "Unit Price", "Amount"]],
-    body: data.items.map((it) => [
-      it.description,
-      String(it.quantity),
-      money(it.unit_price, company.currency_symbol),
-      money(it.line_total, company.currency_symbol),
-    ]),
-    theme: "striped",
-    headStyles: { fillColor: [11, 110, 79], textColor: 255, fontStyle: "bold" },
-    styles: { font: "helvetica", fontSize: 10, cellPadding: 3, overflow: "linebreak", valign: "middle" },
-    columnStyles: {
-      0: { halign: "left", cellWidth: "auto" },
-      1: { halign: "right", cellWidth: 20 },
-      2: { halign: "right", cellWidth: 34 },
-      3: { halign: "right", cellWidth: 34 },
+    startY: bold ? startY + 30 : startY + 36,
+    head: bold
+      ? [["SL#", "Product Description", "Unit Price", "Qty.", "Total"]]
+      : [["Description", "Qty", "Unit Price", "Amount"]],
+    body: data.items.map((it, i) =>
+      bold
+        ? [
+            String(i + 1).padStart(2, "0"),
+            it.description,
+            money(it.unit_price, company.currency_symbol),
+            String(it.quantity),
+            money(it.line_total, company.currency_symbol),
+          ]
+        : [
+            it.description,
+            String(it.quantity),
+            money(it.unit_price, company.currency_symbol),
+            money(it.line_total, company.currency_symbol),
+          ],
+    ),
+    theme: bold ? "grid" : "striped",
+    headStyles: bold
+      ? { fillColor: accent, textColor: 255, fontStyle: "bold", halign: "center", fontSize: 10 }
+      : { fillColor: accent, textColor: 255, fontStyle: "bold" },
+    styles: { font: "helvetica", fontSize: 10, cellPadding: 3, overflow: "linebreak", valign: "middle", lineColor: [226, 232, 240] },
+    columnStyles: bold
+      ? {
+          0: { halign: "center", cellWidth: 16 },
+          1: { halign: "left", cellWidth: "auto" },
+          2: { halign: "right", cellWidth: 34 },
+          3: { halign: "center", cellWidth: 20 },
+          4: { halign: "right", cellWidth: 34 },
+        }
+      : {
+          0: { halign: "left", cellWidth: "auto" },
+          1: { halign: "right", cellWidth: 20 },
+          2: { halign: "right", cellWidth: 34 },
+          3: { halign: "right", cellWidth: 34 },
+        },
+    didParseCell: (d) => {
+      if (d.section !== "head") return;
+      if (bold) { if (d.column.index === 0 || d.column.index === 1) d.cell.styles.halign = d.column.index === 0 ? "center" : "left"; }
+      else if (d.column.index > 0) d.cell.styles.halign = "right";
     },
-    didParseCell: (d) => { if (d.section === "head" && d.column.index > 0) d.cell.styles.halign = "right"; },
+    didDrawCell: (d) => {
+      if (bold && d.section === "head" && d.column.index <= 1) {
+        doc.setFillColor(DARK[0], DARK[1], DARK[2]);
+        doc.rect(d.cell.x, d.cell.y, d.cell.width, d.cell.height, "F");
+        doc.setTextColor(255, 255, 255);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10);
+        doc.text(
+          String(d.cell.raw),
+          d.column.index === 0 ? d.cell.x + d.cell.width / 2 : d.cell.x + 3,
+          d.cell.y + d.cell.height / 2 + 1.5,
+          { align: d.column.index === 0 ? "center" : "left" },
+        );
+      }
+    },
     margin: { left: 14, right: 14 },
 
   });
+
 
   // Totals box
   const finalY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 6;
