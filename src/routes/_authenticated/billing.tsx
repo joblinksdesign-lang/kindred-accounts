@@ -44,7 +44,7 @@ type Subscription = {
 
 function BillingPage() {
   const qc = useQueryClient();
-  const subscriptionParam = useRouterState({ select: (s) => s.location.search.subscription as string | undefined });
+  const subscriptionParam = useRouterState({ select: (s) => (s.location.search as Record<string, string | undefined>).subscription });
   const { tenantId, role } = useActiveTenant();
   const [annual, setAnnual] = useState(false);
   const isOwner = role === "owner";
