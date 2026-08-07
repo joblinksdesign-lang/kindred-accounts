@@ -88,6 +88,8 @@ function SettingsPage() {
 
   if (!company) return <div className="p-8 text-sm text-muted-foreground">Loading…</div>;
 
+  const brandColor = String(form.brand_color || "#8CC63F");
+
   const TemplateCard = ({ template, name, kind, description, selected, onSelect }: {
     template: string; name: string; kind: "invoice" | "receipt"; description: string; selected: boolean; onSelect: () => void;
   }) => (
@@ -96,22 +98,40 @@ function SettingsPage() {
       <div className="aspect-[4/3] rounded-md bg-card overflow-hidden mb-3 relative border">
         {template === "classic" ? (
           <div className="absolute inset-0 flex flex-col">
-            <div className="h-6 gradient-emerald" />
+            <div className="h-6" style={{ background: brandColor }} />
             <div className="p-2 flex-1">
               <div className="h-2 w-2/3 bg-muted-foreground/30 rounded mb-1" />
               <div className="h-1.5 w-1/3 bg-muted-foreground/20 rounded mb-3" />
               <div className="space-y-1">{[1,2,3].map((i) => <div key={i} className="h-1 bg-muted-foreground/15 rounded" />)}</div>
-              <div className="mt-3 h-2 w-1/4 bg-primary/40 rounded ml-auto" />
+              <div className="mt-3 h-2 w-1/4 rounded ml-auto" style={{ background: brandColor }} />
             </div>
+          </div>
+        ) : template === "bold" ? (
+          <div className="absolute inset-0 flex flex-col">
+            <div className="h-2 w-3/4" style={{ background: brandColor }} />
+            <div className="relative h-7 bg-foreground">
+              <div className="absolute right-2 top-1.5 h-2 w-16 bg-background/80 rounded" />
+              <div className="absolute right-2 top-4 h-1.5 w-10 rounded" style={{ background: brandColor }} />
+            </div>
+            <div className="p-2 flex-1">
+              <div className="h-2.5 w-1/3 bg-foreground/80 rounded mb-2" />
+              <div className="flex h-2 mb-1">
+                <div className="w-1/2 bg-foreground" />
+                <div className="w-1/2" style={{ background: brandColor }} />
+              </div>
+              <div className="space-y-1">{[1,2,3].map((i) => <div key={i} className="h-1 bg-muted-foreground/15 rounded" />)}</div>
+              <div className="mt-2 h-2 w-1/3 rounded ml-auto" style={{ background: brandColor }} />
+            </div>
+            <div className="h-3 bg-foreground" />
           </div>
         ) : (
           <div className="absolute inset-0 flex">
-            <div className="w-1.5 bg-[var(--gold)]" />
+            <div className="w-1.5" style={{ background: brandColor }} />
             <div className="p-2 flex-1">
               <div className="h-3 w-1/2 bg-muted-foreground/40 rounded mb-2" />
               <div className="h-1.5 w-1/4 bg-muted-foreground/20 rounded mb-3" />
               <div className="space-y-1">{[1,2,3].map((i) => <div key={i} className="h-1 bg-muted-foreground/15 rounded" />)}</div>
-              <div className="mt-3 h-2 w-1/4 bg-primary/40 rounded ml-auto" />
+              <div className="mt-3 h-2 w-1/4 rounded ml-auto" style={{ background: brandColor }} />
             </div>
           </div>
         )}
@@ -121,6 +141,7 @@ function SettingsPage() {
       <div className="text-[10px] mt-1 uppercase tracking-wider text-muted-foreground">{kind} template</div>
     </button>
   );
+
 
   return (
     <div className="max-w-4xl mx-auto">
