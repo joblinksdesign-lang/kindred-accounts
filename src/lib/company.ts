@@ -26,6 +26,8 @@ export type CompanySettings = {
   receipt_template: string;
   invoice_footer: string | null;
   payment_instructions: string | null;
+  brand_color?: string | null;
+  tagline?: string | null;
 };
 
 export function useCompanySettings() {
