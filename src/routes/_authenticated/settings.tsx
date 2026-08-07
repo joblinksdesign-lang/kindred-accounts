@@ -162,6 +162,8 @@ function SettingsPage() {
               <div><Label>Phone</Label><Input value={String(form.phone || "")} onChange={(e) => set("phone", e.target.value)} /></div>
               <div><Label>Website</Label><Input value={String(form.website || "")} onChange={(e) => set("website", e.target.value)} /></div>
               <div><Label>Tax ID</Label><Input value={String(form.tax_id || "")} onChange={(e) => set("tax_id", e.target.value)} /></div>
+              <div className="col-span-2"><Label>Tagline (shown on documents)</Label><Input value={String(form.tagline || "")} onChange={(e) => set("tagline", e.target.value)} placeholder="Add tagline here" /></div>
+
               <div className="col-span-2"><Label>Address</Label><Input value={String(form.address || "")} onChange={(e) => set("address", e.target.value)} /></div>
               <div><Label>City</Label><Input value={String(form.city || "")} onChange={(e) => set("city", e.target.value)} /></div>
               <div><Label>Country</Label><Input value={String(form.country || "")} onChange={(e) => set("country", e.target.value)} /></div>
