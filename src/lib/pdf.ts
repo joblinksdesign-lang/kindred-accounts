@@ -214,9 +214,24 @@ export async function savePdf(doc: jsPDF, filename: string) {
   }
 }
 
+export type RGB = [number, number, number];
+const DARK: RGB = [26, 32, 44];
+
+export function hexToRgb(hex?: string | null, fallback: RGB = [11, 110, 79]): RGB {
+  if (!hex) return fallback;
+  const m = /^#?([0-9a-f]{6}|[0-9a-f]{3})$/i.exec(hex.trim());
+  if (!m) return fallback;
+  let h = m[1];
+  if (h.length === 3) h = h.split("").map((c) => c + c).join("");
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+}
+
+const accentOf = (company: CompanySettings): RGB => hexToRgb(company.brand_color);
+
 function headerClassic(doc: jsPDF, company: CompanySettings, title: string, number: string, logo: LoadedLogo | null) {
-  // Emerald top band
-  doc.setFillColor(11, 110, 79);
+  const [r, g, b] = accentOf(company);
+  // Brand top band
+  doc.setFillColor(r, g, b);
   doc.rect(0, 0, 210, 28, "F");
   const nameX = logo ? 34 : 14;
   if (logo) drawLogo(doc, logo, 14, 4, 18, 18);
@@ -237,9 +252,84 @@ function headerClassic(doc: jsPDF, company: CompanySettings, title: string, numb
   doc.text(`# ${number}`, 196, 25, { align: "right" });
 }
 
+/** Bold corporate template: accent top bar, dark ribbon with company block,
+ *  large document title and meta lines on the left. */
+function headerBold(
+  doc: jsPDF,
+  company: CompanySettings,
+  title: string,
+  number: string,
+  logo: LoadedLogo | null,
+  meta: [string, string][],
+) {
+  const [r, g, b] = accentOf(company);
+  // Accent slab across the very top
+  doc.setFillColor(r, g, b);
+  doc.rect(0, 0, 150, 10, "F");
+  doc.triangle(150, 0, 150, 10, 168, 0, "F");
+
+  // Dark ribbon on the right
+  doc.setFillColor(DARK[0], DARK[1], DARK[2]);
+  doc.rect(88, 10, 122, 30, "F");
+  doc.triangle(88, 10, 88, 40, 74, 10, "F");
+
+  if (logo) drawLogo(doc, logo, 118, 16, 18, 18);
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(15);
+  doc.text(company.company_name.toUpperCase(), 200, logo ? 25 : 28, { align: "right" });
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9.5);
+  doc.setTextColor(r, g, b);
+  const tagline = company.tagline || [company.city, company.country].filter(Boolean).join(", ");
+  if (tagline) doc.text(tagline.toUpperCase(), 200, logo ? 32 : 35, { align: "right" });
+
+  // Title block
+  doc.setTextColor(DARK[0], DARK[1], DARK[2]);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(34);
+  doc.text(title.toUpperCase(), 14, 30);
+
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(55, 65, 81);
+  meta.forEach(([label, value], i) => {
+    doc.text(label, 14, 40 + i * 6);
+    doc.setFont("helvetica", "bold");
+    doc.text(value, 62, 40 + i * 6);
+    doc.setFont("helvetica", "normal");
+  });
+
+  if (company.website) {
+    doc.setTextColor(100, 116, 139);
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(10);
+    doc.text(company.website, 196, 50, { align: "right" });
+    doc.setFont("helvetica", "normal");
+  }
+}
+
+/** Dark footer band used by the bold template. */
+function footerBold(doc: jsPDF, company: CompanySettings) {
+  const [r, g, b] = accentOf(company);
+  doc.setFillColor(DARK[0], DARK[1], DARK[2]);
+  doc.rect(0, 268, 210, 22, "F");
+  doc.setFillColor(r, g, b);
+  doc.rect(0, 290, 210, 7, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  const parts = [company.phone, company.email, company.website].filter(Boolean) as string[];
+  parts.forEach((p, i) => {
+    doc.text(p, 20 + i * ((170) / Math.max(parts.length, 1)), 281);
+  });
+}
+
+
 function headerModern(doc: jsPDF, company: CompanySettings, title: string, number: string, logo: LoadedLogo | null) {
+  const [r, g, b] = accentOf(company);
   // Left accent bar
-  doc.setFillColor(245, 158, 11);
+  doc.setFillColor(r, g, b);
   doc.rect(0, 0, 6, 297, "F");
   doc.setTextColor(31, 41, 55);
   doc.setFont("helvetica", "bold");
@@ -251,7 +341,7 @@ function headerModern(doc: jsPDF, company: CompanySettings, title: string, numbe
   doc.text(`# ${number}`, 14, 28);
 
   if (logo) drawLogo(doc, logo, 174, 8, 22, 22);
-  doc.setTextColor(11, 110, 79);
+  doc.setTextColor(r, g, b);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(14);
   const rightY = logo ? 34 : 18;
@@ -266,18 +356,28 @@ function headerModern(doc: jsPDF, company: CompanySettings, title: string, numbe
 export function generateInvoicePdf(data: InvoicePdfData, company: CompanySettings, logo: LoadedLogo | null = null): jsPDF {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   drawWatermark(doc, logo);
+  const accent = accentOf(company);
   const template = data.template || company.invoice_template || "classic";
-  if (template === "modern") headerModern(doc, company, "Invoice", data.number, logo);
+  const bold = template === "bold";
+  if (bold) {
+    headerBold(doc, company, "Invoice", data.number, logo, [
+      ["Invoice No.", data.number],
+      ["Invoice Date:", data.date],
+      ["Due Date:", data.dueDate || "—"],
+    ]);
+  } else if (template === "modern") headerModern(doc, company, "Invoice", data.number, logo);
   else headerClassic(doc, company, "Invoice", data.number, logo);
 
-  const startY = template === "modern" ? 44 : 38;
+  const startY = bold ? 70 : template === "modern" ? 44 : 38;
   // Bill To + Meta
   doc.setTextColor(100, 116, 139);
   doc.setFontSize(9);
   doc.setFont("helvetica", "bold");
-  doc.text("BILL TO", 14, startY);
-  doc.text("INVOICE DATE", 130, startY);
-  doc.text("DUE DATE", 170, startY);
+  doc.text(bold ? "INVOICE TO:" : "BILL TO", 14, startY);
+  if (!bold) {
+    doc.text("INVOICE DATE", 130, startY);
+    doc.text("DUE DATE", 170, startY);
+  }
 
   doc.setTextColor(31, 41, 55);
   doc.setFont("helvetica", "bold");
@@ -295,32 +395,77 @@ export function generateInvoicePdf(data: InvoicePdfData, company: CompanySetting
   custLines.forEach((l, i) => doc.text(l, 14, startY + 11 + i * 4));
 
   doc.setFontSize(10);
-  doc.text(data.date, 130, startY + 6);
-  doc.text(data.dueDate || "—", 170, startY + 6);
+  if (!bold) {
+    doc.text(data.date, 130, startY + 6);
+    doc.text(data.dueDate || "—", 170, startY + 6);
+  }
+
 
   // Items
   autoTable(doc, {
-    startY: startY + 36,
-    head: [["Description", "Qty", "Unit Price", "Amount"]],
-    body: data.items.map((it) => [
-      it.description,
-      String(it.quantity),
-      money(it.unit_price, company.currency_symbol),
-      money(it.line_total, company.currency_symbol),
-    ]),
-    theme: "striped",
-    headStyles: { fillColor: [11, 110, 79], textColor: 255, fontStyle: "bold" },
-    styles: { font: "helvetica", fontSize: 10, cellPadding: 3, overflow: "linebreak", valign: "middle" },
-    columnStyles: {
-      0: { halign: "left", cellWidth: "auto" },
-      1: { halign: "right", cellWidth: 20 },
-      2: { halign: "right", cellWidth: 34 },
-      3: { halign: "right", cellWidth: 34 },
+    startY: bold ? startY + 30 : startY + 36,
+    head: bold
+      ? [["SL#", "Product Description", "Unit Price", "Qty.", "Total"]]
+      : [["Description", "Qty", "Unit Price", "Amount"]],
+    body: data.items.map((it, i) =>
+      bold
+        ? [
+            String(i + 1).padStart(2, "0"),
+            it.description,
+            money(it.unit_price, company.currency_symbol),
+            String(it.quantity),
+            money(it.line_total, company.currency_symbol),
+          ]
+        : [
+            it.description,
+            String(it.quantity),
+            money(it.unit_price, company.currency_symbol),
+            money(it.line_total, company.currency_symbol),
+          ],
+    ),
+    theme: bold ? "grid" : "striped",
+    headStyles: bold
+      ? { fillColor: accent, textColor: 255, fontStyle: "bold", halign: "center", fontSize: 10 }
+      : { fillColor: accent, textColor: 255, fontStyle: "bold" },
+    styles: { font: "helvetica", fontSize: 10, cellPadding: 3, overflow: "linebreak", valign: "middle", lineColor: [226, 232, 240] },
+    columnStyles: bold
+      ? {
+          0: { halign: "center", cellWidth: 16 },
+          1: { halign: "left", cellWidth: "auto" },
+          2: { halign: "right", cellWidth: 34 },
+          3: { halign: "center", cellWidth: 20 },
+          4: { halign: "right", cellWidth: 34 },
+        }
+      : {
+          0: { halign: "left", cellWidth: "auto" },
+          1: { halign: "right", cellWidth: 20 },
+          2: { halign: "right", cellWidth: 34 },
+          3: { halign: "right", cellWidth: 34 },
+        },
+    didParseCell: (d) => {
+      if (d.section !== "head") return;
+      if (bold) { if (d.column.index === 0 || d.column.index === 1) d.cell.styles.halign = d.column.index === 0 ? "center" : "left"; }
+      else if (d.column.index > 0) d.cell.styles.halign = "right";
     },
-    didParseCell: (d) => { if (d.section === "head" && d.column.index > 0) d.cell.styles.halign = "right"; },
+    didDrawCell: (d) => {
+      if (bold && d.section === "head" && d.column.index <= 1) {
+        doc.setFillColor(DARK[0], DARK[1], DARK[2]);
+        doc.rect(d.cell.x, d.cell.y, d.cell.width, d.cell.height, "F");
+        doc.setTextColor(255, 255, 255);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10);
+        doc.text(
+          String(d.cell.raw),
+          d.column.index === 0 ? d.cell.x + d.cell.width / 2 : d.cell.x + 3,
+          d.cell.y + d.cell.height / 2 + 1.5,
+          { align: d.column.index === 0 ? "center" : "left" },
+        );
+      }
+    },
     margin: { left: 14, right: 14 },
 
   });
+
 
   // Totals box
   const finalY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 6;
@@ -341,17 +486,17 @@ export function generateInvoicePdf(data: InvoicePdfData, company: CompanySetting
   }
   if (data.taxAmount > 0) {
     doc.setTextColor(100, 116, 139);
-    doc.text(`Tax (${data.taxRate}%)`, xLabel, y);
+    doc.text(Number.isFinite(Number(data.taxRate)) ? `Tax (${Number(data.taxRate)}%)` : "Tax", xLabel, y);
     doc.setTextColor(31, 41, 55);
     doc.text(money(data.taxAmount, company.currency_symbol), xVal, y, { align: "right" });
     y += 6;
   }
   // Total band
-  doc.setFillColor(11, 110, 79);
-  doc.rect(xLabel - 4, y - 4, 70, 10, "F");
+  doc.setFillColor(accent[0], accent[1], accent[2]);
+  doc.rect(xLabel - 4, y - 4, 74, 10, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
-  doc.text("TOTAL", xLabel, y + 2);
+  doc.text(bold ? "G. TOTAL" : "TOTAL", xLabel, y + 2);
   doc.text(money(data.total, company.currency_symbol), xVal, y + 2, { align: "right" });
   y += 10;
 
@@ -362,14 +507,14 @@ export function generateInvoicePdf(data: InvoicePdfData, company: CompanySetting
     doc.setTextColor(31, 41, 55);
     doc.text(money(data.amountPaid, company.currency_symbol), xVal, y + 4, { align: "right" });
     y += 6;
-    doc.setTextColor(245, 158, 11);
+    doc.setTextColor(accent[0], accent[1], accent[2]);
     doc.setFont("helvetica", "bold");
     doc.text("Balance Due", xLabel, y + 4);
     doc.text(money(data.balance, company.currency_symbol), xVal, y + 4, { align: "right" });
   }
 
   // Footer
-  let fy = 270;
+  const fy = bold ? 226 : 270;
   if (data.notes) {
     doc.setTextColor(100, 116, 139);
     doc.setFont("helvetica", "bold");
@@ -383,14 +528,25 @@ export function generateInvoicePdf(data: InvoicePdfData, company: CompanySetting
     doc.setTextColor(100, 116, 139);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9);
-    doc.text("PAYMENT INSTRUCTIONS", 130, fy);
+    doc.text("PAYMENT DETAILS:", bold ? 14 : 130, bold ? fy + 18 : fy);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(31, 41, 55);
-    doc.text(doc.splitTextToSize(company.payment_instructions, 70), 130, fy + 4);
+    doc.text(doc.splitTextToSize(company.payment_instructions, bold ? 100 : 70), bold ? 14 : 130, (bold ? fy + 18 : fy) + 4);
   }
-  doc.setTextColor(100, 116, 139);
-  doc.setFontSize(8);
-  doc.text(company.invoice_footer || "Thank you for your business.", 105, 290, { align: "center" });
+  if (bold) {
+    footerBold(doc, company);
+    doc.setTextColor(DARK[0], DARK[1], DARK[2]);
+    doc.setFont("helvetica", "bolditalic");
+    doc.setFontSize(12);
+    doc.text(company.invoice_footer || "Thank you for your business!", 196, 262, { align: "right" });
+    doc.setFont("helvetica", "normal");
+  } else {
+
+    doc.setTextColor(100, 116, 139);
+    doc.setFontSize(8);
+    doc.text(company.invoice_footer || "Thank you for your business.", 105, 290, { align: "center" });
+  }
+
 
   return doc;
 }
@@ -398,17 +554,27 @@ export function generateInvoicePdf(data: InvoicePdfData, company: CompanySetting
 export function generateReceiptPdf(data: ReceiptPdfData, company: CompanySettings, logo: LoadedLogo | null = null): jsPDF {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   drawWatermark(doc, logo);
+  const accent = accentOf(company);
   const template = data.template || company.receipt_template || "classic";
-  if (template === "modern") headerModern(doc, company, "Receipt", data.number, logo);
+  const bold = template === "bold";
+  if (bold) {
+    headerBold(doc, company, "Receipt", data.number, logo, [
+      ["Receipt No.", data.number],
+      ["Date:", data.date],
+      ["Method:", data.method.replace(/_/g, " ")],
+    ]);
+  } else if (template === "modern") headerModern(doc, company, "Receipt", data.number, logo);
   else headerClassic(doc, company, "Receipt", data.number, logo);
 
-  const y = template === "modern" ? 50 : 44;
+  const y = bold ? 72 : template === "modern" ? 50 : 44;
   doc.setTextColor(100, 116, 139);
   doc.setFontSize(9);
   doc.setFont("helvetica", "bold");
-  doc.text("RECEIVED FROM", 14, y);
-  doc.text("DATE", 130, y);
-  doc.text("PAYMENT METHOD", 170, y);
+  doc.text(bold ? "RECEIPT TO:" : "RECEIVED FROM", 14, y);
+  if (!bold) {
+    doc.text("DATE", 130, y);
+    doc.text("PAYMENT METHOD", 170, y);
+  }
 
   doc.setTextColor(31, 41, 55);
   doc.setFont("helvetica", "bold");
@@ -416,32 +582,73 @@ export function generateReceiptPdf(data: ReceiptPdfData, company: CompanySetting
   doc.text(data.customer.company || data.customer.name, 14, y + 6);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
-  doc.text(data.date, 130, y + 6);
-  doc.text(data.method.replace(/_/g, " "), 170, y + 6);
+  if (!bold) {
+    doc.text(data.date, 130, y + 6);
+    doc.text(data.method.replace(/_/g, " "), 170, y + 6);
+  }
 
-  let cursorY = y + 22;
+  let cursorY = y + (bold ? 16 : 22);
   // Items table (products purchased)
   const items = data.items ?? [];
   if (items.length) {
     autoTable(doc, {
       startY: cursorY,
-      head: [["Description", "Qty", "Unit Price", "Amount"]],
-      body: items.map((it) => [
-        it.description,
-        String(it.quantity),
-        money(it.unit_price, company.currency_symbol),
-        money(it.line_total, company.currency_symbol),
-      ]),
-      theme: "striped",
-      headStyles: { fillColor: [11, 110, 79], textColor: 255, fontStyle: "bold" },
-      styles: { font: "helvetica", fontSize: 10, cellPadding: 3, overflow: "linebreak", valign: "middle" },
-      columnStyles: {
-        0: { halign: "left", cellWidth: "auto" },
-        1: { halign: "right", cellWidth: 20 },
-        2: { halign: "right", cellWidth: 34 },
-        3: { halign: "right", cellWidth: 34 },
+      head: bold
+        ? [["SL#", "Product Description", "Unit Price", "Qty.", "Total"]]
+        : [["Description", "Qty", "Unit Price", "Amount"]],
+      body: items.map((it, i) =>
+        bold
+          ? [
+              String(i + 1).padStart(2, "0"),
+              it.description,
+              money(it.unit_price, company.currency_symbol),
+              String(it.quantity),
+              money(it.line_total, company.currency_symbol),
+            ]
+          : [
+              it.description,
+              String(it.quantity),
+              money(it.unit_price, company.currency_symbol),
+              money(it.line_total, company.currency_symbol),
+            ],
+      ),
+      theme: bold ? "grid" : "striped",
+      headStyles: { fillColor: accent, textColor: 255, fontStyle: "bold" },
+      styles: { font: "helvetica", fontSize: 10, cellPadding: 3, overflow: "linebreak", valign: "middle", lineColor: [226, 232, 240] },
+      columnStyles: bold
+        ? {
+            0: { halign: "center", cellWidth: 16 },
+            1: { halign: "left", cellWidth: "auto" },
+            2: { halign: "right", cellWidth: 34 },
+            3: { halign: "center", cellWidth: 20 },
+            4: { halign: "right", cellWidth: 34 },
+          }
+        : {
+            0: { halign: "left", cellWidth: "auto" },
+            1: { halign: "right", cellWidth: 20 },
+            2: { halign: "right", cellWidth: 34 },
+            3: { halign: "right", cellWidth: 34 },
+          },
+      didParseCell: (d) => {
+        if (d.section !== "head") return;
+        if (bold) d.cell.styles.halign = d.column.index === 0 ? "center" : d.column.index === 1 ? "left" : d.column.index === 3 ? "center" : "right";
+        else if (d.column.index > 0) d.cell.styles.halign = "right";
       },
-      didParseCell: (d) => { if (d.section === "head" && d.column.index > 0) d.cell.styles.halign = "right"; },
+      didDrawCell: (d) => {
+        if (bold && d.section === "head" && d.column.index <= 1) {
+          doc.setFillColor(DARK[0], DARK[1], DARK[2]);
+          doc.rect(d.cell.x, d.cell.y, d.cell.width, d.cell.height, "F");
+          doc.setTextColor(255, 255, 255);
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(10);
+          doc.text(
+            String(d.cell.raw),
+            d.column.index === 0 ? d.cell.x + d.cell.width / 2 : d.cell.x + 3,
+            d.cell.y + d.cell.height / 2 + 1.5,
+            { align: d.column.index === 0 ? "center" : "left" },
+          );
+        }
+      },
       margin: { left: 14, right: 14 },
     });
     cursorY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 4;
@@ -474,16 +681,28 @@ export function generateReceiptPdf(data: ReceiptPdfData, company: CompanySetting
   }
 
   // Amount box
-  doc.setFillColor(245, 243, 238);
-  doc.rect(14, cursorY, 182, 30, "F");
-  doc.setTextColor(100, 116, 139);
-  doc.setFontSize(10);
-  doc.text("AMOUNT RECEIVED", 20, cursorY + 10);
-  doc.setTextColor(11, 110, 79);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(28);
-  doc.text(money(data.amount, company.currency_symbol), 190, cursorY + 22, { align: "right" });
-  cursorY += 36;
+  if (bold) {
+    doc.setFillColor(accent[0], accent[1], accent[2]);
+    doc.rect(110, cursorY, 86, 16, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.text("AMOUNT PAID", 114, cursorY + 10);
+    doc.setFontSize(14);
+    doc.text(money(data.amount, company.currency_symbol), 192, cursorY + 10, { align: "right" });
+    cursorY += 24;
+  } else {
+    doc.setFillColor(245, 243, 238);
+    doc.rect(14, cursorY, 182, 30, "F");
+    doc.setTextColor(100, 116, 139);
+    doc.setFontSize(10);
+    doc.text("AMOUNT RECEIVED", 20, cursorY + 10);
+    doc.setTextColor(accent[0], accent[1], accent[2]);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(28);
+    doc.text(money(data.amount, company.currency_symbol), 190, cursorY + 22, { align: "right" });
+    cursorY += 36;
+  }
 
   if (data.invoiceNumber) {
     doc.setTextColor(100, 116, 139);
@@ -492,11 +711,21 @@ export function generateReceiptPdf(data: ReceiptPdfData, company: CompanySetting
     doc.text(`Payment for invoice ${data.invoiceNumber}`, 14, cursorY + 4);
   }
 
-  doc.setTextColor(100, 116, 139);
-  doc.setFontSize(8);
-  doc.text(company.invoice_footer || "Thank you for your payment.", 105, 290, { align: "center" });
+  if (bold) {
+    footerBold(doc, company);
+    doc.setTextColor(DARK[0], DARK[1], DARK[2]);
+    doc.setFont("helvetica", "bolditalic");
+    doc.setFontSize(12);
+    doc.text(company.invoice_footer || "Thank you for your payment!", 14, 262);
+    doc.setFont("helvetica", "normal");
+  } else {
+    doc.setTextColor(100, 116, 139);
+    doc.setFontSize(8);
+    doc.text(company.invoice_footer || "Thank you for your payment.", 105, 290, { align: "center" });
+  }
   return doc;
 }
+
 
 /** Trigger a native print dialog. On desktop: hidden iframe with the PDF.
  *  On mobile: use Web Share API so the OS print / "Save to Files" sheet

@@ -30,7 +30,7 @@ type Product = {
 
 function ProductsPage() {
   const qc = useQueryClient();
-  const productParam = useRouterState({ select: (s) => s.location.search.product as string | undefined });
+  const productParam = useRouterState({ select: (s) => (s.location.search as Record<string, string | undefined>).product });
   const tenantId = useActiveTenantId();
   const { data: company } = useCompanySettings();
   const sym = company?.currency_symbol || "$";

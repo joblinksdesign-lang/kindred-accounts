@@ -28,7 +28,7 @@ type Customer = {
 
 function CustomersPage() {
   const qc = useQueryClient();
-  const customerParam = useRouterState({ select: (s) => s.location.search.customer as string | undefined });
+  const customerParam = useRouterState({ select: (s) => (s.location.search as Record<string, string | undefined>).customer });
   const tenantId = useActiveTenantId();
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);

@@ -47,8 +47,8 @@ const STATUS_COLORS: Record<string, string> = {
 
 function AdminTenants() {
   const qc = useQueryClient();
-  const tenantParam = useRouterState({ select: (s) => s.location.search.tenant as string | undefined });
-  const subscriptionParam = useRouterState({ select: (s) => s.location.search.subscription as string | undefined });
+  const tenantParam = useRouterState({ select: (s) => (s.location.search as Record<string, string | undefined>).tenant });
+  const subscriptionParam = useRouterState({ select: (s) => (s.location.search as Record<string, string | undefined>).subscription });
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<string>("all");
   const [purgeTarget, setPurgeTarget] = useState<{ id: string; name: string } | null>(null);

@@ -88,6 +88,8 @@ function SettingsPage() {
 
   if (!company) return <div className="p-8 text-sm text-muted-foreground">Loading…</div>;
 
+  const brandColor = String(form.brand_color || "#8CC63F");
+
   const TemplateCard = ({ template, name, kind, description, selected, onSelect }: {
     template: string; name: string; kind: "invoice" | "receipt"; description: string; selected: boolean; onSelect: () => void;
   }) => (
@@ -96,22 +98,40 @@ function SettingsPage() {
       <div className="aspect-[4/3] rounded-md bg-card overflow-hidden mb-3 relative border">
         {template === "classic" ? (
           <div className="absolute inset-0 flex flex-col">
-            <div className="h-6 gradient-emerald" />
+            <div className="h-6" style={{ background: brandColor }} />
             <div className="p-2 flex-1">
               <div className="h-2 w-2/3 bg-muted-foreground/30 rounded mb-1" />
               <div className="h-1.5 w-1/3 bg-muted-foreground/20 rounded mb-3" />
               <div className="space-y-1">{[1,2,3].map((i) => <div key={i} className="h-1 bg-muted-foreground/15 rounded" />)}</div>
-              <div className="mt-3 h-2 w-1/4 bg-primary/40 rounded ml-auto" />
+              <div className="mt-3 h-2 w-1/4 rounded ml-auto" style={{ background: brandColor }} />
             </div>
+          </div>
+        ) : template === "bold" ? (
+          <div className="absolute inset-0 flex flex-col">
+            <div className="h-2 w-3/4" style={{ background: brandColor }} />
+            <div className="relative h-7 bg-foreground">
+              <div className="absolute right-2 top-1.5 h-2 w-16 bg-background/80 rounded" />
+              <div className="absolute right-2 top-4 h-1.5 w-10 rounded" style={{ background: brandColor }} />
+            </div>
+            <div className="p-2 flex-1">
+              <div className="h-2.5 w-1/3 bg-foreground/80 rounded mb-2" />
+              <div className="flex h-2 mb-1">
+                <div className="w-1/2 bg-foreground" />
+                <div className="w-1/2" style={{ background: brandColor }} />
+              </div>
+              <div className="space-y-1">{[1,2,3].map((i) => <div key={i} className="h-1 bg-muted-foreground/15 rounded" />)}</div>
+              <div className="mt-2 h-2 w-1/3 rounded ml-auto" style={{ background: brandColor }} />
+            </div>
+            <div className="h-3 bg-foreground" />
           </div>
         ) : (
           <div className="absolute inset-0 flex">
-            <div className="w-1.5 bg-[var(--gold)]" />
+            <div className="w-1.5" style={{ background: brandColor }} />
             <div className="p-2 flex-1">
               <div className="h-3 w-1/2 bg-muted-foreground/40 rounded mb-2" />
               <div className="h-1.5 w-1/4 bg-muted-foreground/20 rounded mb-3" />
               <div className="space-y-1">{[1,2,3].map((i) => <div key={i} className="h-1 bg-muted-foreground/15 rounded" />)}</div>
-              <div className="mt-3 h-2 w-1/4 bg-primary/40 rounded ml-auto" />
+              <div className="mt-3 h-2 w-1/4 rounded ml-auto" style={{ background: brandColor }} />
             </div>
           </div>
         )}
@@ -121,6 +141,7 @@ function SettingsPage() {
       <div className="text-[10px] mt-1 uppercase tracking-wider text-muted-foreground">{kind} template</div>
     </button>
   );
+
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -141,6 +162,8 @@ function SettingsPage() {
               <div><Label>Phone</Label><Input value={String(form.phone || "")} onChange={(e) => set("phone", e.target.value)} /></div>
               <div><Label>Website</Label><Input value={String(form.website || "")} onChange={(e) => set("website", e.target.value)} /></div>
               <div><Label>Tax ID</Label><Input value={String(form.tax_id || "")} onChange={(e) => set("tax_id", e.target.value)} /></div>
+              <div className="col-span-2"><Label>Tagline (shown on documents)</Label><Input value={String(form.tagline || "")} onChange={(e) => set("tagline", e.target.value)} placeholder="Add tagline here" /></div>
+
               <div className="col-span-2"><Label>Address</Label><Input value={String(form.address || "")} onChange={(e) => set("address", e.target.value)} /></div>
               <div><Label>City</Label><Input value={String(form.city || "")} onChange={(e) => set("city", e.target.value)} /></div>
               <div><Label>Country</Label><Input value={String(form.country || "")} onChange={(e) => set("country", e.target.value)} /></div>
@@ -211,25 +234,46 @@ function SettingsPage() {
 
         <TabsContent value="templates" className="space-y-4">
           <Card className="p-6 shadow-soft border-0">
+            <h3 className="font-semibold mb-1">Brand colour</h3>
+            <p className="text-sm text-muted-foreground mb-4">Used for headers, table headings and totals on every invoice and receipt.</p>
+            <div className="flex flex-wrap items-center gap-3">
+              <input type="color" value={brandColor} onChange={(e) => set("brand_color", e.target.value)}
+                className="h-11 w-16 cursor-pointer rounded-md border bg-background p-1" aria-label="Brand colour" />
+              <Input className="w-36 font-mono" value={brandColor} onChange={(e) => set("brand_color", e.target.value)} maxLength={7} />
+              <div className="flex flex-wrap gap-2">
+                {["#8CC63F", "#0B6E4F", "#1D4ED8", "#B91C1C", "#7C3AED", "#F59E0B", "#0F172A"].map((c) => (
+                  <button key={c} type="button" onClick={() => set("brand_color", c)} title={c}
+                    className={`h-8 w-8 rounded-full border-2 transition ${brandColor.toLowerCase() === c.toLowerCase() ? "border-foreground scale-110" : "border-transparent"}`}
+                    style={{ background: c }} />
+                ))}
+              </div>
+            </div>
+          </Card>
+          <Card className="p-6 shadow-soft border-0">
             <h3 className="font-semibold mb-1">Invoice templates</h3>
             <p className="text-sm text-muted-foreground mb-4">Choose how invoices look when downloaded as PDF.</p>
-            <div className="grid grid-cols-2 gap-4">
-              <TemplateCard template="classic" kind="invoice" name="Classic Emerald" description="Bold emerald banner header — formal and confident."
+            <div className="grid gap-4 sm:grid-cols-3">
+              <TemplateCard template="classic" kind="invoice" name="Classic Banner" description="Full-width brand banner header — formal and confident."
                 selected={form.invoice_template === "classic"} onSelect={() => set("invoice_template", "classic")} />
-              <TemplateCard template="modern" kind="invoice" name="Modern Accent" description="Minimal layout with a gold side accent."
+              <TemplateCard template="modern" kind="invoice" name="Modern Accent" description="Minimal layout with a brand side accent."
                 selected={form.invoice_template === "modern"} onSelect={() => set("invoice_template", "modern")} />
+              <TemplateCard template="bold" kind="invoice" name="Bold Corporate" description="Dark ribbon, numbered item grid and dark footer bar."
+                selected={form.invoice_template === "bold"} onSelect={() => set("invoice_template", "bold")} />
             </div>
           </Card>
           <Card className="p-6 shadow-soft border-0">
             <h3 className="font-semibold mb-1">Receipt templates</h3>
             <p className="text-sm text-muted-foreground mb-4">Choose how receipts look when downloaded as PDF.</p>
-            <div className="grid grid-cols-2 gap-4">
-              <TemplateCard template="classic" kind="receipt" name="Classic Emerald" description="Branded banner with payment summary."
+            <div className="grid gap-4 sm:grid-cols-3">
+              <TemplateCard template="classic" kind="receipt" name="Classic Banner" description="Branded banner with payment summary."
                 selected={form.receipt_template === "classic"} onSelect={() => set("receipt_template", "classic")} />
-              <TemplateCard template="modern" kind="receipt" name="Modern Accent" description="Editorial layout with gold accent strip."
+              <TemplateCard template="modern" kind="receipt" name="Modern Accent" description="Editorial layout with brand accent strip."
                 selected={form.receipt_template === "modern"} onSelect={() => set("receipt_template", "modern")} />
+              <TemplateCard template="bold" kind="receipt" name="Bold Corporate" description="Dark ribbon with brand amount-paid block."
+                selected={form.receipt_template === "bold"} onSelect={() => set("receipt_template", "bold")} />
             </div>
           </Card>
+
         </TabsContent>
       </Tabs>
 
