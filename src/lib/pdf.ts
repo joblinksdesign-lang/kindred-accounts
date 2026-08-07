@@ -214,9 +214,24 @@ export async function savePdf(doc: jsPDF, filename: string) {
   }
 }
 
+export type RGB = [number, number, number];
+const DARK: RGB = [26, 32, 44];
+
+export function hexToRgb(hex?: string | null, fallback: RGB = [11, 110, 79]): RGB {
+  if (!hex) return fallback;
+  const m = /^#?([0-9a-f]{6}|[0-9a-f]{3})$/i.exec(hex.trim());
+  if (!m) return fallback;
+  let h = m[1];
+  if (h.length === 3) h = h.split("").map((c) => c + c).join("");
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+}
+
+const accentOf = (company: CompanySettings): RGB => hexToRgb(company.brand_color);
+
 function headerClassic(doc: jsPDF, company: CompanySettings, title: string, number: string, logo: LoadedLogo | null) {
-  // Emerald top band
-  doc.setFillColor(11, 110, 79);
+  const [r, g, b] = accentOf(company);
+  // Brand top band
+  doc.setFillColor(r, g, b);
   doc.rect(0, 0, 210, 28, "F");
   const nameX = logo ? 34 : 14;
   if (logo) drawLogo(doc, logo, 14, 4, 18, 18);
@@ -236,6 +251,80 @@ function headerClassic(doc: jsPDF, company: CompanySettings, title: string, numb
   doc.setFont("helvetica", "normal");
   doc.text(`# ${number}`, 196, 25, { align: "right" });
 }
+
+/** Bold corporate template: accent top bar, dark ribbon with company block,
+ *  large document title and meta lines on the left. */
+function headerBold(
+  doc: jsPDF,
+  company: CompanySettings,
+  title: string,
+  number: string,
+  logo: LoadedLogo | null,
+  meta: [string, string][],
+) {
+  const [r, g, b] = accentOf(company);
+  // Accent slab across the very top
+  doc.setFillColor(r, g, b);
+  doc.rect(0, 0, 150, 10, "F");
+  doc.triangle(150, 0, 150, 10, 168, 0, "F");
+
+  // Dark ribbon on the right
+  doc.setFillColor(DARK[0], DARK[1], DARK[2]);
+  doc.rect(88, 10, 122, 30, "F");
+  doc.triangle(88, 10, 88, 40, 74, 10, "F");
+
+  if (logo) drawLogo(doc, logo, 118, 16, 18, 18);
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(15);
+  doc.text(company.company_name.toUpperCase(), 200, logo ? 25 : 28, { align: "right" });
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9.5);
+  doc.setTextColor(r, g, b);
+  const tagline = company.tagline || [company.city, company.country].filter(Boolean).join(", ");
+  if (tagline) doc.text(tagline.toUpperCase(), 200, logo ? 32 : 35, { align: "right" });
+
+  // Title block
+  doc.setTextColor(DARK[0], DARK[1], DARK[2]);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(34);
+  doc.text(title.toUpperCase(), 14, 30);
+
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(55, 65, 81);
+  meta.forEach(([label, value], i) => {
+    doc.text(label, 14, 40 + i * 6);
+    doc.setFont("helvetica", "bold");
+    doc.text(value, 62, 40 + i * 6);
+    doc.setFont("helvetica", "normal");
+  });
+
+  if (company.website) {
+    doc.setTextColor(100, 116, 139);
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(10);
+    doc.text(company.website, 196, 50, { align: "right" });
+    doc.setFont("helvetica", "normal");
+  }
+}
+
+/** Dark footer band used by the bold template. */
+function footerBold(doc: jsPDF, company: CompanySettings) {
+  const [r, g, b] = accentOf(company);
+  doc.setFillColor(DARK[0], DARK[1], DARK[2]);
+  doc.rect(0, 268, 210, 22, "F");
+  doc.setFillColor(r, g, b);
+  doc.rect(0, 290, 210, 7, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  const parts = [company.phone, company.email, company.website].filter(Boolean) as string[];
+  parts.forEach((p, i) => {
+    doc.text(p, 20 + i * ((170) / Math.max(parts.length, 1)), 281);
+  });
+}
+
 
 function headerModern(doc: jsPDF, company: CompanySettings, title: string, number: string, logo: LoadedLogo | null) {
   // Left accent bar
