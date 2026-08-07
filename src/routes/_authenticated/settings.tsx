@@ -234,25 +234,46 @@ function SettingsPage() {
 
         <TabsContent value="templates" className="space-y-4">
           <Card className="p-6 shadow-soft border-0">
+            <h3 className="font-semibold mb-1">Brand colour</h3>
+            <p className="text-sm text-muted-foreground mb-4">Used for headers, table headings and totals on every invoice and receipt.</p>
+            <div className="flex flex-wrap items-center gap-3">
+              <input type="color" value={brandColor} onChange={(e) => set("brand_color", e.target.value)}
+                className="h-11 w-16 cursor-pointer rounded-md border bg-background p-1" aria-label="Brand colour" />
+              <Input className="w-36 font-mono" value={brandColor} onChange={(e) => set("brand_color", e.target.value)} maxLength={7} />
+              <div className="flex flex-wrap gap-2">
+                {["#8CC63F", "#0B6E4F", "#1D4ED8", "#B91C1C", "#7C3AED", "#F59E0B", "#0F172A"].map((c) => (
+                  <button key={c} type="button" onClick={() => set("brand_color", c)} title={c}
+                    className={`h-8 w-8 rounded-full border-2 transition ${brandColor.toLowerCase() === c.toLowerCase() ? "border-foreground scale-110" : "border-transparent"}`}
+                    style={{ background: c }} />
+                ))}
+              </div>
+            </div>
+          </Card>
+          <Card className="p-6 shadow-soft border-0">
             <h3 className="font-semibold mb-1">Invoice templates</h3>
             <p className="text-sm text-muted-foreground mb-4">Choose how invoices look when downloaded as PDF.</p>
-            <div className="grid grid-cols-2 gap-4">
-              <TemplateCard template="classic" kind="invoice" name="Classic Emerald" description="Bold emerald banner header — formal and confident."
+            <div className="grid gap-4 sm:grid-cols-3">
+              <TemplateCard template="classic" kind="invoice" name="Classic Banner" description="Full-width brand banner header — formal and confident."
                 selected={form.invoice_template === "classic"} onSelect={() => set("invoice_template", "classic")} />
-              <TemplateCard template="modern" kind="invoice" name="Modern Accent" description="Minimal layout with a gold side accent."
+              <TemplateCard template="modern" kind="invoice" name="Modern Accent" description="Minimal layout with a brand side accent."
                 selected={form.invoice_template === "modern"} onSelect={() => set("invoice_template", "modern")} />
+              <TemplateCard template="bold" kind="invoice" name="Bold Corporate" description="Dark ribbon, numbered item grid and dark footer bar."
+                selected={form.invoice_template === "bold"} onSelect={() => set("invoice_template", "bold")} />
             </div>
           </Card>
           <Card className="p-6 shadow-soft border-0">
             <h3 className="font-semibold mb-1">Receipt templates</h3>
             <p className="text-sm text-muted-foreground mb-4">Choose how receipts look when downloaded as PDF.</p>
-            <div className="grid grid-cols-2 gap-4">
-              <TemplateCard template="classic" kind="receipt" name="Classic Emerald" description="Branded banner with payment summary."
+            <div className="grid gap-4 sm:grid-cols-3">
+              <TemplateCard template="classic" kind="receipt" name="Classic Banner" description="Branded banner with payment summary."
                 selected={form.receipt_template === "classic"} onSelect={() => set("receipt_template", "classic")} />
-              <TemplateCard template="modern" kind="receipt" name="Modern Accent" description="Editorial layout with gold accent strip."
+              <TemplateCard template="modern" kind="receipt" name="Modern Accent" description="Editorial layout with brand accent strip."
                 selected={form.receipt_template === "modern"} onSelect={() => set("receipt_template", "modern")} />
+              <TemplateCard template="bold" kind="receipt" name="Bold Corporate" description="Dark ribbon with brand amount-paid block."
+                selected={form.receipt_template === "bold"} onSelect={() => set("receipt_template", "bold")} />
             </div>
           </Card>
+
         </TabsContent>
       </Tabs>
 
