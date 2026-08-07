@@ -514,7 +514,7 @@ export function generateInvoicePdf(data: InvoicePdfData, company: CompanySetting
   }
 
   // Footer
-  const fy = bold ? 240 : 270;
+  const fy = bold ? 226 : 270;
   if (data.notes) {
     doc.setTextColor(100, 116, 139);
     doc.setFont("helvetica", "bold");
@@ -528,19 +528,20 @@ export function generateInvoicePdf(data: InvoicePdfData, company: CompanySetting
     doc.setTextColor(100, 116, 139);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9);
-    doc.text("PAYMENT DETAILS:", bold ? 14 : 130, bold ? fy + 20 : fy);
+    doc.text("PAYMENT DETAILS:", bold ? 14 : 130, bold ? fy + 18 : fy);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(31, 41, 55);
-    doc.text(doc.splitTextToSize(company.payment_instructions, bold ? 100 : 70), bold ? 14 : 130, (bold ? fy + 20 : fy) + 4);
+    doc.text(doc.splitTextToSize(company.payment_instructions, bold ? 100 : 70), bold ? 14 : 130, (bold ? fy + 18 : fy) + 4);
   }
   if (bold) {
     footerBold(doc, company);
     doc.setTextColor(DARK[0], DARK[1], DARK[2]);
     doc.setFont("helvetica", "bolditalic");
     doc.setFontSize(12);
-    doc.text(company.invoice_footer || "Thank you for your business!", 14, 262);
+    doc.text(company.invoice_footer || "Thank you for your business!", 196, 262, { align: "right" });
     doc.setFont("helvetica", "normal");
   } else {
+
     doc.setTextColor(100, 116, 139);
     doc.setFontSize(8);
     doc.text(company.invoice_footer || "Thank you for your business.", 105, 290, { align: "center" });
