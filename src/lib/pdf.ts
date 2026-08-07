@@ -493,7 +493,7 @@ export function generateInvoicePdf(data: InvoicePdfData, company: CompanySetting
   }
   // Total band
   doc.setFillColor(accent[0], accent[1], accent[2]);
-  doc.rect(xLabel - 4, y - 4, 70, 10, "F");
+  doc.rect(xLabel - 4, y - 4, 74, 10, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
   doc.text(bold ? "G. TOTAL" : "TOTAL", xLabel, y + 2);
