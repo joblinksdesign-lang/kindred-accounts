@@ -560,17 +560,27 @@ export function generateInvoicePdf(data: InvoicePdfData, company: CompanySetting
 export function generateReceiptPdf(data: ReceiptPdfData, company: CompanySettings, logo: LoadedLogo | null = null): jsPDF {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   drawWatermark(doc, logo);
+  const accent = accentOf(company);
   const template = data.template || company.receipt_template || "classic";
-  if (template === "modern") headerModern(doc, company, "Receipt", data.number, logo);
+  const bold = template === "bold";
+  if (bold) {
+    headerBold(doc, company, "Receipt", data.number, logo, [
+      ["Receipt No.", data.number],
+      ["Date:", data.date],
+      ["Method:", data.method.replace(/_/g, " ")],
+    ]);
+  } else if (template === "modern") headerModern(doc, company, "Receipt", data.number, logo);
   else headerClassic(doc, company, "Receipt", data.number, logo);
 
-  const y = template === "modern" ? 50 : 44;
+  const y = bold ? 72 : template === "modern" ? 50 : 44;
   doc.setTextColor(100, 116, 139);
   doc.setFontSize(9);
   doc.setFont("helvetica", "bold");
-  doc.text("RECEIVED FROM", 14, y);
-  doc.text("DATE", 130, y);
-  doc.text("PAYMENT METHOD", 170, y);
+  doc.text(bold ? "RECEIPT TO:" : "RECEIVED FROM", 14, y);
+  if (!bold) {
+    doc.text("DATE", 130, y);
+    doc.text("PAYMENT METHOD", 170, y);
+  }
 
   doc.setTextColor(31, 41, 55);
   doc.setFont("helvetica", "bold");
@@ -578,32 +588,73 @@ export function generateReceiptPdf(data: ReceiptPdfData, company: CompanySetting
   doc.text(data.customer.company || data.customer.name, 14, y + 6);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
-  doc.text(data.date, 130, y + 6);
-  doc.text(data.method.replace(/_/g, " "), 170, y + 6);
+  if (!bold) {
+    doc.text(data.date, 130, y + 6);
+    doc.text(data.method.replace(/_/g, " "), 170, y + 6);
+  }
 
-  let cursorY = y + 22;
+  let cursorY = y + (bold ? 16 : 22);
   // Items table (products purchased)
   const items = data.items ?? [];
   if (items.length) {
     autoTable(doc, {
       startY: cursorY,
-      head: [["Description", "Qty", "Unit Price", "Amount"]],
-      body: items.map((it) => [
-        it.description,
-        String(it.quantity),
-        money(it.unit_price, company.currency_symbol),
-        money(it.line_total, company.currency_symbol),
-      ]),
-      theme: "striped",
-      headStyles: { fillColor: [11, 110, 79], textColor: 255, fontStyle: "bold" },
-      styles: { font: "helvetica", fontSize: 10, cellPadding: 3, overflow: "linebreak", valign: "middle" },
-      columnStyles: {
-        0: { halign: "left", cellWidth: "auto" },
-        1: { halign: "right", cellWidth: 20 },
-        2: { halign: "right", cellWidth: 34 },
-        3: { halign: "right", cellWidth: 34 },
+      head: bold
+        ? [["SL#", "Product Description", "Unit Price", "Qty.", "Total"]]
+        : [["Description", "Qty", "Unit Price", "Amount"]],
+      body: items.map((it, i) =>
+        bold
+          ? [
+              String(i + 1).padStart(2, "0"),
+              it.description,
+              money(it.unit_price, company.currency_symbol),
+              String(it.quantity),
+              money(it.line_total, company.currency_symbol),
+            ]
+          : [
+              it.description,
+              String(it.quantity),
+              money(it.unit_price, company.currency_symbol),
+              money(it.line_total, company.currency_symbol),
+            ],
+      ),
+      theme: bold ? "grid" : "striped",
+      headStyles: { fillColor: accent, textColor: 255, fontStyle: "bold" },
+      styles: { font: "helvetica", fontSize: 10, cellPadding: 3, overflow: "linebreak", valign: "middle", lineColor: [226, 232, 240] },
+      columnStyles: bold
+        ? {
+            0: { halign: "center", cellWidth: 16 },
+            1: { halign: "left", cellWidth: "auto" },
+            2: { halign: "right", cellWidth: 34 },
+            3: { halign: "center", cellWidth: 20 },
+            4: { halign: "right", cellWidth: 34 },
+          }
+        : {
+            0: { halign: "left", cellWidth: "auto" },
+            1: { halign: "right", cellWidth: 20 },
+            2: { halign: "right", cellWidth: 34 },
+            3: { halign: "right", cellWidth: 34 },
+          },
+      didParseCell: (d) => {
+        if (d.section !== "head") return;
+        if (bold) d.cell.styles.halign = d.column.index === 0 ? "center" : d.column.index === 1 ? "left" : d.column.index === 3 ? "center" : "right";
+        else if (d.column.index > 0) d.cell.styles.halign = "right";
       },
-      didParseCell: (d) => { if (d.section === "head" && d.column.index > 0) d.cell.styles.halign = "right"; },
+      didDrawCell: (d) => {
+        if (bold && d.section === "head" && d.column.index <= 1) {
+          doc.setFillColor(DARK[0], DARK[1], DARK[2]);
+          doc.rect(d.cell.x, d.cell.y, d.cell.width, d.cell.height, "F");
+          doc.setTextColor(255, 255, 255);
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(10);
+          doc.text(
+            String(d.cell.raw),
+            d.column.index === 0 ? d.cell.x + d.cell.width / 2 : d.cell.x + 3,
+            d.cell.y + d.cell.height / 2 + 1.5,
+            { align: d.column.index === 0 ? "center" : "left" },
+          );
+        }
+      },
       margin: { left: 14, right: 14 },
     });
     cursorY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 4;
@@ -636,16 +687,28 @@ export function generateReceiptPdf(data: ReceiptPdfData, company: CompanySetting
   }
 
   // Amount box
-  doc.setFillColor(245, 243, 238);
-  doc.rect(14, cursorY, 182, 30, "F");
-  doc.setTextColor(100, 116, 139);
-  doc.setFontSize(10);
-  doc.text("AMOUNT RECEIVED", 20, cursorY + 10);
-  doc.setTextColor(11, 110, 79);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(28);
-  doc.text(money(data.amount, company.currency_symbol), 190, cursorY + 22, { align: "right" });
-  cursorY += 36;
+  if (bold) {
+    doc.setFillColor(accent[0], accent[1], accent[2]);
+    doc.rect(110, cursorY, 86, 16, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.text("AMOUNT PAID", 114, cursorY + 10);
+    doc.setFontSize(14);
+    doc.text(money(data.amount, company.currency_symbol), 192, cursorY + 10, { align: "right" });
+    cursorY += 24;
+  } else {
+    doc.setFillColor(245, 243, 238);
+    doc.rect(14, cursorY, 182, 30, "F");
+    doc.setTextColor(100, 116, 139);
+    doc.setFontSize(10);
+    doc.text("AMOUNT RECEIVED", 20, cursorY + 10);
+    doc.setTextColor(accent[0], accent[1], accent[2]);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(28);
+    doc.text(money(data.amount, company.currency_symbol), 190, cursorY + 22, { align: "right" });
+    cursorY += 36;
+  }
 
   if (data.invoiceNumber) {
     doc.setTextColor(100, 116, 139);
@@ -654,11 +717,21 @@ export function generateReceiptPdf(data: ReceiptPdfData, company: CompanySetting
     doc.text(`Payment for invoice ${data.invoiceNumber}`, 14, cursorY + 4);
   }
 
-  doc.setTextColor(100, 116, 139);
-  doc.setFontSize(8);
-  doc.text(company.invoice_footer || "Thank you for your payment.", 105, 290, { align: "center" });
+  if (bold) {
+    footerBold(doc, company);
+    doc.setTextColor(DARK[0], DARK[1], DARK[2]);
+    doc.setFont("helvetica", "bolditalic");
+    doc.setFontSize(12);
+    doc.text(company.invoice_footer || "Thank you for your payment!", 14, 262);
+    doc.setFont("helvetica", "normal");
+  } else {
+    doc.setTextColor(100, 116, 139);
+    doc.setFontSize(8);
+    doc.text(company.invoice_footer || "Thank you for your payment.", 105, 290, { align: "center" });
+  }
   return doc;
 }
+
 
 /** Trigger a native print dialog. On desktop: hidden iframe with the PDF.
  *  On mobile: use Web Share API so the OS print / "Save to Files" sheet
