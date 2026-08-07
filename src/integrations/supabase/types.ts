@@ -17,6 +17,7 @@ export type Database = {
       company_settings: {
         Row: {
           address: string | null
+          brand_color: string
           city: string | null
           company_name: string
           country: string | null
@@ -37,6 +38,7 @@ export type Database = {
           quote_prefix: string
           receipt_prefix: string
           receipt_template: string
+          tagline: string | null
           tax_id: string | null
           tenant_id: string
           updated_at: string
@@ -44,6 +46,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          brand_color?: string
           city?: string | null
           company_name?: string
           country?: string | null
@@ -64,6 +67,7 @@ export type Database = {
           quote_prefix?: string
           receipt_prefix?: string
           receipt_template?: string
+          tagline?: string | null
           tax_id?: string | null
           tenant_id: string
           updated_at?: string
@@ -71,6 +75,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          brand_color?: string
           city?: string | null
           company_name?: string
           country?: string | null
@@ -91,6 +96,7 @@ export type Database = {
           quote_prefix?: string
           receipt_prefix?: string
           receipt_template?: string
+          tagline?: string | null
           tax_id?: string | null
           tenant_id?: string
           updated_at?: string
