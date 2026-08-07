@@ -398,15 +398,8 @@ export function generateInvoicePdf(data: InvoicePdfData, company: CompanySetting
   if (!bold) {
     doc.text(data.date, 130, startY + 6);
     doc.text(data.dueDate || "—", 170, startY + 6);
-  } else {
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(9.5);
-    doc.text("Invoice No.", 150, startY, { align: "right" });
-    doc.text("Date:", 150, startY + 6, { align: "right" });
-    doc.setFont("helvetica", "normal");
-    doc.text(data.number, 196, startY, { align: "right" });
-    doc.text(data.date, 196, startY + 6, { align: "right" });
   }
+
 
   // Items
   autoTable(doc, {
