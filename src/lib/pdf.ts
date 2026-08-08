@@ -44,8 +44,11 @@ export type ReceiptPdfData = {
 };
 
 
-const money = (n: number, sym = "USh ") =>
-  `${sym}${(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const money = (n: number, sym?: string | null) => {
+  const raw = (sym && sym.trim()) || "USh";
+  const prefix = /[A-Za-z0-9]$/.test(raw) ? `${raw} ` : raw;
+  return `${prefix}${(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+};
 
 export type LoadedLogo = { dataUrl: string; format: "PNG" | "JPEG" };
 
