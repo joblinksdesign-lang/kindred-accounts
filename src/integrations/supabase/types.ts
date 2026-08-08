@@ -171,6 +171,81 @@ export type Database = {
           },
         ]
       }
+      expenses: {
+        Row: {
+          amount: number
+          category: string | null
+          created_at: string
+          created_by: string | null
+          description: string
+          expense_date: string
+          id: string
+          method: Database["public"]["Enums"]["payment_method"]
+          next_run_date: string | null
+          notes: string | null
+          parent_expense_id: string | null
+          recurrence: Database["public"]["Enums"]["expense_recurrence"]
+          recurrence_end: string | null
+          reference: string | null
+          tenant_id: string
+          updated_at: string
+          vendor: string | null
+        }
+        Insert: {
+          amount?: number
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description: string
+          expense_date?: string
+          id?: string
+          method?: Database["public"]["Enums"]["payment_method"]
+          next_run_date?: string | null
+          notes?: string | null
+          parent_expense_id?: string | null
+          recurrence?: Database["public"]["Enums"]["expense_recurrence"]
+          recurrence_end?: string | null
+          reference?: string | null
+          tenant_id: string
+          updated_at?: string
+          vendor?: string | null
+        }
+        Update: {
+          amount?: number
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          expense_date?: string
+          id?: string
+          method?: Database["public"]["Enums"]["payment_method"]
+          next_run_date?: string | null
+          notes?: string | null
+          parent_expense_id?: string | null
+          recurrence?: Database["public"]["Enums"]["expense_recurrence"]
+          recurrence_end?: string | null
+          reference?: string | null
+          tenant_id?: string
+          updated_at?: string
+          vendor?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_parent_expense_id_fkey"
+            columns: ["parent_expense_id"]
+            isOneToOne: false
+            referencedRelation: "expenses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expenses_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoice_items: {
         Row: {
           created_at: string
@@ -1150,6 +1225,7 @@ export type Database = {
     Enums: {
       app_role: "admin" | "accountant" | "sales_agent" | "super_admin"
       billing_cycle: "monthly" | "annual"
+      expense_recurrence: "none" | "daily" | "weekly" | "monthly"
       invoice_status:
         | "draft"
         | "sent"
@@ -1313,6 +1389,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "accountant", "sales_agent", "super_admin"],
       billing_cycle: ["monthly", "annual"],
+      expense_recurrence: ["none", "daily", "weekly", "monthly"],
       invoice_status: [
         "draft",
         "sent",
