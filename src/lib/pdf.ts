@@ -447,8 +447,9 @@ export function generateInvoicePdf(data: InvoicePdfData, company: CompanySetting
         },
     didParseCell: (d) => {
       if (d.section !== "head") return;
-      if (bold) { if (d.column.index === 0 || d.column.index === 1) d.cell.styles.halign = d.column.index === 0 ? "center" : "left"; }
-      else if (d.column.index > 0) d.cell.styles.halign = "right";
+      d.cell.styles.halign = bold
+        ? d.column.index === 0 ? "center" : d.column.index === 1 ? "left" : d.column.index === 3 ? "center" : "right"
+        : d.column.index === 0 ? "left" : "right";
     },
     didDrawCell: (d) => {
       if (bold && d.section === "head" && d.column.index <= 1) {
