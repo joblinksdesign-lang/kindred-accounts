@@ -28,7 +28,7 @@ const statusColor: Record<string, string> = {
 
 function InvoicesPage() {
   const { data: company } = useCompanySettings();
-  const sym = company?.currency_symbol || "$";
+  const sym = company?.currency_symbol || "USh ";
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<string>("all");
 

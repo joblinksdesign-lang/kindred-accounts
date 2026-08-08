@@ -64,9 +64,11 @@ export function useCompanyLogoUrl(company: Pick<CompanySettings, "logo_path" | "
   });
 }
 
-export function formatMoney(amount: number | string | null | undefined, symbol = "USh ") {
+export function formatMoney(amount: number | string | null | undefined, symbol?: string | null) {
   const n = typeof amount === "string" ? parseFloat(amount) : amount ?? 0;
-  return `${symbol}${(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const raw = (symbol && symbol.trim()) || "USh";
+  const prefix = /[A-Za-z0-9]$/.test(raw) ? `${raw} ` : raw;
+  return `${prefix}${(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 export function formatDate(d: string | Date | null | undefined) {

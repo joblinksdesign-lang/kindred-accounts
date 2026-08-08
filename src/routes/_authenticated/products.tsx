@@ -33,7 +33,7 @@ function ProductsPage() {
   const productParam = useRouterState({ select: (s) => (s.location.search as Record<string, string | undefined>).product });
   const tenantId = useActiveTenantId();
   const { data: company } = useCompanySettings();
-  const sym = company?.currency_symbol || "$";
+  const sym = company?.currency_symbol || "USh ";
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);

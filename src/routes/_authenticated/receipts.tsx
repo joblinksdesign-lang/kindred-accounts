@@ -20,7 +20,7 @@ export const Route = createFileRoute("/_authenticated/receipts")({
 
 function ReceiptsPage() {
   const { data: company } = useCompanySettings();
-  const sym = company?.currency_symbol || "$";
+  const sym = company?.currency_symbol || "USh ";
   const [q, setQ] = useState("");
 
   const { data: receipts = [] } = useQuery({

@@ -28,7 +28,7 @@ function QuotationsPage() {
   const qc = useQueryClient();
   const tenantId = useActiveTenantId();
   const { data: company } = useCompanySettings();
-  const sym = company?.currency_symbol || "$";
+  const sym = company?.currency_symbol || "USh ";
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
   const [customerId, setCustomerId] = useState("");

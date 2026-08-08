@@ -36,8 +36,8 @@ export const Route = createFileRoute("/onboarding")({
 });
 
 const CURRENCIES: Array<[string, string]> = [
-  ["USD", "$"], ["EUR", "€"], ["GBP", "£"], ["UGX", "USh"], ["KES", "KSh"],
-  ["TZS", "TSh"], ["NGN", "₦"], ["ZAR", "R"], ["GHS", "₵"], ["INR", "₹"],
+  ["UGX", "USh"], ["KES", "KSh"], ["TZS", "TSh"], ["USD", "$"], ["EUR", "€"],
+  ["GBP", "£"], ["NGN", "₦"], ["ZAR", "R"], ["GHS", "₵"], ["INR", "₹"],
 ];
 
 function OnboardingPage() {
@@ -99,7 +99,7 @@ function OnboardingPage() {
     e.preventDefault();
     setLoading(true);
     const fd = new FormData(e.currentTarget);
-    const symbol = CURRENCIES.find(([c]) => c === currency)?.[1] ?? "$";
+    const symbol = CURRENCIES.find(([c]) => c === currency)?.[1] ?? "USh";
     try {
       const businessName = String(fd.get("business_name"));
       const email = String(fd.get("email"));

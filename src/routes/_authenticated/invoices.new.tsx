@@ -25,7 +25,7 @@ function NewInvoicePage() {
   const navigate = useNavigate();
   const tenantId = useActiveTenantId();
   const { data: company } = useCompanySettings();
-  const sym = company?.currency_symbol || "$";
+  const sym = company?.currency_symbol || "USh ";
 
   const { data: customers = [] } = useQuery({
     queryKey: ["customers_simple"],
