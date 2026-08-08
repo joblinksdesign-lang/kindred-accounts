@@ -15,7 +15,7 @@ export const Route = createFileRoute("/_authenticated/reports")({
 function ReportsPage() {
   const { data: company } = useCompanySettings();
   const { data: logoUrl } = useCompanyLogoUrl(company);
-  const sym = company?.currency_symbol || "$";
+  const sym = company?.currency_symbol || "USh ";
 
   const { data } = useQuery({
     queryKey: ["reports"],

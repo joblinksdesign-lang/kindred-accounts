@@ -31,7 +31,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 
 function Dashboard() {
   const { data: company } = useCompanySettings();
-  const sym = company?.currency_symbol || "$";
+  const sym = company?.currency_symbol || "USh ";
   const [period, setPeriod] = useState<Period>("month");
   const [range, setRange] = useState<DateRange | undefined>();
 

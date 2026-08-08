@@ -28,7 +28,7 @@ function InvoiceDetail() {
   const qc = useQueryClient();
   const tenantId = useActiveTenantId();
   const { data: company } = useCompanySettings();
-  const sym = company?.currency_symbol || "$";
+  const sym = company?.currency_symbol || "USh ";
   const [payOpen, setPayOpen] = useState(false);
 
   const { data: invoice } = useQuery({
