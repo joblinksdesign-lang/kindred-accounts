@@ -27,6 +27,7 @@ const workspaceNav = [
   { title: "Invoices", to: "/invoices", icon: FileText },
   { title: "Receipts", to: "/receipts", icon: Receipt },
   { title: "Payments", to: "/payments", icon: CreditCard },
+  { title: "Expenses", to: "/expenses", icon: Wallet },
   { title: "Reports", to: "/reports", icon: BarChart3 },
   { title: "Notifications", to: "/notifications", icon: Bell },
 ] as const;
