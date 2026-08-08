@@ -36,8 +36,8 @@ export const Route = createFileRoute("/onboarding")({
 });
 
 const CURRENCIES: Array<[string, string]> = [
-  ["USD", "$"], ["EUR", "€"], ["GBP", "£"], ["UGX", "USh"], ["KES", "KSh"],
-  ["TZS", "TSh"], ["NGN", "₦"], ["ZAR", "R"], ["GHS", "₵"], ["INR", "₹"],
+  ["UGX", "USh"], ["KES", "KSh"], ["TZS", "TSh"], ["USD", "$"], ["EUR", "€"],
+  ["GBP", "£"], ["NGN", "₦"], ["ZAR", "R"], ["GHS", "₵"], ["INR", "₹"],
 ];
 
 function OnboardingPage() {
