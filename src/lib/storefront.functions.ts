@@ -222,6 +222,7 @@ export const submitStoreOrder = createServerFn({ method: "POST" })
       .insert({
         tenant_id: tenant.id,
         customer_id: customerId,
+        quote_number: "",
         quote_date: today,
         status: "sent",
         subtotal,
