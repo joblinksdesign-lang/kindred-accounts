@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, Users, Package, FileText, Receipt, CreditCard, FileSignature,
-  BarChart3, Settings, LogOut, Search, Building2, ShieldCheck, LayoutGrid, Tag, Sparkles, Bell, Wallet,
+  BarChart3, Settings, LogOut, Search, Building2, ShieldCheck, LayoutGrid, Tag, Sparkles, Bell, Wallet, Store,
 } from "lucide-react";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
@@ -17,6 +17,7 @@ import { NotificationBell } from "@/components/notification-bell";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser } from "@/lib/use-current-user";
 import { useActiveTenant } from "@/lib/tenant";
+import { useTenantModules } from "@/lib/modules";
 import type { ReactNode } from "react";
 
 const workspaceNav = [
@@ -44,6 +45,8 @@ function AppSidebar() {
   const collapsed = state === "collapsed";
   const { isSuperAdmin } = useCurrentUser();
   const { tenant, role } = useActiveTenant();
+  const { data: modules } = useTenantModules();
+  const hasStore = modules?.has("storefront") ?? false;
 
   const isActive = (to: string) =>
     to === "/admin"
@@ -99,6 +102,15 @@ function AppSidebar() {
             <SidebarGroupLabel>Business</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
+                {hasStore && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={isActive("/online-store")} tooltip="Online store">
+                      <Link to="/online-store" className="flex items-center gap-2">
+                        <Store className="h-4 w-4" /><span>Online store</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild isActive={isActive("/settings")} tooltip="Settings">
                     <Link to="/settings" className="flex items-center gap-2">
