@@ -1,7 +1,7 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { getStorefront, submitStoreOrder, type StoreOrderResult } from "@/lib/storefront.functions";
+import { getStorefront, submitStoreOrder, type StoreOrderResult, type StorefrontData } from "@/lib/storefront.functions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -60,7 +60,7 @@ function CenterMessage({ title, text }: { title: string; text: string }) {
 type CartLine = { product_id: string; name: string; unit_price: number; quantity: number };
 
 function Storefront() {
-  const store = Route.useLoaderData();
+  const store = Route.useLoaderData() as StorefrontData;
   const { company, products, tenant } = store;
   const symbol = company.currency_symbol || tenant.currency_symbol;
   const accent = company.brand_color || "#0b6e4f";
