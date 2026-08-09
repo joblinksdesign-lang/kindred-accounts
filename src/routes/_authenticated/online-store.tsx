@@ -2,7 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { AppShell } from "@/components/app-shell";
 import { PageHeader } from "@/components/page-helpers";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -82,7 +81,7 @@ function OnlineStorePage() {
   const enabled = modules?.has("storefront") ?? false;
 
   return (
-    <AppShell>
+    <>
       <PageHeader
         title="Online store"
         subtitle="Show your products online and let customers send you orders on WhatsApp."
@@ -188,6 +187,6 @@ function OnlineStorePage() {
           </Card>
         </div>
       )}
-    </AppShell>
+    </>
   );
 }
