@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { formatDate } from "@/lib/company";
 import { Check, X, Pause, Play, Trash2, Eraser } from "lucide-react";
 import { purgeTenantData } from "@/lib/admin.functions";
+import { MODULES } from "@/lib/modules";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -34,7 +35,8 @@ type TenantRow = {
   id: string; business_name: string; email: string; phone: string | null;
   country: string | null; currency: string; status: "pending" | "active" | "suspended" | "expired" | "cancelled";
   plan_id: string | null; created_at: string; approved_at: string | null;
-  plans?: { name: string } | null;
+  modules_override: string[] | null;
+  plans?: { name: string; modules: string[] | null } | null;
 };
 
 const STATUS_COLORS: Record<string, string> = {
@@ -61,7 +63,7 @@ function AdminTenants() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("tenants")
-        .select("id, business_name, email, phone, country, currency, status, plan_id, created_at, approved_at, plans:plan_id(name)")
+        .select("id, business_name, email, phone, country, currency, status, plan_id, created_at, approved_at, modules_override, plans:plan_id(name, modules)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as unknown as TenantRow[];
@@ -71,7 +73,7 @@ function AdminTenants() {
   const { data: plans = [] } = useQuery({
     queryKey: ["all_plans"],
     queryFn: async () => {
-      const { data } = await supabase.from("plans").select("id, name").order("sort_order");
+      const { data } = await supabase.from("plans").select("id, name, modules").order("sort_order");
       return data ?? [];
     },
   });
@@ -94,6 +96,15 @@ function AdminTenants() {
       if (error) throw error;
     },
     onSuccess: () => { toast.success("Plan updated"); qc.invalidateQueries({ queryKey: ["admin_tenants"] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const updateModules = useMutation({
+    mutationFn: async ({ id, modules_override }: { id: string; modules_override: string[] | null }) => {
+      const { error } = await supabase.from("tenants").update({ modules_override } as never).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("Modules updated"); qc.invalidateQueries({ queryKey: ["admin_tenants"] }); },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -224,6 +235,7 @@ function AdminTenants() {
                 <TableHead>Business</TableHead>
                 <TableHead>Country</TableHead>
                 <TableHead>Plan</TableHead>
+                <TableHead>Modules</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Joined</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -244,6 +256,38 @@ function AdminTenants() {
                         {plans.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
+                  </TableCell>
+                  <TableCell>
+                    <div className="space-y-1">
+                      {MODULES.map((m) => {
+                        const planHas = (t.plans?.modules ?? []).includes(m.key);
+                        const value =
+                          t.modules_override == null ? "plan" : t.modules_override.includes(m.key) ? "on" : "off";
+                        return (
+                          <Select
+                            key={m.key}
+                            value={value}
+                            onValueChange={(v) => {
+                              const current = t.modules_override ?? (t.plans?.modules ?? []);
+                              const next =
+                                v === "plan"
+                                  ? null
+                                  : v === "on"
+                                    ? Array.from(new Set([...current, m.key]))
+                                    : current.filter((k) => k !== m.key);
+                              updateModules.mutate({ id: t.id, modules_override: next });
+                            }}
+                          >
+                            <SelectTrigger className="h-8 w-40 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="plan">{m.name}: plan ({planHas ? "on" : "off"})</SelectItem>
+                              <SelectItem value="on">{m.name}: force on</SelectItem>
+                              <SelectItem value="off">{m.name}: force off</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        );
+                      })}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className={`text-xs capitalize ${STATUS_COLORS[t.status]}`}>{t.status}</Badge>

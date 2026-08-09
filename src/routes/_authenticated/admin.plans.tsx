@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { PageHeader } from "@/components/page-helpers";
 import { toast } from "sonner";
 import { Plus, Pencil, Archive } from "lucide-react";
+import { MODULES } from "@/lib/modules";
 
 export const Route = createFileRoute("/_authenticated/admin/plans")({
   head: () => ({ meta: [{ title: "Plans — Super Admin" }] }),
@@ -25,7 +26,7 @@ type Plan = {
   price_monthly: number; price_annual: number; trial_days: number;
   max_invoices_per_month: number | null; max_customers: number | null;
   max_users: number | null; max_products: number | null;
-  features: string[]; is_active: boolean; is_public: boolean; is_default: boolean; sort_order: number;
+  features: string[]; modules: string[]; is_active: boolean; is_public: boolean; is_default: boolean; sort_order: number;
 };
 
 function AdminPlans() {
@@ -38,7 +39,7 @@ function AdminPlans() {
     queryFn: async () => {
       const { data, error } = await supabase.from("plans").select("*").order("sort_order");
       if (error) throw error;
-      return (data ?? []).map((p) => ({ ...p, features: (p.features as string[]) ?? [] })) as Plan[];
+      return (data ?? []).map((p) => ({ ...p, features: (p.features as string[]) ?? [], modules: ((p as unknown as { modules?: string[] }).modules) ?? [] })) as Plan[];
     },
   });
 
@@ -89,6 +90,7 @@ function AdminPlans() {
       max_users: num("max_users"),
       max_products: num("max_products"),
       features,
+      modules: MODULES.filter((m) => fd.get(`module_${m.key}`) === "on").map((m) => m.key),
       sort_order: Number(fd.get("sort_order") || 0),
       is_active: fd.get("is_active") === "on",
       is_public: fd.get("is_public") === "on",
@@ -130,6 +132,15 @@ function AdminPlans() {
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
                     Inv: {p.max_invoices_per_month ?? "∞"} • Cust: {p.max_customers ?? "∞"} • Users: {p.max_users ?? "∞"}
+                    {p.modules.length > 0 && (
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {p.modules.map((k) => (
+                          <Badge key={k} variant="outline" className="text-[10px]">
+                            {MODULES.find((m) => m.key === k)?.name ?? k}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-1">
@@ -164,6 +175,17 @@ function AdminPlans() {
             <div><Label>Max customers</Label><Input name="max_customers" type="number" defaultValue={editing?.max_customers ?? ""} /></div>
             <div><Label>Max users</Label><Input name="max_users" type="number" defaultValue={editing?.max_users ?? ""} /></div>
             <div><Label>Max products</Label><Input name="max_products" type="number" defaultValue={editing?.max_products ?? ""} /></div>
+            <div className="col-span-2">
+              <Label>Included modules</Label>
+              <div className="mt-2 flex flex-wrap gap-6">
+                {MODULES.map((m) => (
+                  <label key={m.key} className="flex items-center gap-2 text-sm">
+                    <Switch name={`module_${m.key}`} defaultChecked={editing?.modules?.includes(m.key) ?? false} />
+                    {m.name}
+                  </label>
+                ))}
+              </div>
+            </div>
             <div className="col-span-2"><Label>Features (one per line)</Label><Textarea name="features" rows={4} defaultValue={editing?.features.join("\n") ?? ""} /></div>
             <div className="col-span-2 flex flex-wrap gap-6 pt-2">
               <label className="flex items-center gap-2 text-sm"><Switch name="is_active" defaultChecked={editing?.is_active ?? true} /> Active</label>

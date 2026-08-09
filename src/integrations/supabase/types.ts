@@ -38,11 +38,15 @@ export type Database = {
           quote_prefix: string
           receipt_prefix: string
           receipt_template: string
+          store_about: string | null
+          store_enabled: boolean
+          store_headline: string | null
           tagline: string | null
           tax_id: string | null
           tenant_id: string
           updated_at: string
           website: string | null
+          whatsapp_number: string | null
         }
         Insert: {
           address?: string | null
@@ -67,11 +71,15 @@ export type Database = {
           quote_prefix?: string
           receipt_prefix?: string
           receipt_template?: string
+          store_about?: string | null
+          store_enabled?: boolean
+          store_headline?: string | null
           tagline?: string | null
           tax_id?: string | null
           tenant_id: string
           updated_at?: string
           website?: string | null
+          whatsapp_number?: string | null
         }
         Update: {
           address?: string | null
@@ -96,11 +104,15 @@ export type Database = {
           quote_prefix?: string
           receipt_prefix?: string
           receipt_template?: string
+          store_about?: string | null
+          store_enabled?: boolean
+          store_headline?: string | null
           tagline?: string | null
           tax_id?: string | null
           tenant_id?: string
           updated_at?: string
           website?: string | null
+          whatsapp_number?: string | null
         }
         Relationships: [
           {
@@ -497,6 +509,7 @@ export type Database = {
           max_invoices_per_month: number | null
           max_products: number | null
           max_users: number | null
+          modules: string[]
           name: string
           price_annual: number
           price_monthly: number
@@ -519,6 +532,7 @@ export type Database = {
           max_invoices_per_month?: number | null
           max_products?: number | null
           max_users?: number | null
+          modules?: string[]
           name: string
           price_annual?: number
           price_monthly?: number
@@ -541,6 +555,7 @@ export type Database = {
           max_invoices_per_month?: number | null
           max_products?: number | null
           max_users?: number | null
+          modules?: string[]
           name?: string
           price_annual?: number
           price_monthly?: number
@@ -1069,6 +1084,7 @@ export type Database = {
           id: string
           invoice_counter: number
           legal_name: string | null
+          modules_override: string[] | null
           owner_user_id: string
           phone: string | null
           plan_id: string | null
@@ -1091,6 +1107,7 @@ export type Database = {
           id?: string
           invoice_counter?: number
           legal_name?: string | null
+          modules_override?: string[] | null
           owner_user_id: string
           phone?: string | null
           plan_id?: string | null
@@ -1113,6 +1130,7 @@ export type Database = {
           id?: string
           invoice_counter?: number
           legal_name?: string | null
+          modules_override?: string[] | null
           owner_user_id?: string
           phone?: string | null
           plan_id?: string | null

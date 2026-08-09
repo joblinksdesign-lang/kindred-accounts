@@ -26,6 +26,7 @@ export type InvoicePdfData = {
   balance: number;
   notes?: string | null;
   template?: string;
+  docTitle?: string;
 };
 
 export type ReceiptPdfData = {
@@ -362,21 +363,22 @@ export function generateInvoicePdf(data: InvoicePdfData, company: CompanySetting
   const accent = accentOf(company);
   const template = data.template || company.invoice_template || "classic";
   const bold = template === "bold";
+  const title = data.docTitle || "Invoice";
   if (bold) {
-    headerBold(doc, company, "Invoice", data.number, logo, [
-      ["Invoice No.", data.number],
-      ["Invoice Date:", data.date],
+    headerBold(doc, company, title, data.number, logo, [
+      [`${title} No.`, data.number],
+      [`${title} Date:`, data.date],
       ["Due Date:", data.dueDate || "—"],
     ]);
-  } else if (template === "modern") headerModern(doc, company, "Invoice", data.number, logo);
-  else headerClassic(doc, company, "Invoice", data.number, logo);
+  } else if (template === "modern") headerModern(doc, company, title, data.number, logo);
+  else headerClassic(doc, company, title, data.number, logo);
 
   const startY = bold ? 70 : template === "modern" ? 44 : 38;
   // Bill To + Meta
   doc.setTextColor(100, 116, 139);
   doc.setFontSize(9);
   doc.setFont("helvetica", "bold");
-  doc.text(bold ? "INVOICE TO:" : "BILL TO", 14, startY);
+  doc.text(bold ? `${title.toUpperCase()} TO:` : "BILL TO", 14, startY);
   if (!bold) {
     doc.text("INVOICE DATE", 130, startY);
     doc.text("DUE DATE", 170, startY);
