@@ -148,7 +148,9 @@ function ProductsPage() {
         cost_price: Number(form.cost_price || 0),
         quantity: Number(form.quantity || 0),
         reorder_level: Number(form.reorder_level || 0),
+        image_paths: images,
       };
+
       if (editing) {
         const { error } = await supabase.from("products").update(payload as never).eq("id", editing.id);
         if (error) throw error;
