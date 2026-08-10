@@ -107,6 +107,38 @@ function ProductsPage() {
     [p.name, p.sku, p.category, p.supplier].some((v) => v?.toLowerCase().includes(q.toLowerCase()))
   );
 
+  const allPaths = useMemo(
+    () => Array.from(new Set([...products.flatMap((p) => p.image_paths ?? []), ...images])),
+    [products, images],
+  );
+  const { data: urls = {} } = useProductImageUrls(allPaths);
+
+  const openDialog = (p: Product | null) => {
+    setEditing(p);
+    setImages(p?.image_paths ?? []);
+    setOpen(true);
+  };
+
+  const onPickImages = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    if (files.length === 0) return;
+    const room = MAX_PRODUCT_IMAGES - images.length;
+    if (room <= 0) { toast.error(`Up to ${MAX_PRODUCT_IMAGES} images per product`); return; }
+    setUploading(true);
+    try {
+      const paths = await uploadProductImages(tenantId!, files.slice(0, room));
+      setImages((prev) => [...prev, ...paths]);
+      toast.success("Image uploaded");
+    } catch (err) {
+      toast.error("Upload failed", { description: (err as Error).message });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+
+
 
   const upsert = useMutation({
     mutationFn: async (form: Record<string, unknown>) => {
