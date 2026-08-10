@@ -9,7 +9,13 @@ export const MODULES = [
     name: "Online store",
     description: "Public product catalogue with cart and WhatsApp order checkout.",
   },
+  {
+    key: "pos",
+    name: "Point of sale",
+    description: "Fast counter selling: tap products, take payment, print a thermal receipt.",
+  },
 ] as const;
+
 
 export type ModuleKey = (typeof MODULES)[number]["key"];
 
