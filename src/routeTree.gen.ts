@@ -21,6 +21,7 @@ import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedReceiptsRouteImport } from './routes/_authenticated/receipts'
 import { Route as AuthenticatedQuotationsRouteImport } from './routes/_authenticated/quotations'
 import { Route as AuthenticatedProductsRouteImport } from './routes/_authenticated/products'
+import { Route as AuthenticatedPosRouteImport } from './routes/_authenticated/pos'
 import { Route as AuthenticatedPaymentsRouteImport } from './routes/_authenticated/payments'
 import { Route as AuthenticatedOnlineStoreRouteImport } from './routes/_authenticated/online-store'
 import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
@@ -35,6 +36,7 @@ import { Route as AuthenticatedInvoicesNewRouteImport } from './routes/_authenti
 import { Route as AuthenticatedInvoicesIdRouteImport } from './routes/_authenticated/invoices.$id'
 import { Route as AuthenticatedAdminTenantsRouteImport } from './routes/_authenticated/admin.tenants'
 import { Route as AuthenticatedAdminPlansRouteImport } from './routes/_authenticated/admin.plans'
+import { Route as AuthenticatedInvoicesEditIdRouteImport } from './routes/_authenticated/invoices.edit.$id'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -93,6 +95,11 @@ const AuthenticatedQuotationsRoute = AuthenticatedQuotationsRouteImport.update({
 const AuthenticatedProductsRoute = AuthenticatedProductsRouteImport.update({
   id: '/products',
   path: '/products',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedPosRoute = AuthenticatedPosRouteImport.update({
+  id: '/pos',
+  path: '/pos',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedPaymentsRoute = AuthenticatedPaymentsRouteImport.update({
@@ -170,6 +177,12 @@ const AuthenticatedAdminPlansRoute = AuthenticatedAdminPlansRouteImport.update({
   path: '/plans',
   getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
+const AuthenticatedInvoicesEditIdRoute =
+  AuthenticatedInvoicesEditIdRouteImport.update({
+    id: '/invoices/edit/$id',
+    path: '/invoices/edit/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -185,6 +198,7 @@ export interface FileRoutesByFullPath {
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/online-store': typeof AuthenticatedOnlineStoreRoute
   '/payments': typeof AuthenticatedPaymentsRoute
+  '/pos': typeof AuthenticatedPosRoute
   '/products': typeof AuthenticatedProductsRoute
   '/quotations': typeof AuthenticatedQuotationsRoute
   '/receipts': typeof AuthenticatedReceiptsRoute
@@ -197,6 +211,7 @@ export interface FileRoutesByFullPath {
   '/invoices/new': typeof AuthenticatedInvoicesNewRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/invoices/': typeof AuthenticatedInvoicesIndexRoute
+  '/invoices/edit/$id': typeof AuthenticatedInvoicesEditIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -211,6 +226,7 @@ export interface FileRoutesByTo {
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/online-store': typeof AuthenticatedOnlineStoreRoute
   '/payments': typeof AuthenticatedPaymentsRoute
+  '/pos': typeof AuthenticatedPosRoute
   '/products': typeof AuthenticatedProductsRoute
   '/quotations': typeof AuthenticatedQuotationsRoute
   '/receipts': typeof AuthenticatedReceiptsRoute
@@ -223,6 +239,7 @@ export interface FileRoutesByTo {
   '/invoices/new': typeof AuthenticatedInvoicesNewRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/invoices': typeof AuthenticatedInvoicesIndexRoute
+  '/invoices/edit/$id': typeof AuthenticatedInvoicesEditIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -240,6 +257,7 @@ export interface FileRoutesById {
   '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
   '/_authenticated/online-store': typeof AuthenticatedOnlineStoreRoute
   '/_authenticated/payments': typeof AuthenticatedPaymentsRoute
+  '/_authenticated/pos': typeof AuthenticatedPosRoute
   '/_authenticated/products': typeof AuthenticatedProductsRoute
   '/_authenticated/quotations': typeof AuthenticatedQuotationsRoute
   '/_authenticated/receipts': typeof AuthenticatedReceiptsRoute
@@ -252,6 +270,7 @@ export interface FileRoutesById {
   '/_authenticated/invoices/new': typeof AuthenticatedInvoicesNewRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/invoices/': typeof AuthenticatedInvoicesIndexRoute
+  '/_authenticated/invoices/edit/$id': typeof AuthenticatedInvoicesEditIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -269,6 +288,7 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/online-store'
     | '/payments'
+    | '/pos'
     | '/products'
     | '/quotations'
     | '/receipts'
@@ -281,6 +301,7 @@ export interface FileRouteTypes {
     | '/invoices/new'
     | '/admin/'
     | '/invoices/'
+    | '/invoices/edit/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -295,6 +316,7 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/online-store'
     | '/payments'
+    | '/pos'
     | '/products'
     | '/quotations'
     | '/receipts'
@@ -307,6 +329,7 @@ export interface FileRouteTypes {
     | '/invoices/new'
     | '/admin'
     | '/invoices'
+    | '/invoices/edit/$id'
   id:
     | '__root__'
     | '/'
@@ -323,6 +346,7 @@ export interface FileRouteTypes {
     | '/_authenticated/notifications'
     | '/_authenticated/online-store'
     | '/_authenticated/payments'
+    | '/_authenticated/pos'
     | '/_authenticated/products'
     | '/_authenticated/quotations'
     | '/_authenticated/receipts'
@@ -335,6 +359,7 @@ export interface FileRouteTypes {
     | '/_authenticated/invoices/new'
     | '/_authenticated/admin/'
     | '/_authenticated/invoices/'
+    | '/_authenticated/invoices/edit/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -431,6 +456,13 @@ declare module '@tanstack/react-router' {
       path: '/products'
       fullPath: '/products'
       preLoaderRoute: typeof AuthenticatedProductsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/pos': {
+      id: '/_authenticated/pos'
+      path: '/pos'
+      fullPath: '/pos'
+      preLoaderRoute: typeof AuthenticatedPosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/payments': {
@@ -531,6 +563,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminPlansRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/invoices/edit/$id': {
+      id: '/_authenticated/invoices/edit/$id'
+      path: '/invoices/edit/$id'
+      fullPath: '/invoices/edit/$id'
+      preLoaderRoute: typeof AuthenticatedInvoicesEditIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -558,6 +597,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
   AuthenticatedOnlineStoreRoute: typeof AuthenticatedOnlineStoreRoute
   AuthenticatedPaymentsRoute: typeof AuthenticatedPaymentsRoute
+  AuthenticatedPosRoute: typeof AuthenticatedPosRoute
   AuthenticatedProductsRoute: typeof AuthenticatedProductsRoute
   AuthenticatedQuotationsRoute: typeof AuthenticatedQuotationsRoute
   AuthenticatedReceiptsRoute: typeof AuthenticatedReceiptsRoute
@@ -566,6 +606,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedInvoicesIdRoute: typeof AuthenticatedInvoicesIdRoute
   AuthenticatedInvoicesNewRoute: typeof AuthenticatedInvoicesNewRoute
   AuthenticatedInvoicesIndexRoute: typeof AuthenticatedInvoicesIndexRoute
+  AuthenticatedInvoicesEditIdRoute: typeof AuthenticatedInvoicesEditIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -577,6 +618,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
   AuthenticatedOnlineStoreRoute: AuthenticatedOnlineStoreRoute,
   AuthenticatedPaymentsRoute: AuthenticatedPaymentsRoute,
+  AuthenticatedPosRoute: AuthenticatedPosRoute,
   AuthenticatedProductsRoute: AuthenticatedProductsRoute,
   AuthenticatedQuotationsRoute: AuthenticatedQuotationsRoute,
   AuthenticatedReceiptsRoute: AuthenticatedReceiptsRoute,
@@ -585,6 +627,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedInvoicesIdRoute: AuthenticatedInvoicesIdRoute,
   AuthenticatedInvoicesNewRoute: AuthenticatedInvoicesNewRoute,
   AuthenticatedInvoicesIndexRoute: AuthenticatedInvoicesIndexRoute,
+  AuthenticatedInvoicesEditIdRoute: AuthenticatedInvoicesEditIdRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

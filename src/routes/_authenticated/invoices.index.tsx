@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PageHeader, ListToolbar, EmptyState } from "@/components/page-helpers";
 import { formatMoney, formatDate, useCompanySettings } from "@/lib/company";
-import { Plus } from "lucide-react";
+import { Plus, Pencil } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/invoices/")({
   head: () => ({ meta: [{ title: "Invoices" }] }),
@@ -88,6 +88,7 @@ function InvoicesPage() {
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Total</TableHead>
                   <TableHead className="text-right">Balance</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -105,9 +106,19 @@ function InvoicesPage() {
                     <TableCell><Badge className={`capitalize ${statusColor[inv.status] || ""}`} variant="secondary">{inv.status}</Badge></TableCell>
                     <TableCell className="text-right tabular-nums font-medium">{formatMoney(inv.total, sym)}</TableCell>
                     <TableCell className="text-right tabular-nums">{formatMoney(inv.balance, sym)}</TableCell>
+                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                      {inv.status === "draft" ? (
+                        <Button asChild size="sm" variant="outline">
+                          <Link to="/invoices/edit/$id" params={{ id: inv.id }}><Pencil className="h-3.5 w-3.5 mr-1.5" />Edit</Link>
+                        </Button>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
                   </TableRow>
                   );
                 })}
+
               </TableBody>
             </Table>
           </div>

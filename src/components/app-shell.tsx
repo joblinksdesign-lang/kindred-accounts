@@ -1,8 +1,9 @@
 import { createFileRoute, Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, Users, Package, FileText, Receipt, CreditCard, FileSignature,
-  BarChart3, Settings, LogOut, Search, Building2, ShieldCheck, LayoutGrid, Tag, Sparkles, Bell, Wallet, Store,
+  BarChart3, Settings, LogOut, Search, Building2, ShieldCheck, LayoutGrid, Tag, Sparkles, Bell, Wallet, Store, ScanBarcode,
 } from "lucide-react";
+
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter,
@@ -47,6 +48,7 @@ function AppSidebar() {
   const { tenant, role } = useActiveTenant();
   const { data: modules } = useTenantModules();
   const hasStore = modules?.has("storefront") ?? false;
+  const hasPos = modules?.has("pos") ?? false;
 
   const isActive = (to: string) =>
     to === "/admin"
@@ -57,6 +59,7 @@ function AppSidebar() {
 
   const showWorkspace = !isSuperAdmin && !!tenant;
   const showAdmin = isSuperAdmin;
+
 
   return (
     <Sidebar collapsible="icon" className="border-r">
@@ -83,7 +86,17 @@ function AppSidebar() {
             <SidebarGroupLabel>Workspace</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
+                {hasPos && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={isActive("/pos")} tooltip="Point of Sale">
+                      <Link to="/pos" className="flex items-center gap-2 font-semibold">
+                        <ScanBarcode className="h-4 w-4" /><span>Point of Sale</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
                 {workspaceNav.map((item) => (
+
                   <SidebarMenuItem key={item.to}>
                     <SidebarMenuButton asChild isActive={isActive(item.to)} tooltip={item.title}>
                       <Link to={item.to} className="flex items-center gap-2">
@@ -164,6 +177,8 @@ function Topbar() {
   const navigate = useNavigate();
   const { user } = useCurrentUser();
   const { tenant, memberships } = useActiveTenant();
+  const { data: modules } = useTenantModules();
+
   const initials = (user?.email || "U").slice(0, 2).toUpperCase();
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -183,6 +198,12 @@ function Topbar() {
         <Input placeholder="Search…" className="h-9 pl-8 bg-background" />
       </div>
       <div className="ml-auto flex items-center gap-2">
+        {modules?.has("pos") && (
+          <Button asChild size="sm" className="gradient-emerald text-white shadow-soft">
+            <Link to="/pos"><ScanBarcode className="h-4 w-4 md:mr-1.5" /><span className="hidden md:inline">POS</span></Link>
+          </Button>
+        )}
+
         <NotificationBell />
         <div className="flex items-center gap-2 rounded-lg border bg-background px-2 py-1">
           <Avatar className="h-7 w-7">

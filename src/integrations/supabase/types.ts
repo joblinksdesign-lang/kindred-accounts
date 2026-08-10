@@ -608,6 +608,7 @@ export type Database = {
           created_by: string | null
           description: string | null
           id: string
+          image_paths: string[]
           image_url: string | null
           is_active: boolean
           name: string
@@ -627,6 +628,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
+          image_paths?: string[]
           image_url?: string | null
           is_active?: boolean
           name: string
@@ -646,6 +648,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
+          image_paths?: string[]
           image_url?: string | null
           is_active?: boolean
           name?: string

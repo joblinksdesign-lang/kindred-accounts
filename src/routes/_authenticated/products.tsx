@@ -1,6 +1,7 @@
 import { createFileRoute, useRouterState } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,10 +13,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PageHeader, ListToolbar, EmptyState } from "@/components/page-helpers";
-import { Plus, Pencil, Trash2, ArrowUpRight, ArrowDownRight, Sliders } from "lucide-react";
+import { Plus, Pencil, Trash2, ArrowUpRight, ArrowDownRight, Sliders, ImagePlus, X, PackageSearch } from "lucide-react";
 import { toast } from "sonner";
 import { formatMoney, useCompanySettings } from "@/lib/company";
 import { useActiveTenantId } from "@/lib/tenant";
+import { MAX_PRODUCT_IMAGES, uploadProductImages, useProductImageUrls } from "@/lib/product-images";
+
 
 export const Route = createFileRoute("/_authenticated/products")({
   head: () => ({ meta: [{ title: "Products & Inventory" }] }),
@@ -25,8 +28,9 @@ export const Route = createFileRoute("/_authenticated/products")({
 type Product = {
   id: string; name: string; sku: string | null; barcode: string | null; category: string | null;
   unit_price: number; cost_price: number; quantity: number; reorder_level: number;
-  supplier: string | null; image_url: string | null;
+  supplier: string | null; image_url: string | null; image_paths: string[] | null;
 };
+
 
 function ProductsPage() {
   const qc = useQueryClient();
@@ -41,6 +45,9 @@ function ProductsPage() {
   const [listsOpen, setListsOpen] = useState(false);
   const [newCategory, setNewCategory] = useState("");
   const [newSupplier, setNewSupplier] = useState("");
+  const [images, setImages] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
+
 
   const { data: products = [] } = useQuery({
     queryKey: ["products"],
@@ -100,6 +107,38 @@ function ProductsPage() {
     [p.name, p.sku, p.category, p.supplier].some((v) => v?.toLowerCase().includes(q.toLowerCase()))
   );
 
+  const allPaths = useMemo(
+    () => Array.from(new Set([...products.flatMap((p) => p.image_paths ?? []), ...images])),
+    [products, images],
+  );
+  const { data: urls = {} } = useProductImageUrls(allPaths);
+
+  const openDialog = (p: Product | null) => {
+    setEditing(p);
+    setImages(p?.image_paths ?? []);
+    setOpen(true);
+  };
+
+  const onPickImages = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = "";
+    if (files.length === 0) return;
+    const room = MAX_PRODUCT_IMAGES - images.length;
+    if (room <= 0) { toast.error(`Up to ${MAX_PRODUCT_IMAGES} images per product`); return; }
+    setUploading(true);
+    try {
+      const paths = await uploadProductImages(tenantId!, files.slice(0, room));
+      setImages((prev) => [...prev, ...paths]);
+      toast.success("Image uploaded");
+    } catch (err) {
+      toast.error("Upload failed", { description: (err as Error).message });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+
+
 
   const upsert = useMutation({
     mutationFn: async (form: Record<string, unknown>) => {
@@ -109,7 +148,9 @@ function ProductsPage() {
         cost_price: Number(form.cost_price || 0),
         quantity: Number(form.quantity || 0),
         reorder_level: Number(form.reorder_level || 0),
+        image_paths: images,
       };
+
       if (editing) {
         const { error } = await supabase.from("products").update(payload as never).eq("id", editing.id);
         if (error) throw error;
@@ -122,7 +163,7 @@ function ProductsPage() {
     onSuccess: () => {
       toast.success(editing ? "Product updated" : "Product created");
       qc.invalidateQueries({ queryKey: ["products"] });
-      setOpen(false); setEditing(null);
+      setOpen(false); setEditing(null); setImages([]);
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -209,7 +250,7 @@ function ProductsPage() {
       <Card className="p-4 shadow-soft border-0">
         <ListToolbar
           query={q} onQuery={setQ} placeholder="Search by name, SKU, category…"
-          onAdd={() => { setEditing(null); setOpen(true); }} addLabel="New product"
+          onAdd={() => openDialog(null)} addLabel="New product"
         />
         {filtered.length === 0 ? (
           <EmptyState title="No products yet" message="Add your first product or service to start invoicing." />
@@ -233,9 +274,23 @@ function ProductsPage() {
                   return (
                     <TableRow key={p.id} className={productParam === p.id ? "bg-primary/10 ring-1 ring-primary/30" : ""}>
                       <TableCell>
-                        <div className="font-medium">{p.name}</div>
-                        <div className="text-xs text-muted-foreground">{p.category}</div>
+                        <div className="flex items-center gap-2.5">
+                          <div className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-md border bg-muted">
+                            {(() => {
+                              const first = (p.image_paths ?? [])[0];
+                              const src = first ? urls[first] : p.image_url;
+                              return src
+                                ? <img src={src} alt={p.name} loading="lazy" className="h-full w-full object-cover" />
+                                : <PackageSearch className="h-4 w-4 text-muted-foreground" />;
+                            })()}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="font-medium">{p.name}</div>
+                            <div className="text-xs text-muted-foreground">{p.category}</div>
+                          </div>
+                        </div>
                       </TableCell>
+
                       <TableCell className="text-xs text-muted-foreground">{p.sku || "—"}</TableCell>
                       <TableCell className="text-right tabular-nums">{formatMoney(p.unit_price, sym)}</TableCell>
                       <TableCell className="text-right tabular-nums font-medium">{Number(p.quantity)}</TableCell>
@@ -246,7 +301,7 @@ function ProductsPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <Button size="icon" variant="ghost" title="Stock movement" onClick={() => setMovement(p)}><Sliders className="h-4 w-4" /></Button>
-                        <Button size="icon" variant="ghost" onClick={() => { setEditing(p); setOpen(true); }}><Pencil className="h-4 w-4" /></Button>
+                        <Button size="icon" variant="ghost" onClick={() => openDialog(p)}><Pencil className="h-4 w-4" /></Button>
                         <Button size="icon" variant="ghost" onClick={() => confirm("Delete product?") && del.mutate(p.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                       </TableCell>
                     </TableRow>
@@ -290,7 +345,32 @@ function ProductsPage() {
             <div><Label>Cost price ({sym})</Label><Input name="cost_price" type="number" step="0.01" defaultValue={editing?.cost_price ?? 0} /></div>
             <div><Label>Quantity</Label><Input name="quantity" type="number" step="1" defaultValue={editing?.quantity ?? 0} /></div>
             <div><Label>Reorder level</Label><Input name="reorder_level" type="number" step="1" defaultValue={editing?.reorder_level ?? 0} /></div>
-            <div className="col-span-2"><Label>Image URL</Label><Input name="image_url" defaultValue={editing?.image_url ?? ""} /></div>
+            <div className="col-span-2">
+              <Label>Product images (up to {MAX_PRODUCT_IMAGES})</Label>
+              <div className="mt-1.5 flex flex-wrap gap-2">
+                {images.map((path) => (
+                  <div key={path} className="relative h-20 w-20 overflow-hidden rounded-lg border bg-muted">
+                    {urls[path] && <img src={urls[path]} alt="Product" className="h-full w-full object-cover" />}
+                    <button
+                      type="button"
+                      onClick={() => setImages((prev) => prev.filter((x) => x !== path))}
+                      className="absolute right-0.5 top-0.5 rounded-full bg-background/90 p-0.5 shadow"
+                      title="Remove image"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+                {images.length < MAX_PRODUCT_IMAGES && (
+                  <label className="grid h-20 w-20 cursor-pointer place-items-center gap-1 rounded-lg border border-dashed text-muted-foreground hover:border-primary hover:text-primary">
+                    {uploading ? <span className="text-[10px]">Uploading…</span> : <><ImagePlus className="h-5 w-5" /><span className="text-[10px]">Upload</span></>}
+                    <input type="file" accept="image/*" multiple className="hidden" onChange={onPickImages} disabled={uploading} />
+                  </label>
+                )}
+              </div>
+              <p className="mt-1 text-[11px] text-muted-foreground">Pick images straight from your device — JPG or PNG, up to 5MB each.</p>
+            </div>
+
             <DialogFooter className="col-span-2 mt-2">
               <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
               <Button type="submit" className="gradient-emerald text-white">{editing ? "Save" : "Create"}</Button>

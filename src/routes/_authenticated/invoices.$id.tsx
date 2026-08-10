@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PageHeader } from "@/components/page-helpers";
-import { ArrowLeft, Download, Plus, Send, Trash2 } from "lucide-react";
+import { ArrowLeft, Download, Pencil, Plus, Send, Trash2 } from "lucide-react";
 import { formatMoney, formatDate, useCompanySettings } from "@/lib/company";
 import { useActiveTenantId } from "@/lib/tenant";
 import { generateInvoicePdf, loadCompanyLogo, savePdf } from "@/lib/pdf";
@@ -130,7 +130,13 @@ function InvoiceDetail() {
             <SelectTrigger className="w-40 h-9"><SelectValue /></SelectTrigger>
             <SelectContent>{["draft","sent","pending","partial","paid","overdue","cancelled"].map((s) => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}</SelectContent>
           </Select>
+          {invoice.status === "draft" && (
+            <Button asChild variant="outline">
+              <Link to="/invoices/edit/$id" params={{ id }}><Pencil className="h-4 w-4 mr-1.5" />Edit draft</Link>
+            </Button>
+          )}
           <Button variant="outline" onClick={downloadPdf}><Download className="h-4 w-4 mr-1.5" />PDF</Button>
+
           {Number(invoice.balance) > 0 && (
             <Button onClick={() => setPayOpen(true)} className="gradient-emerald text-white"><Send className="h-4 w-4 mr-1.5" />Record payment</Button>
           )}
