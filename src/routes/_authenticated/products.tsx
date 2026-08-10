@@ -1,6 +1,7 @@
 import { createFileRoute, useRouterState } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,10 +13,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PageHeader, ListToolbar, EmptyState } from "@/components/page-helpers";
-import { Plus, Pencil, Trash2, ArrowUpRight, ArrowDownRight, Sliders } from "lucide-react";
+import { Plus, Pencil, Trash2, ArrowUpRight, ArrowDownRight, Sliders, ImagePlus, X, PackageSearch } from "lucide-react";
 import { toast } from "sonner";
 import { formatMoney, useCompanySettings } from "@/lib/company";
 import { useActiveTenantId } from "@/lib/tenant";
+import { MAX_PRODUCT_IMAGES, uploadProductImages, useProductImageUrls } from "@/lib/product-images";
+
 
 export const Route = createFileRoute("/_authenticated/products")({
   head: () => ({ meta: [{ title: "Products & Inventory" }] }),
@@ -25,8 +28,9 @@ export const Route = createFileRoute("/_authenticated/products")({
 type Product = {
   id: string; name: string; sku: string | null; barcode: string | null; category: string | null;
   unit_price: number; cost_price: number; quantity: number; reorder_level: number;
-  supplier: string | null; image_url: string | null;
+  supplier: string | null; image_url: string | null; image_paths: string[] | null;
 };
+
 
 function ProductsPage() {
   const qc = useQueryClient();
@@ -41,6 +45,9 @@ function ProductsPage() {
   const [listsOpen, setListsOpen] = useState(false);
   const [newCategory, setNewCategory] = useState("");
   const [newSupplier, setNewSupplier] = useState("");
+  const [images, setImages] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
+
 
   const { data: products = [] } = useQuery({
     queryKey: ["products"],
