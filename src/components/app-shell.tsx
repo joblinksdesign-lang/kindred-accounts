@@ -198,6 +198,12 @@ function Topbar() {
         <Input placeholder="Search…" className="h-9 pl-8 bg-background" />
       </div>
       <div className="ml-auto flex items-center gap-2">
+        {modules?.has("pos") && (
+          <Button asChild size="sm" className="gradient-emerald text-white shadow-soft">
+            <Link to="/pos"><ScanBarcode className="h-4 w-4 md:mr-1.5" /><span className="hidden md:inline">POS</span></Link>
+          </Button>
+        )}
+
         <NotificationBell />
         <div className="flex items-center gap-2 rounded-lg border bg-background px-2 py-1">
           <Avatar className="h-7 w-7">
