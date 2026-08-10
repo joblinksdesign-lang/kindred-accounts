@@ -36,6 +36,7 @@ import { Route as AuthenticatedInvoicesNewRouteImport } from './routes/_authenti
 import { Route as AuthenticatedInvoicesIdRouteImport } from './routes/_authenticated/invoices.$id'
 import { Route as AuthenticatedAdminTenantsRouteImport } from './routes/_authenticated/admin.tenants'
 import { Route as AuthenticatedAdminPlansRouteImport } from './routes/_authenticated/admin.plans'
+import { Route as AuthenticatedInvoicesEditIdRouteImport } from './routes/_authenticated/invoices.edit.$id'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -176,6 +177,12 @@ const AuthenticatedAdminPlansRoute = AuthenticatedAdminPlansRouteImport.update({
   path: '/plans',
   getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
+const AuthenticatedInvoicesEditIdRoute =
+  AuthenticatedInvoicesEditIdRouteImport.update({
+    id: '/invoices/edit/$id',
+    path: '/invoices/edit/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -204,6 +211,7 @@ export interface FileRoutesByFullPath {
   '/invoices/new': typeof AuthenticatedInvoicesNewRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/invoices/': typeof AuthenticatedInvoicesIndexRoute
+  '/invoices/edit/$id': typeof AuthenticatedInvoicesEditIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -231,6 +239,7 @@ export interface FileRoutesByTo {
   '/invoices/new': typeof AuthenticatedInvoicesNewRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/invoices': typeof AuthenticatedInvoicesIndexRoute
+  '/invoices/edit/$id': typeof AuthenticatedInvoicesEditIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -261,6 +270,7 @@ export interface FileRoutesById {
   '/_authenticated/invoices/new': typeof AuthenticatedInvoicesNewRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/invoices/': typeof AuthenticatedInvoicesIndexRoute
+  '/_authenticated/invoices/edit/$id': typeof AuthenticatedInvoicesEditIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -291,6 +301,7 @@ export interface FileRouteTypes {
     | '/invoices/new'
     | '/admin/'
     | '/invoices/'
+    | '/invoices/edit/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -318,6 +329,7 @@ export interface FileRouteTypes {
     | '/invoices/new'
     | '/admin'
     | '/invoices'
+    | '/invoices/edit/$id'
   id:
     | '__root__'
     | '/'
@@ -347,6 +359,7 @@ export interface FileRouteTypes {
     | '/_authenticated/invoices/new'
     | '/_authenticated/admin/'
     | '/_authenticated/invoices/'
+    | '/_authenticated/invoices/edit/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -550,6 +563,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminPlansRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/invoices/edit/$id': {
+      id: '/_authenticated/invoices/edit/$id'
+      path: '/invoices/edit/$id'
+      fullPath: '/invoices/edit/$id'
+      preLoaderRoute: typeof AuthenticatedInvoicesEditIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -586,6 +606,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedInvoicesIdRoute: typeof AuthenticatedInvoicesIdRoute
   AuthenticatedInvoicesNewRoute: typeof AuthenticatedInvoicesNewRoute
   AuthenticatedInvoicesIndexRoute: typeof AuthenticatedInvoicesIndexRoute
+  AuthenticatedInvoicesEditIdRoute: typeof AuthenticatedInvoicesEditIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -606,6 +627,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedInvoicesIdRoute: AuthenticatedInvoicesIdRoute,
   AuthenticatedInvoicesNewRoute: AuthenticatedInvoicesNewRoute,
   AuthenticatedInvoicesIndexRoute: AuthenticatedInvoicesIndexRoute,
+  AuthenticatedInvoicesEditIdRoute: AuthenticatedInvoicesEditIdRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
