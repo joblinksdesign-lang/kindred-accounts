@@ -1,8 +1,9 @@
 import { createFileRoute, Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, Users, Package, FileText, Receipt, CreditCard, FileSignature,
-  BarChart3, Settings, LogOut, Search, Building2, ShieldCheck, LayoutGrid, Tag, Sparkles, Bell, Wallet, Store,
+  BarChart3, Settings, LogOut, Search, Building2, ShieldCheck, LayoutGrid, Tag, Sparkles, Bell, Wallet, Store, ScanBarcode,
 } from "lucide-react";
+
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarFooter,
@@ -47,6 +48,7 @@ function AppSidebar() {
   const { tenant, role } = useActiveTenant();
   const { data: modules } = useTenantModules();
   const hasStore = modules?.has("storefront") ?? false;
+  const hasPos = modules?.has("pos") ?? false;
 
   const isActive = (to: string) =>
     to === "/admin"
@@ -57,6 +59,7 @@ function AppSidebar() {
 
   const showWorkspace = !isSuperAdmin && !!tenant;
   const showAdmin = isSuperAdmin;
+
 
   return (
     <Sidebar collapsible="icon" className="border-r">
@@ -83,7 +86,17 @@ function AppSidebar() {
             <SidebarGroupLabel>Workspace</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
+                {hasPos && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={isActive("/pos")} tooltip="Point of Sale">
+                      <Link to="/pos" className="flex items-center gap-2 font-semibold">
+                        <ScanBarcode className="h-4 w-4" /><span>Point of Sale</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
                 {workspaceNav.map((item) => (
+
                   <SidebarMenuItem key={item.to}>
                     <SidebarMenuButton asChild isActive={isActive(item.to)} tooltip={item.title}>
                       <Link to={item.to} className="flex items-center gap-2">
