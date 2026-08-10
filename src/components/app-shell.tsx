@@ -177,6 +177,8 @@ function Topbar() {
   const navigate = useNavigate();
   const { user } = useCurrentUser();
   const { tenant, memberships } = useActiveTenant();
+  const { data: modules } = useTenantModules();
+
   const initials = (user?.email || "U").slice(0, 2).toUpperCase();
   const signOut = async () => {
     await supabase.auth.signOut();
