@@ -25,8 +25,11 @@ export type StorefrontProduct = {
   description: string | null;
   unit_price: number;
   image_url: string | null;
+  images: string[];
   quantity: number;
+  reorder_level: number;
 };
+
 
 export type StorefrontData = {
   tenant: { id: string; slug: string; business_name: string; currency: string; currency_symbol: string };
