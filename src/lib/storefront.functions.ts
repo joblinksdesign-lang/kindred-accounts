@@ -192,13 +192,17 @@ export const submitStoreOrder = createServerFn({ method: "POST" })
     const ids = data.items.map((i) => i.product_id);
     const { data: products } = await supabaseAdmin
       .from("products")
-      .select("id, name, unit_price, is_active")
+      .select("id, name, unit_price, is_active, quantity")
       .eq("tenant_id", tenant.id)
       .in("id", ids);
 
     const priced = data.items.map((i) => {
       const p = (products ?? []).find((x) => x.id === i.product_id && x.is_active);
       if (!p) throw new Error("One of the items is no longer available.");
+      const stock = Number(p.quantity ?? 0);
+      if (stock <= 0) throw new Error(`${p.name} is out of stock.`);
+      if (i.quantity > stock) throw new Error(`Only ${stock} of ${p.name} left in stock.`);
+
       const unit = Number(p.unit_price);
       return {
         product_id: p.id,
