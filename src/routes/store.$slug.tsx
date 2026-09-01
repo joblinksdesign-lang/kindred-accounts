@@ -389,6 +389,89 @@ function Storefront() {
   );
 }
 
+/** Swipeable image gallery: horizontal snap scroll with dots + arrows. */
+function ProductGallery({ images, name, out }: { images: string[]; name: string; out: boolean }) {
+  const [index, setIndex] = useState(0);
+  const ref = useRef<HTMLDivElement>(null);
+
+  const go = (i: number) => {
+    const el = ref.current;
+    if (!el) return;
+    const next = Math.max(0, Math.min(images.length - 1, i));
+    el.scrollTo({ left: next * el.clientWidth, behavior: "smooth" });
+    setIndex(next);
+  };
+
+  if (images.length === 0) {
+    return (
+      <div className="grid aspect-square w-full place-items-center bg-muted text-muted-foreground">
+        <PackageSearch className="h-8 w-8" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="group relative aspect-square w-full overflow-hidden bg-muted">
+      <div
+        ref={ref}
+        onScroll={(e) => {
+          const el = e.currentTarget;
+          setIndex(Math.round(el.scrollLeft / Math.max(el.clientWidth, 1)));
+        }}
+        className="flex h-full w-full snap-x snap-mandatory overflow-x-auto scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {images.map((src, i) => (
+          <img
+            key={src}
+            src={src}
+            alt={`${name} image ${i + 1}`}
+            loading="lazy"
+            className={`h-full w-full shrink-0 snap-center object-cover ${out ? "opacity-60 grayscale" : ""}`}
+          />
+        ))}
+      </div>
+
+      {images.length > 1 && (
+        <>
+          <button
+            type="button"
+            aria-label="Previous image"
+            onClick={() => go(index - 1)}
+            className="absolute left-1 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-full bg-background/80 opacity-0 shadow transition group-hover:opacity-100 focus:opacity-100"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            aria-label="Next image"
+            onClick={() => go(index + 1)}
+            className="absolute right-1 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-full bg-background/80 opacity-0 shadow transition group-hover:opacity-100 focus:opacity-100"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+          <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5">
+            {images.map((src, i) => (
+              <button
+                key={src}
+                type="button"
+                aria-label={`Go to image ${i + 1}`}
+                onClick={() => go(i)}
+                className={`h-1.5 rounded-full transition-all ${i === index ? "w-4 bg-foreground" : "w-1.5 bg-foreground/40"}`}
+              />
+            ))}
+          </div>
+        </>
+      )}
+      {out && (
+        <span className="absolute left-2 top-2 rounded-full bg-destructive px-2 py-0.5 text-[10px] font-semibold text-destructive-foreground">
+          Sold out
+        </span>
+      )}
+    </div>
+  );
+}
+
+
 function Row({ label, value }: { label: string; value: string }) {
   return <div className="flex justify-between text-muted-foreground"><span>{label}</span><span className="tabular-nums text-foreground">{value}</span></div>;
 }
