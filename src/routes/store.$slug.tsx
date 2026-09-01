@@ -301,9 +301,15 @@ function Storefront() {
                       <div><Label>Email</Label><Input type="email" maxLength={160} value={customer.email} onChange={(e) => setCustomer({ ...customer, email: e.target.value })} /></div>
                       <div><Label>Delivery address</Label><Input maxLength={300} value={customer.address} onChange={(e) => setCustomer({ ...customer, address: e.target.value })} /></div>
                       <div><Label>Notes</Label><Textarea rows={2} maxLength={600} value={customer.notes} onChange={(e) => setCustomer({ ...customer, notes: e.target.value })} /></div>
-                      <Button type="submit" disabled={submit.isPending} className="w-full text-white" style={{ background: accent }}>
+                      {stockProblem && (
+                        <p className="rounded-md bg-destructive/10 p-2 text-xs font-medium text-destructive">
+                          {stockProblem.name} doesn't have enough stock. Reduce the quantity to continue.
+                        </p>
+                      )}
+                      <Button type="submit" disabled={submit.isPending || !!stockProblem} className="w-full text-white" style={{ background: accent }}>
                         {submit.isPending ? "Submitting…" : "Checkout"}
                       </Button>
+
                     </form>
                   </div>
                 )}
