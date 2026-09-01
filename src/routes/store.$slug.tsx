@@ -1,5 +1,5 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { getStorefront, submitStoreOrder, type StoreOrderResult, type StorefrontData } from "@/lib/storefront.functions";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
-import { ShoppingCart, Plus, Minus, Trash2, Send, Download, PackageSearch } from "lucide-react";
+import { ShoppingCart, Plus, Minus, Trash2, Send, Download, PackageSearch, ChevronLeft, ChevronRight } from "lucide-react";
 import { formatMoney } from "@/lib/company";
 
 export const Route = createFileRoute("/store/$slug")({
@@ -83,7 +83,19 @@ function Storefront() {
     return matchQ && matchC;
   });
 
+  const stockOf = (id: string) => Number(products.find((p) => p.id === id)?.quantity ?? 0);
+
   const add = (id: string, name: string, price: number) => {
+    const stock = stockOf(id);
+    const inCart = cart.find((l) => l.product_id === id)?.quantity ?? 0;
+    if (stock <= 0) {
+      toast.error(`${name} is out of stock`);
+      return;
+    }
+    if (inCart + 1 > stock) {
+      toast.error(`Only ${stock} of ${name} left in stock`);
+      return;
+    }
     setCart((c) => {
       const found = c.find((l) => l.product_id === id);
       if (found) return c.map((l) => (l.product_id === id ? { ...l, quantity: l.quantity + 1 } : l));
@@ -91,10 +103,19 @@ function Storefront() {
     });
     toast.success(`${name} added to cart`);
   };
-  const setQty = (id: string, qty: number) =>
+  const setQty = (id: string, qty: number) => {
+    const stock = stockOf(id);
+    if (qty > stock) {
+      toast.error(`Only ${stock} left in stock`);
+      return;
+    }
     setCart((c) =>
       qty <= 0 ? c.filter((l) => l.product_id !== id) : c.map((l) => (l.product_id === id ? { ...l, quantity: qty } : l)),
     );
+  };
+
+  const stockProblem = cart.find((l) => l.quantity > stockOf(l.product_id));
+
 
   const subtotal = cart.reduce((s, l) => s + l.unit_price * l.quantity, 0);
   const taxAmount = (subtotal * (company.default_tax_rate || 0)) / 100;
@@ -242,18 +263,26 @@ function Storefront() {
                 ) : (
                   <div className="flex flex-1 flex-col py-4">
                     <div className="space-y-3">
-                      {cart.map((l) => (
-                        <div key={l.product_id} className="flex items-center gap-2 rounded-lg border p-2">
-                          <div className="min-w-0 flex-1">
-                            <div className="truncate text-sm font-medium">{l.name}</div>
-                            <div className="text-xs text-muted-foreground">{formatMoney(l.unit_price, symbol)}</div>
+                      {cart.map((l) => {
+                        const stock = stockOf(l.product_id);
+                        const over = l.quantity > stock;
+                        return (
+                        <div key={l.product_id} className={`rounded-lg border p-2 ${over ? "border-destructive" : ""}`}>
+                          <div className="flex items-center gap-2">
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate text-sm font-medium">{l.name}</div>
+                              <div className="text-xs text-muted-foreground">{formatMoney(l.unit_price, symbol)}</div>
+                            </div>
+                            <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => setQty(l.product_id, l.quantity - 1)}><Minus className="h-3 w-3" /></Button>
+                            <span className="w-6 text-center text-sm tabular-nums">{l.quantity}</span>
+                            <Button size="icon" variant="outline" className="h-7 w-7" disabled={l.quantity >= stock} onClick={() => setQty(l.product_id, l.quantity + 1)}><Plus className="h-3 w-3" /></Button>
+                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setQty(l.product_id, 0)}><Trash2 className="h-3 w-3 text-destructive" /></Button>
                           </div>
-                          <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => setQty(l.product_id, l.quantity - 1)}><Minus className="h-3 w-3" /></Button>
-                          <span className="w-6 text-center text-sm tabular-nums">{l.quantity}</span>
-                          <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => setQty(l.product_id, l.quantity + 1)}><Plus className="h-3 w-3" /></Button>
-                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setQty(l.product_id, 0)}><Trash2 className="h-3 w-3 text-destructive" /></Button>
+                          {over && <div className="mt-1 text-[11px] font-medium text-destructive">Only {stock} left in stock</div>}
                         </div>
-                      ))}
+                        );
+                      })}
+
                     </div>
                     <Separator className="my-4" />
                     <div className="space-y-1 text-sm">
@@ -272,9 +301,15 @@ function Storefront() {
                       <div><Label>Email</Label><Input type="email" maxLength={160} value={customer.email} onChange={(e) => setCustomer({ ...customer, email: e.target.value })} /></div>
                       <div><Label>Delivery address</Label><Input maxLength={300} value={customer.address} onChange={(e) => setCustomer({ ...customer, address: e.target.value })} /></div>
                       <div><Label>Notes</Label><Textarea rows={2} maxLength={600} value={customer.notes} onChange={(e) => setCustomer({ ...customer, notes: e.target.value })} /></div>
-                      <Button type="submit" disabled={submit.isPending} className="w-full text-white" style={{ background: accent }}>
+                      {stockProblem && (
+                        <p className="rounded-md bg-destructive/10 p-2 text-xs font-medium text-destructive">
+                          {stockProblem.name} doesn't have enough stock. Reduce the quantity to continue.
+                        </p>
+                      )}
+                      <Button type="submit" disabled={submit.isPending || !!stockProblem} className="w-full text-white" style={{ background: accent }}>
                         {submit.isPending ? "Submitting…" : "Checkout"}
                       </Button>
+
                     </form>
                   </div>
                 )}
@@ -309,27 +344,38 @@ function Storefront() {
           <p className="py-16 text-center text-sm text-muted-foreground">No products match your search.</p>
         ) : (
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-            {visible.map((p) => (
+            {visible.map((p) => {
+              const stock = Number(p.quantity ?? 0);
+              const inCart = cart.find((l) => l.product_id === p.id)?.quantity ?? 0;
+              const out = stock <= 0;
+              const low = !out && stock <= Math.max(Number(p.reorder_level ?? 0), 3);
+              return (
               <Card key={p.id} className="flex flex-col overflow-hidden border-0 shadow-soft">
-                <div className="aspect-square w-full bg-muted">
-                  {p.image_url ? (
-                    <img src={p.image_url} alt={p.name} loading="lazy" className="h-full w-full object-cover" />
-                  ) : (
-                    <div className="grid h-full place-items-center text-muted-foreground"><PackageSearch className="h-8 w-8" /></div>
-                  )}
-                </div>
+                <ProductGallery images={p.images} name={p.name} out={out} />
                 <div className="flex flex-1 flex-col gap-1 p-3">
                   {p.category && <span className="text-[10px] uppercase tracking-wide text-muted-foreground">{p.category}</span>}
                   <div className="line-clamp-2 text-sm font-semibold leading-snug">{p.name}</div>
+                  <div className={`text-[11px] font-medium ${out ? "text-destructive" : low ? "text-amber-600" : "text-muted-foreground"}`}>
+                    {out ? "Out of stock" : low ? `Only ${stock} left` : `${stock} in stock`}
+                  </div>
                   <div className="mt-auto pt-2 text-base font-bold tabular-nums [overflow-wrap:anywhere]">
                     {formatMoney(p.unit_price, symbol)}
                   </div>
-                  <Button size="sm" className="mt-2 w-full text-white" style={{ background: accent }} onClick={() => add(p.id, p.name, p.unit_price)}>
-                    Add to cart
+                  <Button
+                    size="sm"
+                    className="mt-2 w-full text-white disabled:opacity-60"
+                    style={{ background: out || inCart >= stock ? undefined : accent }}
+                    variant={out || inCart >= stock ? "secondary" : "default"}
+                    disabled={out || inCart >= stock}
+                    onClick={() => add(p.id, p.name, p.unit_price)}
+                  >
+                    {out ? "Out of stock" : inCart >= stock ? "Max in cart" : "Add to cart"}
                   </Button>
                 </div>
               </Card>
-            ))}
+              );
+            })}
+
           </div>
         )}
       </main>
@@ -342,6 +388,89 @@ function Storefront() {
     </div>
   );
 }
+
+/** Swipeable image gallery: horizontal snap scroll with dots + arrows. */
+function ProductGallery({ images, name, out }: { images: string[]; name: string; out: boolean }) {
+  const [index, setIndex] = useState(0);
+  const ref = useRef<HTMLDivElement>(null);
+
+  const go = (i: number) => {
+    const el = ref.current;
+    if (!el) return;
+    const next = Math.max(0, Math.min(images.length - 1, i));
+    el.scrollTo({ left: next * el.clientWidth, behavior: "smooth" });
+    setIndex(next);
+  };
+
+  if (images.length === 0) {
+    return (
+      <div className="grid aspect-square w-full place-items-center bg-muted text-muted-foreground">
+        <PackageSearch className="h-8 w-8" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="group relative aspect-square w-full overflow-hidden bg-muted">
+      <div
+        ref={ref}
+        onScroll={(e) => {
+          const el = e.currentTarget;
+          setIndex(Math.round(el.scrollLeft / Math.max(el.clientWidth, 1)));
+        }}
+        className="flex h-full w-full snap-x snap-mandatory overflow-x-auto scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {images.map((src, i) => (
+          <img
+            key={src}
+            src={src}
+            alt={`${name} image ${i + 1}`}
+            loading="lazy"
+            className={`h-full w-full shrink-0 snap-center object-cover ${out ? "opacity-60 grayscale" : ""}`}
+          />
+        ))}
+      </div>
+
+      {images.length > 1 && (
+        <>
+          <button
+            type="button"
+            aria-label="Previous image"
+            onClick={() => go(index - 1)}
+            className="absolute left-1 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-full bg-background/80 opacity-0 shadow transition group-hover:opacity-100 focus:opacity-100"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            aria-label="Next image"
+            onClick={() => go(index + 1)}
+            className="absolute right-1 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-full bg-background/80 opacity-0 shadow transition group-hover:opacity-100 focus:opacity-100"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+          <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5">
+            {images.map((src, i) => (
+              <button
+                key={src}
+                type="button"
+                aria-label={`Go to image ${i + 1}`}
+                onClick={() => go(i)}
+                className={`h-1.5 rounded-full transition-all ${i === index ? "w-4 bg-foreground" : "w-1.5 bg-foreground/40"}`}
+              />
+            ))}
+          </div>
+        </>
+      )}
+      {out && (
+        <span className="absolute left-2 top-2 rounded-full bg-destructive px-2 py-0.5 text-[10px] font-semibold text-destructive-foreground">
+          Sold out
+        </span>
+      )}
+    </div>
+  );
+}
+
 
 function Row({ label, value }: { label: string; value: string }) {
   return <div className="flex justify-between text-muted-foreground"><span>{label}</span><span className="tabular-nums text-foreground">{value}</span></div>;

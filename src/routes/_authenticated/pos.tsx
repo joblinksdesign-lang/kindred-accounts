@@ -112,15 +112,28 @@ function PosPage() {
   const change = Math.max(Number(tendered || 0) - total, 0);
   const count = cart.reduce((s, l) => s + l.quantity, 0);
 
-  const add = (p: PosProduct) =>
+  const stockOf = (id: string) => Number(products.find((p) => p.id === id)?.quantity ?? 0);
+
+  const add = (p: PosProduct) => {
+    const stock = Number(p.quantity ?? 0);
+    const inCart = cart.find((l) => l.product_id === p.id)?.quantity ?? 0;
+    if (stock <= 0) { toast.error(`${p.name} is out of stock`); return; }
+    if (inCart + 1 > stock) { toast.error(`Only ${stock} of ${p.name} left in stock`); return; }
     setCart((c) => {
       const found = c.find((l) => l.product_id === p.id);
       if (found) return c.map((l) => (l.product_id === p.id ? { ...l, quantity: l.quantity + 1 } : l));
       return [...c, { product_id: p.id, name: p.name, unit_price: Number(p.unit_price), quantity: 1 }];
     });
+  };
 
-  const setQty = (id: string, qty: number) =>
+  const setQty = (id: string, qty: number) => {
+    const stock = stockOf(id);
+    if (qty > stock) { toast.error(`Only ${stock} left in stock`); return; }
     setCart((c) => (qty <= 0 ? c.filter((l) => l.product_id !== id) : c.map((l) => (l.product_id === id ? { ...l, quantity: qty } : l))));
+  };
+
+  const stockProblem = cart.find((l) => l.quantity > stockOf(l.product_id));
+
 
   const reset = () => { setCart([]); setDiscount(0); setTendered(""); setCustomerId("walkin"); setMethod("cash"); };
 
@@ -134,7 +147,22 @@ function PosPage() {
   const checkout = useMutation({
     mutationFn: async (): Promise<SaleResult> => {
       if (cart.length === 0) throw new Error("Cart is empty");
+
+      // Re-check live stock before selling anything.
+      const { data: fresh, error: freshErr } = await supabase
+        .from("products")
+        .select("id, name, quantity")
+        .in("id", cart.map((l) => l.product_id));
+      if (freshErr) throw freshErr;
+      for (const l of cart) {
+        const p = (fresh ?? []).find((x) => x.id === l.product_id);
+        const stock = Number(p?.quantity ?? 0);
+        if (stock <= 0) throw new Error(`${l.name} is out of stock`);
+        if (l.quantity > stock) throw new Error(`Only ${stock} of ${l.name} left in stock`);
+      }
+
       const { data: u } = await supabase.auth.getUser();
+
 
       // Resolve the customer (walk-in gets a reusable record).
       let cid = customerId;
@@ -284,30 +312,46 @@ function PosPage() {
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
                 {visible.map((p) => {
                   const img = (p.image_paths ?? [])[0] ? urls[(p.image_paths ?? [])[0]] : p.image_url;
-                  const out = Number(p.quantity) <= 0;
+                  const stock = Number(p.quantity ?? 0);
+                  const out = stock <= 0;
+                  const inCart = cart.find((l) => l.product_id === p.id)?.quantity ?? 0;
+                  const low = !out && stock <= 5;
+                  const maxed = !out && inCart >= stock;
                   return (
                     <button
                       key={p.id}
                       type="button"
                       onClick={() => add(p)}
-                      className="group overflow-hidden rounded-xl border bg-card text-left shadow-soft transition hover:border-primary hover:shadow-md active:scale-[.98]"
+                      disabled={out || maxed}
+                      className="group overflow-hidden rounded-xl border bg-card text-left shadow-soft transition hover:border-primary hover:shadow-md active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:border-border disabled:active:scale-100"
                     >
-                      <div className="aspect-square w-full bg-muted">
+                      <div className="relative aspect-square w-full bg-muted">
                         {img ? (
-                          <img src={img} alt={p.name} loading="lazy" className="h-full w-full object-cover" />
+                          <img src={img} alt={p.name} loading="lazy" className={`h-full w-full object-cover ${out ? "grayscale" : ""}`} />
                         ) : (
                           <div className="grid h-full place-items-center text-muted-foreground"><PackageSearch className="h-7 w-7" /></div>
+                        )}
+                        {out && (
+                          <span className="absolute left-1.5 top-1.5 rounded-full bg-destructive px-2 py-0.5 text-[10px] font-semibold text-destructive-foreground">
+                            Out of stock
+                          </span>
+                        )}
+                        {!out && low && (
+                          <span className="absolute left-1.5 top-1.5 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-semibold text-white">
+                            Low stock
+                          </span>
                         )}
                       </div>
                       <div className="p-2.5">
                         <div className="line-clamp-2 text-xs font-semibold leading-snug">{p.name}</div>
                         <div className="mt-1 text-sm font-bold tabular-nums text-primary [overflow-wrap:anywhere]">{formatMoney(p.unit_price, sym)}</div>
-                        <div className={`text-[10px] ${out ? "text-destructive" : "text-muted-foreground"}`}>
-                          {out ? "Out of stock" : `${Number(p.quantity)} in stock`}
+                        <div className={`text-[10px] ${out ? "text-destructive" : low ? "text-amber-600" : "text-muted-foreground"}`}>
+                          {out ? "Out of stock" : maxed ? `All ${stock} in cart` : `${stock} in stock`}
                         </div>
                       </div>
                     </button>
                   );
+
                 })}
               </div>
             )}

@@ -25,8 +25,11 @@ export type StorefrontProduct = {
   description: string | null;
   unit_price: number;
   image_url: string | null;
+  images: string[];
   quantity: number;
+  reorder_level: number;
 };
+
 
 export type StorefrontData = {
   tenant: { id: string; slug: string; business_name: string; currency: string; currency_symbol: string };
@@ -73,7 +76,7 @@ export const getStorefront = createServerFn({ method: "GET" })
         .maybeSingle(),
       sb
         .from("products")
-        .select("id, name, sku, category, description, unit_price, image_url, quantity")
+        .select("id, name, sku, category, description, unit_price, image_url, image_paths, quantity, reorder_level")
         .eq("tenant_id", tenant.id)
         .eq("is_active", true)
         .order("name"),
@@ -81,15 +84,28 @@ export const getStorefront = createServerFn({ method: "GET" })
     if (!company) return null;
 
     let logoUrl: string | null = company.logo_url ?? null;
+    const admin = (await import("@/integrations/supabase/client.server")).supabaseAdmin;
     if (company.logo_path) {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const { data: signed } = await supabaseAdmin.storage
+      const { data: signed } = await admin.storage
         .from("company-assets")
         .createSignedUrl(company.logo_path, 60 * 60);
       if (signed?.signedUrl) logoUrl = signed.signedUrl;
     }
 
+    // Sign every product image so the gallery can render private bucket files.
+    const allPaths = (products ?? []).flatMap((p) => (p.image_paths ?? []) as string[]);
+    const signedMap: Record<string, string> = {};
+    if (allPaths.length > 0) {
+      const { data: signedList } = await admin.storage
+        .from("product-images")
+        .createSignedUrls(allPaths, 60 * 60);
+      (signedList ?? []).forEach((s) => {
+        if (s.path && s.signedUrl) signedMap[s.path] = s.signedUrl;
+      });
+    }
+
     return {
+
       tenant: tenant as StorefrontData["tenant"],
       company: {
         company_name: company.company_name,
@@ -108,7 +124,21 @@ export const getStorefront = createServerFn({ method: "GET" })
         store_headline: company.store_headline,
         store_about: company.store_about,
       },
-      products: (products ?? []).map((p) => ({ ...p, unit_price: Number(p.unit_price) })) as StorefrontProduct[],
+      products: (products ?? []).map((p) => ({
+        id: p.id,
+        name: p.name,
+        sku: p.sku,
+        category: p.category,
+        description: p.description,
+        unit_price: Number(p.unit_price),
+        image_url: p.image_url,
+        images: (((p.image_paths ?? []) as string[]).map((path) => signedMap[path]).filter(Boolean) as string[]).concat(
+          p.image_url && ((p.image_paths ?? []) as string[]).length === 0 ? [p.image_url] : [],
+        ),
+        quantity: Number(p.quantity ?? 0),
+        reorder_level: Number(p.reorder_level ?? 0),
+      })) as StorefrontProduct[],
+
     };
   });
 
@@ -162,13 +192,17 @@ export const submitStoreOrder = createServerFn({ method: "POST" })
     const ids = data.items.map((i) => i.product_id);
     const { data: products } = await supabaseAdmin
       .from("products")
-      .select("id, name, unit_price, is_active")
+      .select("id, name, unit_price, is_active, quantity")
       .eq("tenant_id", tenant.id)
       .in("id", ids);
 
     const priced = data.items.map((i) => {
       const p = (products ?? []).find((x) => x.id === i.product_id && x.is_active);
       if (!p) throw new Error("One of the items is no longer available.");
+      const stock = Number(p.quantity ?? 0);
+      if (stock <= 0) throw new Error(`${p.name} is out of stock.`);
+      if (i.quantity > stock) throw new Error(`Only ${stock} of ${p.name} left in stock.`);
+
       const unit = Number(p.unit_price);
       return {
         product_id: p.id,
