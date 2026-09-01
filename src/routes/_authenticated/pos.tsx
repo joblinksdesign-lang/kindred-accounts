@@ -112,15 +112,28 @@ function PosPage() {
   const change = Math.max(Number(tendered || 0) - total, 0);
   const count = cart.reduce((s, l) => s + l.quantity, 0);
 
-  const add = (p: PosProduct) =>
+  const stockOf = (id: string) => Number(products.find((p) => p.id === id)?.quantity ?? 0);
+
+  const add = (p: PosProduct) => {
+    const stock = Number(p.quantity ?? 0);
+    const inCart = cart.find((l) => l.product_id === p.id)?.quantity ?? 0;
+    if (stock <= 0) { toast.error(`${p.name} is out of stock`); return; }
+    if (inCart + 1 > stock) { toast.error(`Only ${stock} of ${p.name} left in stock`); return; }
     setCart((c) => {
       const found = c.find((l) => l.product_id === p.id);
       if (found) return c.map((l) => (l.product_id === p.id ? { ...l, quantity: l.quantity + 1 } : l));
       return [...c, { product_id: p.id, name: p.name, unit_price: Number(p.unit_price), quantity: 1 }];
     });
+  };
 
-  const setQty = (id: string, qty: number) =>
+  const setQty = (id: string, qty: number) => {
+    const stock = stockOf(id);
+    if (qty > stock) { toast.error(`Only ${stock} left in stock`); return; }
     setCart((c) => (qty <= 0 ? c.filter((l) => l.product_id !== id) : c.map((l) => (l.product_id === id ? { ...l, quantity: qty } : l))));
+  };
+
+  const stockProblem = cart.find((l) => l.quantity > stockOf(l.product_id));
+
 
   const reset = () => { setCart([]); setDiscount(0); setTendered(""); setCustomerId("walkin"); setMethod("cash"); };
 
