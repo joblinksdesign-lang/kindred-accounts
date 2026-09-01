@@ -263,18 +263,26 @@ function Storefront() {
                 ) : (
                   <div className="flex flex-1 flex-col py-4">
                     <div className="space-y-3">
-                      {cart.map((l) => (
-                        <div key={l.product_id} className="flex items-center gap-2 rounded-lg border p-2">
-                          <div className="min-w-0 flex-1">
-                            <div className="truncate text-sm font-medium">{l.name}</div>
-                            <div className="text-xs text-muted-foreground">{formatMoney(l.unit_price, symbol)}</div>
+                      {cart.map((l) => {
+                        const stock = stockOf(l.product_id);
+                        const over = l.quantity > stock;
+                        return (
+                        <div key={l.product_id} className={`rounded-lg border p-2 ${over ? "border-destructive" : ""}`}>
+                          <div className="flex items-center gap-2">
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate text-sm font-medium">{l.name}</div>
+                              <div className="text-xs text-muted-foreground">{formatMoney(l.unit_price, symbol)}</div>
+                            </div>
+                            <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => setQty(l.product_id, l.quantity - 1)}><Minus className="h-3 w-3" /></Button>
+                            <span className="w-6 text-center text-sm tabular-nums">{l.quantity}</span>
+                            <Button size="icon" variant="outline" className="h-7 w-7" disabled={l.quantity >= stock} onClick={() => setQty(l.product_id, l.quantity + 1)}><Plus className="h-3 w-3" /></Button>
+                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setQty(l.product_id, 0)}><Trash2 className="h-3 w-3 text-destructive" /></Button>
                           </div>
-                          <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => setQty(l.product_id, l.quantity - 1)}><Minus className="h-3 w-3" /></Button>
-                          <span className="w-6 text-center text-sm tabular-nums">{l.quantity}</span>
-                          <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => setQty(l.product_id, l.quantity + 1)}><Plus className="h-3 w-3" /></Button>
-                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setQty(l.product_id, 0)}><Trash2 className="h-3 w-3 text-destructive" /></Button>
+                          {over && <div className="mt-1 text-[11px] font-medium text-destructive">Only {stock} left in stock</div>}
                         </div>
-                      ))}
+                        );
+                      })}
+
                     </div>
                     <Separator className="my-4" />
                     <div className="space-y-1 text-sm">
