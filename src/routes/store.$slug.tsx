@@ -344,25 +344,35 @@ function Storefront() {
           <p className="py-16 text-center text-sm text-muted-foreground">No products match your search.</p>
         ) : (
           <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-            {visible.map((p) => (
+            {visible.map((p) => {
+              const stock = Number(p.quantity ?? 0);
+              const inCart = cart.find((l) => l.product_id === p.id)?.quantity ?? 0;
+              const out = stock <= 0;
+              const low = !out && stock <= Math.max(Number(p.reorder_level ?? 0), 3);
+              return (
               <Card key={p.id} className="flex flex-col overflow-hidden border-0 shadow-soft">
-                <div className="aspect-square w-full bg-muted">
-                  {p.image_url ? (
-                    <img src={p.image_url} alt={p.name} loading="lazy" className="h-full w-full object-cover" />
-                  ) : (
-                    <div className="grid h-full place-items-center text-muted-foreground"><PackageSearch className="h-8 w-8" /></div>
-                  )}
-                </div>
+                <ProductGallery images={p.images} name={p.name} out={out} />
                 <div className="flex flex-1 flex-col gap-1 p-3">
                   {p.category && <span className="text-[10px] uppercase tracking-wide text-muted-foreground">{p.category}</span>}
                   <div className="line-clamp-2 text-sm font-semibold leading-snug">{p.name}</div>
+                  <div className={`text-[11px] font-medium ${out ? "text-destructive" : low ? "text-amber-600" : "text-muted-foreground"}`}>
+                    {out ? "Out of stock" : low ? `Only ${stock} left` : `${stock} in stock`}
+                  </div>
                   <div className="mt-auto pt-2 text-base font-bold tabular-nums [overflow-wrap:anywhere]">
                     {formatMoney(p.unit_price, symbol)}
                   </div>
-                  <Button size="sm" className="mt-2 w-full text-white" style={{ background: accent }} onClick={() => add(p.id, p.name, p.unit_price)}>
-                    Add to cart
+                  <Button
+                    size="sm"
+                    className="mt-2 w-full text-white disabled:opacity-60"
+                    style={{ background: out || inCart >= stock ? undefined : accent }}
+                    variant={out || inCart >= stock ? "secondary" : "default"}
+                    disabled={out || inCart >= stock}
+                    onClick={() => add(p.id, p.name, p.unit_price)}
+                  >
+                    {out ? "Out of stock" : inCart >= stock ? "Max in cart" : "Add to cart"}
                   </Button>
                 </div>
+
               </Card>
             ))}
           </div>
