@@ -76,7 +76,7 @@ export const getStorefront = createServerFn({ method: "GET" })
         .maybeSingle(),
       sb
         .from("products")
-        .select("id, name, sku, category, description, unit_price, image_url, quantity")
+        .select("id, name, sku, category, description, unit_price, image_url, image_paths, quantity, reorder_level")
         .eq("tenant_id", tenant.id)
         .eq("is_active", true)
         .order("name"),
@@ -84,15 +84,28 @@ export const getStorefront = createServerFn({ method: "GET" })
     if (!company) return null;
 
     let logoUrl: string | null = company.logo_url ?? null;
+    const admin = (await import("@/integrations/supabase/client.server")).supabaseAdmin;
     if (company.logo_path) {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const { data: signed } = await supabaseAdmin.storage
+      const { data: signed } = await admin.storage
         .from("company-assets")
         .createSignedUrl(company.logo_path, 60 * 60);
       if (signed?.signedUrl) logoUrl = signed.signedUrl;
     }
 
+    // Sign every product image so the gallery can render private bucket files.
+    const allPaths = (products ?? []).flatMap((p) => (p.image_paths ?? []) as string[]);
+    const signedMap: Record<string, string> = {};
+    if (allPaths.length > 0) {
+      const { data: signedList } = await admin.storage
+        .from("product-images")
+        .createSignedUrls(allPaths, 60 * 60);
+      (signedList ?? []).forEach((s) => {
+        if (s.path && s.signedUrl) signedMap[s.path] = s.signedUrl;
+      });
+    }
+
     return {
+
       tenant: tenant as StorefrontData["tenant"],
       company: {
         company_name: company.company_name,
