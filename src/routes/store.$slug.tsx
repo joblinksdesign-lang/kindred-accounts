@@ -83,7 +83,19 @@ function Storefront() {
     return matchQ && matchC;
   });
 
+  const stockOf = (id: string) => Number(products.find((p) => p.id === id)?.quantity ?? 0);
+
   const add = (id: string, name: string, price: number) => {
+    const stock = stockOf(id);
+    const inCart = cart.find((l) => l.product_id === id)?.quantity ?? 0;
+    if (stock <= 0) {
+      toast.error(`${name} is out of stock`);
+      return;
+    }
+    if (inCart + 1 > stock) {
+      toast.error(`Only ${stock} of ${name} left in stock`);
+      return;
+    }
     setCart((c) => {
       const found = c.find((l) => l.product_id === id);
       if (found) return c.map((l) => (l.product_id === id ? { ...l, quantity: l.quantity + 1 } : l));
@@ -91,10 +103,19 @@ function Storefront() {
     });
     toast.success(`${name} added to cart`);
   };
-  const setQty = (id: string, qty: number) =>
+  const setQty = (id: string, qty: number) => {
+    const stock = stockOf(id);
+    if (qty > stock) {
+      toast.error(`Only ${stock} left in stock`);
+      return;
+    }
     setCart((c) =>
       qty <= 0 ? c.filter((l) => l.product_id !== id) : c.map((l) => (l.product_id === id ? { ...l, quantity: qty } : l)),
     );
+  };
+
+  const stockProblem = cart.find((l) => l.quantity > stockOf(l.product_id));
+
 
   const subtotal = cart.reduce((s, l) => s + l.unit_price * l.quantity, 0);
   const taxAmount = (subtotal * (company.default_tax_rate || 0)) / 100;
