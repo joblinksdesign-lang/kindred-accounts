@@ -147,7 +147,22 @@ function PosPage() {
   const checkout = useMutation({
     mutationFn: async (): Promise<SaleResult> => {
       if (cart.length === 0) throw new Error("Cart is empty");
+
+      // Re-check live stock before selling anything.
+      const { data: fresh, error: freshErr } = await supabase
+        .from("products")
+        .select("id, name, quantity")
+        .in("id", cart.map((l) => l.product_id));
+      if (freshErr) throw freshErr;
+      for (const l of cart) {
+        const p = (fresh ?? []).find((x) => x.id === l.product_id);
+        const stock = Number(p?.quantity ?? 0);
+        if (stock <= 0) throw new Error(`${l.name} is out of stock`);
+        if (l.quantity > stock) throw new Error(`Only ${stock} of ${l.name} left in stock`);
+      }
+
       const { data: u } = await supabase.auth.getUser();
+
 
       // Resolve the customer (walk-in gets a reusable record).
       let cid = customerId;
