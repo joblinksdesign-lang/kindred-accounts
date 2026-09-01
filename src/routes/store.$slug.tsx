@@ -372,9 +372,10 @@ function Storefront() {
                     {out ? "Out of stock" : inCart >= stock ? "Max in cart" : "Add to cart"}
                   </Button>
                 </div>
-
               </Card>
-            ))}
+              );
+            })}
+
           </div>
         )}
       </main>
