@@ -124,7 +124,21 @@ export const getStorefront = createServerFn({ method: "GET" })
         store_headline: company.store_headline,
         store_about: company.store_about,
       },
-      products: (products ?? []).map((p) => ({ ...p, unit_price: Number(p.unit_price) })) as StorefrontProduct[],
+      products: (products ?? []).map((p) => ({
+        id: p.id,
+        name: p.name,
+        sku: p.sku,
+        category: p.category,
+        description: p.description,
+        unit_price: Number(p.unit_price),
+        image_url: p.image_url,
+        images: (((p.image_paths ?? []) as string[]).map((path) => signedMap[path]).filter(Boolean) as string[]).concat(
+          p.image_url && ((p.image_paths ?? []) as string[]).length === 0 ? [p.image_url] : [],
+        ),
+        quantity: Number(p.quantity ?? 0),
+        reorder_level: Number(p.reorder_level ?? 0),
+      })) as StorefrontProduct[],
+
     };
   });
 
