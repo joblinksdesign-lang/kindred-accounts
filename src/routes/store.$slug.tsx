@@ -1,7 +1,14 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { getStorefront, submitStoreOrder, type StoreOrderResult, type StorefrontData } from "@/lib/storefront.functions";
+import {
+  getStorefront,
+  submitStoreOrder,
+  lookupStoreCustomer,
+  type StoreCustomerLookup,
+  type StoreOrderResult,
+  type StorefrontData,
+} from "@/lib/storefront.functions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -122,14 +129,34 @@ function Storefront() {
   const total = subtotal + taxAmount;
   const count = cart.reduce((s, l) => s + l.quantity, 0);
 
+  const [mode, setMode] = useState<"code" | "form">("code");
+  const [code, setCode] = useState("");
+  const [known, setKnown] = useState<StoreCustomerLookup | null>(null);
+  const [orderNotes, setOrderNotes] = useState("");
+  const [customer, setCustomer] = useState({ name: "", phone: "", email: "", address: "", notes: "" });
+
+  const lookup = useMutation({
+    mutationFn: async (value: string) => lookupStoreCustomer({ data: { slug: tenant.slug, code: value.trim() } }),
+    onSuccess: (res) => {
+      if (res.found) {
+        setKnown(res);
+        toast.success(`Welcome back, ${res.name}`);
+      } else {
+        setKnown(null);
+        toast.error("We don't know that code yet — continue as a new customer.");
+        setMode("form");
+      }
+    },
+    onError: () => toast.error("Could not check that code right now."),
+  });
+
   const submit = useMutation({
-    mutationFn: async (form: {
-      name: string; phone: string; email: string; address: string; notes: string;
-    }) =>
+    mutationFn: async () =>
       submitStoreOrder({
         data: {
           slug: tenant.slug,
-          customer: form,
+          ...(known ? { code: known.code } : { customer }),
+          notes: known ? orderNotes : customer.notes,
           items: cart.map((l) => ({ product_id: l.product_id, quantity: l.quantity })),
         },
       }),
@@ -140,8 +167,6 @@ function Storefront() {
     },
     onError: (e: Error) => toast.error(e.message || "Could not submit your order"),
   });
-
-  const [customer, setCustomer] = useState({ name: "", phone: "", email: "", address: "", notes: "" });
 
   const buildPdf = async (res: StoreOrderResult) => {
     const { generateInvoicePdf, loadLogoDataUrl } = await import("@/lib/pdf");
@@ -165,7 +190,12 @@ function Storefront() {
         date: res.date,
         status: "sent",
         docTitle: "Quotation",
-        customer: { name: customer.name, phone: customer.phone, email: customer.email, address: customer.address },
+        customer: {
+          name: res.customerName,
+          phone: res.customerPhone,
+          email: known ? known.email ?? "" : customer.email,
+          address: res.customerAddress,
+        },
         items: res.items,
         subtotal: res.subtotal,
         taxRate: res.taxRate,
@@ -174,7 +204,7 @@ function Storefront() {
         total: res.total,
         amountPaid: 0,
         balance: res.total,
-        notes: customer.notes || null,
+        notes: (known ? orderNotes : customer.notes) || null,
         template: "bold",
       },
       companySettings,
@@ -201,9 +231,10 @@ function Storefront() {
     const lines = [
       `*New order — ${company.company_name}*`,
       `Quotation: ${res.quoteNumber}`,
-      `Name: ${customer.name}`,
-      `Phone: ${customer.phone}`,
-      customer.address ? `Address: ${customer.address}` : null,
+      res.customerCode ? `My shop code: ${res.customerCode}` : null,
+      `Name: ${res.customerName}`,
+      `Phone: ${res.customerPhone}`,
+      res.customerAddress ? `Address: ${res.customerAddress}` : null,
       "",
       ...res.items.map((i) => `• ${i.description} x${i.quantity} — ${formatMoney(i.line_total, symbol)}`),
       "",
@@ -215,6 +246,7 @@ function Storefront() {
     ].filter(Boolean);
     window.open(`https://wa.me/${digits}?text=${encodeURIComponent(lines.join("\n"))}`, "_blank");
   };
+
 
   return (
     <div className="min-h-screen bg-background" style={{ ["--brand" as string]: accent }}>
@@ -293,24 +325,79 @@ function Storefront() {
                     <Separator className="my-4" />
                     <form
                       className="space-y-3"
-                      onSubmit={(e) => { e.preventDefault(); submit.mutate(customer); }}
+                      onSubmit={(e) => { e.preventDefault(); submit.mutate(); }}
                     >
-                      <div className="text-sm font-semibold">Your details</div>
-                      <div><Label>Full name *</Label><Input required maxLength={120} value={customer.name} onChange={(e) => setCustomer({ ...customer, name: e.target.value })} /></div>
-                      <div><Label>Phone *</Label><Input required maxLength={40} value={customer.phone} onChange={(e) => setCustomer({ ...customer, phone: e.target.value })} /></div>
-                      <div><Label>Email</Label><Input type="email" maxLength={160} value={customer.email} onChange={(e) => setCustomer({ ...customer, email: e.target.value })} /></div>
-                      <div><Label>Delivery address</Label><Input maxLength={300} value={customer.address} onChange={(e) => setCustomer({ ...customer, address: e.target.value })} /></div>
-                      <div><Label>Notes</Label><Textarea rows={2} maxLength={600} value={customer.notes} onChange={(e) => setCustomer({ ...customer, notes: e.target.value })} /></div>
+                      {known ? (
+                        <div className="space-y-3">
+                          <div className="rounded-lg border p-3 text-sm" style={{ borderColor: accent }}>
+                            <div className="font-semibold">Welcome back, {known.name}</div>
+                            <div className="text-xs text-muted-foreground">
+                              Shop code {known.code}{known.phone ? ` • ${known.phone}` : ""}
+                            </div>
+                            <button
+                              type="button"
+                              className="mt-2 text-xs underline"
+                              onClick={() => { setKnown(null); setCode(""); setMode("code"); }}
+                            >
+                              Not you? Use another code
+                            </button>
+                          </div>
+                          <div><Label>Notes for this order</Label><Textarea rows={2} maxLength={600} value={orderNotes} onChange={(e) => setOrderNotes(e.target.value)} /></div>
+                        </div>
+                      ) : mode === "code" ? (
+                        <div className="space-y-3">
+                          <div className="text-sm font-semibold">Enter your shop code</div>
+                          <p className="text-xs text-muted-foreground">
+                            Returning customers get a 5-character code (e.g. Jo123) on WhatsApp. Enter it to order without filling the form.
+                          </p>
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder="Jo123"
+                              maxLength={16}
+                              value={code}
+                              onChange={(e) => setCode(e.target.value)}
+                            />
+                            <Button
+                              type="button"
+                              disabled={code.trim().length < 3 || lookup.isPending}
+                              className="text-white"
+                              style={{ background: accent }}
+                              onClick={() => lookup.mutate(code)}
+                            >
+                              {lookup.isPending ? "Checking…" : "Continue"}
+                            </Button>
+                          </div>
+                          <Button type="button" variant="outline" className="w-full" onClick={() => setMode("form")}>
+                            I'm a new customer
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div className="text-sm font-semibold">Your details</div>
+                            <button type="button" className="text-xs underline" onClick={() => setMode("code")}>
+                              I have a shop code
+                            </button>
+                          </div>
+                          <div><Label>Full name *</Label><Input required maxLength={120} value={customer.name} onChange={(e) => setCustomer({ ...customer, name: e.target.value })} /></div>
+                          <div><Label>Phone *</Label><Input required maxLength={40} value={customer.phone} onChange={(e) => setCustomer({ ...customer, phone: e.target.value })} /></div>
+                          <div><Label>Email</Label><Input type="email" maxLength={160} value={customer.email} onChange={(e) => setCustomer({ ...customer, email: e.target.value })} /></div>
+                          <div><Label>Delivery address</Label><Input maxLength={300} value={customer.address} onChange={(e) => setCustomer({ ...customer, address: e.target.value })} /></div>
+                          <div><Label>Notes</Label><Textarea rows={2} maxLength={600} value={customer.notes} onChange={(e) => setCustomer({ ...customer, notes: e.target.value })} /></div>
+                        </div>
+                      )}
                       {stockProblem && (
                         <p className="rounded-md bg-destructive/10 p-2 text-xs font-medium text-destructive">
                           {stockProblem.name} doesn't have enough stock. Reduce the quantity to continue.
                         </p>
                       )}
-                      <Button type="submit" disabled={submit.isPending || !!stockProblem} className="w-full text-white" style={{ background: accent }}>
-                        {submit.isPending ? "Submitting…" : "Checkout"}
-                      </Button>
-
+                      {(known || mode === "form") && (
+                        <Button type="submit" disabled={submit.isPending || !!stockProblem} className="w-full text-white" style={{ background: accent }}>
+                          {submit.isPending ? "Submitting…" : "Checkout"}
+                        </Button>
+                      )}
                     </form>
+
                   </div>
                 )}
               </SheetContent>

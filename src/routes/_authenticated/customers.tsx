@@ -10,7 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { PageHeader, ListToolbar, EmptyState } from "@/components/page-helpers";
-import { Plus, Mail, Phone, Trash2, Pencil } from "lucide-react";
+import { Plus, Mail, Phone, Trash2, Pencil, Send, Copy } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { formatDate } from "@/lib/company";
 import { useActiveTenantId } from "@/lib/tenant";
@@ -23,7 +24,7 @@ export const Route = createFileRoute("/_authenticated/customers")({
 type Customer = {
   id: string; name: string; company_name: string | null; email: string | null;
   phone: string | null; address: string | null; city: string | null; country: string | null;
-  tax_id: string | null; notes: string | null; created_at: string;
+  tax_id: string | null; notes: string | null; created_at: string; store_code: string | null;
 };
 
 function CustomersPage() {
@@ -111,6 +112,7 @@ function CustomersPage() {
                 <TableRow>
                   <TableHead>Customer</TableHead>
                   <TableHead>Contact</TableHead>
+                  <TableHead>Shop code</TableHead>
                   <TableHead>Location</TableHead>
                   <TableHead>Added</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -129,6 +131,38 @@ function CustomersPage() {
                         {c.phone && <span className="flex items-center gap-1.5"><Phone className="h-3 w-3" />{c.phone}</span>}
                       </div>
                     </TableCell>
+                    <TableCell>
+                      {c.store_code ? (
+                        <div className="flex items-center gap-1">
+                          <Badge variant="secondary" className="font-mono">{c.store_code}</Badge>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7"
+                            title="Copy code"
+                            onClick={() => { navigator.clipboard.writeText(c.store_code!); toast.success("Shop code copied"); }}
+                          >
+                            <Copy className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7"
+                            title="Send code on WhatsApp"
+                            onClick={() => {
+                              const digits = (c.phone ?? "").replace(/\D/g, "");
+                              if (!digits) { toast.error("Add a phone number first"); return; }
+                              const text = `Hello ${c.name}, your shop code is ${c.store_code}. Use it at checkout in our online store to order without filling in your details.`;
+                              window.open(`https://wa.me/${digits}?text=${encodeURIComponent(text)}`, "_blank");
+                            }}
+                          >
+                            <Send className="h-3.5 w-3.5 text-success" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
                     <TableCell className="text-xs text-muted-foreground">{[c.city, c.country].filter(Boolean).join(", ") || "—"}</TableCell>
                     <TableCell className="text-xs text-muted-foreground">{formatDate(c.created_at)}</TableCell>
                     <TableCell className="text-right">
@@ -137,6 +171,7 @@ function CustomersPage() {
                     </TableCell>
                   </TableRow>
                 ))}
+
               </TableBody>
             </Table>
           </div>

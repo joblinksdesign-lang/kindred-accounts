@@ -144,23 +144,72 @@ export const getStorefront = createServerFn({ method: "GET" })
 
 const checkoutSchema = z.object({
   slug: z.string().min(1).max(120),
-  customer: z.object({
-    name: z.string().trim().min(1).max(120),
-    phone: z.string().trim().min(3).max(40),
-    email: z.string().trim().email().max(160).optional().or(z.literal("")),
-    address: z.string().trim().max(300).optional().or(z.literal("")),
-    notes: z.string().trim().max(600).optional().or(z.literal("")),
-  }),
+  code: z.string().trim().min(3).max(16).optional().or(z.literal("")),
+  customer: z
+    .object({
+      name: z.string().trim().min(1).max(120),
+      phone: z.string().trim().min(3).max(40),
+      email: z.string().trim().email().max(160).optional().or(z.literal("")),
+      address: z.string().trim().max(300).optional().or(z.literal("")),
+      notes: z.string().trim().max(600).optional().or(z.literal("")),
+    })
+    .optional(),
+  notes: z.string().trim().max(600).optional().or(z.literal("")),
   items: z
     .array(z.object({ product_id: z.string().uuid(), quantity: z.number().int().min(1).max(9999) }))
     .min(1)
     .max(60),
 });
 
+export type StoreCustomerLookup = {
+  found: boolean;
+  code?: string;
+  name?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+};
+
+/** Public: checks a shopper's 5-character shop code for one business. */
+export const lookupStoreCustomer = createServerFn({ method: "POST" })
+  .inputValidator((data) =>
+    z.object({ slug: z.string().min(1).max(120), code: z.string().trim().min(3).max(16) }).parse(data),
+  )
+  .handler(async ({ data }): Promise<StoreCustomerLookup> => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: tenant } = await supabaseAdmin
+      .from("tenants")
+      .select("id, status")
+      .eq("slug", data.slug)
+      .maybeSingle();
+    if (!tenant || tenant.status !== "active") return { found: false };
+
+    const { data: customer } = await supabaseAdmin
+      .from("customers")
+      .select("store_code, name, phone, email, address")
+      .eq("tenant_id", tenant.id)
+      .ilike("store_code", data.code)
+      .maybeSingle();
+    if (!customer) return { found: false };
+
+    return {
+      found: true,
+      code: customer.store_code ?? data.code,
+      name: customer.name,
+      phone: customer.phone ?? "",
+      email: customer.email ?? "",
+      address: customer.address ?? "",
+    };
+  });
+
 export type StoreOrderResult = {
   quoteNumber: string;
   quotationId: string;
   date: string;
+  customerCode: string | null;
+  customerName: string;
+  customerPhone: string;
+  customerAddress: string;
   items: { description: string; quantity: number; unit_price: number; line_total: number }[];
   subtotal: number;
   taxRate: number;
@@ -168,6 +217,7 @@ export type StoreOrderResult = {
   total: number;
   whatsappNumber: string | null;
 };
+
 
 /** Public: turns a storefront cart into a quotation for the business. */
 export const submitStoreOrder = createServerFn({ method: "POST" })
@@ -218,37 +268,59 @@ export const submitStoreOrder = createServerFn({ method: "POST" })
     const taxAmount = Number(((subtotal * taxRate) / 100).toFixed(2));
     const total = Number((subtotal + taxAmount).toFixed(2));
 
-    // Reuse an existing customer record when the phone or email matches.
-    const email = data.customer.email || null;
+    // Returning shoppers are identified by their shop code; new ones fill the form.
     let customerId: string | null = null;
-    const { data: existing } = await supabaseAdmin
-      .from("customers")
-      .select("id, phone, email")
-      .eq("tenant_id", tenant.id)
-      .or(`phone.eq.${data.customer.phone}${email ? `,email.eq.${email}` : ""}`)
-      .limit(1);
-    if (existing && existing.length > 0) {
-      customerId = existing[0].id;
-      await supabaseAdmin
+    let record: { id: string; name: string; phone: string | null; address: string | null; store_code: string | null } | null =
+      null;
+
+    if (data.code) {
+      const { data: byCode } = await supabaseAdmin
         .from("customers")
-        .update({ name: data.customer.name, address: data.customer.address || null })
-        .eq("id", customerId);
+        .select("id, name, phone, address, store_code")
+        .eq("tenant_id", tenant.id)
+        .ilike("store_code", data.code)
+        .maybeSingle();
+      if (!byCode) throw new Error("We couldn't find that shop code. Please check it or order as a new customer.");
+      record = byCode;
+      customerId = byCode.id;
     } else {
-      const { data: created, error: custErr } = await supabaseAdmin
+      const form = data.customer;
+      if (!form) throw new Error("Please enter your details or your shop code.");
+      const email = form.email || null;
+      const { data: existing } = await supabaseAdmin
         .from("customers")
-        .insert({
-          tenant_id: tenant.id,
-          name: data.customer.name,
-          phone: data.customer.phone,
-          email,
-          address: data.customer.address || null,
-          notes: "Created from online store",
-        })
-        .select("id")
-        .single();
-      if (custErr) throw custErr;
-      customerId = created.id;
+        .select("id, name, phone, address, store_code")
+        .eq("tenant_id", tenant.id)
+        .or(`phone.eq.${form.phone}${email ? `,email.eq.${email}` : ""}`)
+        .limit(1);
+      if (existing && existing.length > 0) {
+        record = existing[0];
+        customerId = existing[0].id;
+        await supabaseAdmin
+          .from("customers")
+          .update({ name: form.name, address: form.address || null })
+          .eq("id", customerId);
+        record = { ...existing[0], name: form.name, address: form.address || null };
+      } else {
+        const { data: created, error: custErr } = await supabaseAdmin
+          .from("customers")
+          .insert({
+            tenant_id: tenant.id,
+            name: form.name,
+            phone: form.phone,
+            email,
+            address: form.address || null,
+            notes: "Created from online store",
+          })
+          .select("id, name, phone, address, store_code")
+          .single();
+        if (custErr) throw custErr;
+        record = created;
+        customerId = created.id;
+      }
     }
+
+    const orderNotes = data.notes || data.customer?.notes || "";
 
     const today = new Date().toISOString().slice(0, 10);
     const { data: quote, error: qErr } = await supabaseAdmin
@@ -264,7 +336,7 @@ export const submitStoreOrder = createServerFn({ method: "POST" })
         tax_amount: taxAmount,
         discount: 0,
         total,
-        notes: ["Online store order", data.customer.notes].filter(Boolean).join(" — ") || null,
+        notes: ["Online store order", orderNotes].filter(Boolean).join(" — ") || null,
       })
       .select("id, quote_number, quote_date")
       .single();
@@ -287,7 +359,7 @@ export const submitStoreOrder = createServerFn({ method: "POST" })
       _tenant: tenant.id,
       _type: `store_order:${quote.id}`,
       _title: "New online store order",
-      _message: `${data.customer.name} placed an order (${quote.quote_number}).`,
+      _message: `${record?.name ?? "A customer"} placed an order (${quote.quote_number}).`,
       _link: `/quotations?quotation=${quote.id}`,
     });
 
@@ -295,6 +367,10 @@ export const submitStoreOrder = createServerFn({ method: "POST" })
       quoteNumber: quote.quote_number,
       quotationId: quote.id,
       date: quote.quote_date,
+      customerCode: record?.store_code ?? null,
+      customerName: record?.name ?? "",
+      customerPhone: record?.phone ?? "",
+      customerAddress: record?.address ?? "",
       items: priced.map(({ description, quantity, unit_price, line_total }) => ({
         description,
         quantity,
@@ -308,3 +384,4 @@ export const submitStoreOrder = createServerFn({ method: "POST" })
       whatsappNumber: company.whatsapp_number || company.phone || null,
     };
   });
+
