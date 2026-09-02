@@ -24,7 +24,7 @@ export const Route = createFileRoute("/_authenticated/customers")({
 type Customer = {
   id: string; name: string; company_name: string | null; email: string | null;
   phone: string | null; address: string | null; city: string | null; country: string | null;
-  tax_id: string | null; notes: string | null; created_at: string;
+  tax_id: string | null; notes: string | null; created_at: string; store_code: string | null;
 };
 
 function CustomersPage() {
