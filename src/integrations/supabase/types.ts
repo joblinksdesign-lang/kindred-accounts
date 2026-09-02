@@ -137,6 +137,7 @@ export type Database = {
           name: string
           notes: string | null
           phone: string | null
+          store_code: string | null
           tax_id: string | null
           tenant_id: string
           updated_at: string
@@ -153,6 +154,7 @@ export type Database = {
           name: string
           notes?: string | null
           phone?: string | null
+          store_code?: string | null
           tax_id?: string | null
           tenant_id: string
           updated_at?: string
@@ -169,6 +171,7 @@ export type Database = {
           name?: string
           notes?: string | null
           phone?: string | null
+          store_code?: string | null
           tax_id?: string | null
           tenant_id?: string
           updated_at?: string
@@ -1182,6 +1185,10 @@ export type Database = {
     }
     Functions: {
       current_tenant_ids: { Args: never; Returns: string[] }
+      generate_store_code: {
+        Args: { _name: string; _tenant: string }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
