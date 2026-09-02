@@ -1,7 +1,14 @@
 import { createFileRoute, notFound } from "@tanstack/react-router";
 import { useMemo, useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { getStorefront, submitStoreOrder, type StoreOrderResult, type StorefrontData } from "@/lib/storefront.functions";
+import {
+  getStorefront,
+  submitStoreOrder,
+  lookupStoreCustomer,
+  type StoreCustomerLookup,
+  type StoreOrderResult,
+  type StorefrontData,
+} from "@/lib/storefront.functions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
