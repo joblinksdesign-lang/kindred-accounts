@@ -122,14 +122,34 @@ function Storefront() {
   const total = subtotal + taxAmount;
   const count = cart.reduce((s, l) => s + l.quantity, 0);
 
+  const [mode, setMode] = useState<"code" | "form">("code");
+  const [code, setCode] = useState("");
+  const [known, setKnown] = useState<StoreCustomerLookup | null>(null);
+  const [orderNotes, setOrderNotes] = useState("");
+  const [customer, setCustomer] = useState({ name: "", phone: "", email: "", address: "", notes: "" });
+
+  const lookup = useMutation({
+    mutationFn: async (value: string) => lookupStoreCustomer({ data: { slug: tenant.slug, code: value.trim() } }),
+    onSuccess: (res) => {
+      if (res.found) {
+        setKnown(res);
+        toast.success(`Welcome back, ${res.name}`);
+      } else {
+        setKnown(null);
+        toast.error("We don't know that code yet — continue as a new customer.");
+        setMode("form");
+      }
+    },
+    onError: () => toast.error("Could not check that code right now."),
+  });
+
   const submit = useMutation({
-    mutationFn: async (form: {
-      name: string; phone: string; email: string; address: string; notes: string;
-    }) =>
+    mutationFn: async () =>
       submitStoreOrder({
         data: {
           slug: tenant.slug,
-          customer: form,
+          ...(known ? { code: known.code } : { customer }),
+          notes: known ? orderNotes : customer.notes,
           items: cart.map((l) => ({ product_id: l.product_id, quantity: l.quantity })),
         },
       }),
@@ -140,8 +160,6 @@ function Storefront() {
     },
     onError: (e: Error) => toast.error(e.message || "Could not submit your order"),
   });
-
-  const [customer, setCustomer] = useState({ name: "", phone: "", email: "", address: "", notes: "" });
 
   const buildPdf = async (res: StoreOrderResult) => {
     const { generateInvoicePdf, loadLogoDataUrl } = await import("@/lib/pdf");
@@ -165,7 +183,12 @@ function Storefront() {
         date: res.date,
         status: "sent",
         docTitle: "Quotation",
-        customer: { name: customer.name, phone: customer.phone, email: customer.email, address: customer.address },
+        customer: {
+          name: res.customerName,
+          phone: res.customerPhone,
+          email: known ? known.email ?? "" : customer.email,
+          address: res.customerAddress,
+        },
         items: res.items,
         subtotal: res.subtotal,
         taxRate: res.taxRate,
@@ -174,7 +197,7 @@ function Storefront() {
         total: res.total,
         amountPaid: 0,
         balance: res.total,
-        notes: customer.notes || null,
+        notes: (known ? orderNotes : customer.notes) || null,
         template: "bold",
       },
       companySettings,
@@ -201,9 +224,10 @@ function Storefront() {
     const lines = [
       `*New order — ${company.company_name}*`,
       `Quotation: ${res.quoteNumber}`,
-      `Name: ${customer.name}`,
-      `Phone: ${customer.phone}`,
-      customer.address ? `Address: ${customer.address}` : null,
+      res.customerCode ? `My shop code: ${res.customerCode}` : null,
+      `Name: ${res.customerName}`,
+      `Phone: ${res.customerPhone}`,
+      res.customerAddress ? `Address: ${res.customerAddress}` : null,
       "",
       ...res.items.map((i) => `• ${i.description} x${i.quantity} — ${formatMoney(i.line_total, symbol)}`),
       "",
@@ -215,6 +239,7 @@ function Storefront() {
     ].filter(Boolean);
     window.open(`https://wa.me/${digits}?text=${encodeURIComponent(lines.join("\n"))}`, "_blank");
   };
+
 
   return (
     <div className="min-h-screen bg-background" style={{ ["--brand" as string]: accent }}>
