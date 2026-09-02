@@ -144,23 +144,72 @@ export const getStorefront = createServerFn({ method: "GET" })
 
 const checkoutSchema = z.object({
   slug: z.string().min(1).max(120),
-  customer: z.object({
-    name: z.string().trim().min(1).max(120),
-    phone: z.string().trim().min(3).max(40),
-    email: z.string().trim().email().max(160).optional().or(z.literal("")),
-    address: z.string().trim().max(300).optional().or(z.literal("")),
-    notes: z.string().trim().max(600).optional().or(z.literal("")),
-  }),
+  code: z.string().trim().min(3).max(16).optional().or(z.literal("")),
+  customer: z
+    .object({
+      name: z.string().trim().min(1).max(120),
+      phone: z.string().trim().min(3).max(40),
+      email: z.string().trim().email().max(160).optional().or(z.literal("")),
+      address: z.string().trim().max(300).optional().or(z.literal("")),
+      notes: z.string().trim().max(600).optional().or(z.literal("")),
+    })
+    .optional(),
+  notes: z.string().trim().max(600).optional().or(z.literal("")),
   items: z
     .array(z.object({ product_id: z.string().uuid(), quantity: z.number().int().min(1).max(9999) }))
     .min(1)
     .max(60),
 });
 
+export type StoreCustomerLookup = {
+  found: boolean;
+  code?: string;
+  name?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+};
+
+/** Public: checks a shopper's 5-character shop code for one business. */
+export const lookupStoreCustomer = createServerFn({ method: "POST" })
+  .inputValidator((data) =>
+    z.object({ slug: z.string().min(1).max(120), code: z.string().trim().min(3).max(16) }).parse(data),
+  )
+  .handler(async ({ data }): Promise<StoreCustomerLookup> => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: tenant } = await supabaseAdmin
+      .from("tenants")
+      .select("id, status")
+      .eq("slug", data.slug)
+      .maybeSingle();
+    if (!tenant || tenant.status !== "active") return { found: false };
+
+    const { data: customer } = await supabaseAdmin
+      .from("customers")
+      .select("store_code, name, phone, email, address")
+      .eq("tenant_id", tenant.id)
+      .ilike("store_code", data.code)
+      .maybeSingle();
+    if (!customer) return { found: false };
+
+    return {
+      found: true,
+      code: customer.store_code ?? data.code,
+      name: customer.name,
+      phone: customer.phone ?? "",
+      email: customer.email ?? "",
+      address: customer.address ?? "",
+    };
+  });
+
 export type StoreOrderResult = {
   quoteNumber: string;
   quotationId: string;
   date: string;
+  customerCode: string | null;
+  customerName: string;
+  customerPhone: string;
+  customerAddress: string;
   items: { description: string; quantity: number; unit_price: number; line_total: number }[];
   subtotal: number;
   taxRate: number;
@@ -168,6 +217,7 @@ export type StoreOrderResult = {
   total: number;
   whatsappNumber: string | null;
 };
+
 
 /** Public: turns a storefront cart into a quotation for the business. */
 export const submitStoreOrder = createServerFn({ method: "POST" })
