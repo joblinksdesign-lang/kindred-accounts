@@ -325,24 +325,79 @@ function Storefront() {
                     <Separator className="my-4" />
                     <form
                       className="space-y-3"
-                      onSubmit={(e) => { e.preventDefault(); submit.mutate(customer); }}
+                      onSubmit={(e) => { e.preventDefault(); submit.mutate(); }}
                     >
-                      <div className="text-sm font-semibold">Your details</div>
-                      <div><Label>Full name *</Label><Input required maxLength={120} value={customer.name} onChange={(e) => setCustomer({ ...customer, name: e.target.value })} /></div>
-                      <div><Label>Phone *</Label><Input required maxLength={40} value={customer.phone} onChange={(e) => setCustomer({ ...customer, phone: e.target.value })} /></div>
-                      <div><Label>Email</Label><Input type="email" maxLength={160} value={customer.email} onChange={(e) => setCustomer({ ...customer, email: e.target.value })} /></div>
-                      <div><Label>Delivery address</Label><Input maxLength={300} value={customer.address} onChange={(e) => setCustomer({ ...customer, address: e.target.value })} /></div>
-                      <div><Label>Notes</Label><Textarea rows={2} maxLength={600} value={customer.notes} onChange={(e) => setCustomer({ ...customer, notes: e.target.value })} /></div>
+                      {known ? (
+                        <div className="space-y-3">
+                          <div className="rounded-lg border p-3 text-sm" style={{ borderColor: accent }}>
+                            <div className="font-semibold">Welcome back, {known.name}</div>
+                            <div className="text-xs text-muted-foreground">
+                              Shop code {known.code}{known.phone ? ` • ${known.phone}` : ""}
+                            </div>
+                            <button
+                              type="button"
+                              className="mt-2 text-xs underline"
+                              onClick={() => { setKnown(null); setCode(""); setMode("code"); }}
+                            >
+                              Not you? Use another code
+                            </button>
+                          </div>
+                          <div><Label>Notes for this order</Label><Textarea rows={2} maxLength={600} value={orderNotes} onChange={(e) => setOrderNotes(e.target.value)} /></div>
+                        </div>
+                      ) : mode === "code" ? (
+                        <div className="space-y-3">
+                          <div className="text-sm font-semibold">Enter your shop code</div>
+                          <p className="text-xs text-muted-foreground">
+                            Returning customers get a 5-character code (e.g. Jo123) on WhatsApp. Enter it to order without filling the form.
+                          </p>
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder="Jo123"
+                              maxLength={16}
+                              value={code}
+                              onChange={(e) => setCode(e.target.value)}
+                            />
+                            <Button
+                              type="button"
+                              disabled={code.trim().length < 3 || lookup.isPending}
+                              className="text-white"
+                              style={{ background: accent }}
+                              onClick={() => lookup.mutate(code)}
+                            >
+                              {lookup.isPending ? "Checking…" : "Continue"}
+                            </Button>
+                          </div>
+                          <Button type="button" variant="outline" className="w-full" onClick={() => setMode("form")}>
+                            I'm a new customer
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div className="text-sm font-semibold">Your details</div>
+                            <button type="button" className="text-xs underline" onClick={() => setMode("code")}>
+                              I have a shop code
+                            </button>
+                          </div>
+                          <div><Label>Full name *</Label><Input required maxLength={120} value={customer.name} onChange={(e) => setCustomer({ ...customer, name: e.target.value })} /></div>
+                          <div><Label>Phone *</Label><Input required maxLength={40} value={customer.phone} onChange={(e) => setCustomer({ ...customer, phone: e.target.value })} /></div>
+                          <div><Label>Email</Label><Input type="email" maxLength={160} value={customer.email} onChange={(e) => setCustomer({ ...customer, email: e.target.value })} /></div>
+                          <div><Label>Delivery address</Label><Input maxLength={300} value={customer.address} onChange={(e) => setCustomer({ ...customer, address: e.target.value })} /></div>
+                          <div><Label>Notes</Label><Textarea rows={2} maxLength={600} value={customer.notes} onChange={(e) => setCustomer({ ...customer, notes: e.target.value })} /></div>
+                        </div>
+                      )}
                       {stockProblem && (
                         <p className="rounded-md bg-destructive/10 p-2 text-xs font-medium text-destructive">
                           {stockProblem.name} doesn't have enough stock. Reduce the quantity to continue.
                         </p>
                       )}
-                      <Button type="submit" disabled={submit.isPending || !!stockProblem} className="w-full text-white" style={{ background: accent }}>
-                        {submit.isPending ? "Submitting…" : "Checkout"}
-                      </Button>
-
+                      {(known || mode === "form") && (
+                        <Button type="submit" disabled={submit.isPending || !!stockProblem} className="w-full text-white" style={{ background: accent }}>
+                          {submit.isPending ? "Submitting…" : "Checkout"}
+                        </Button>
+                      )}
                     </form>
+
                   </div>
                 )}
               </SheetContent>
