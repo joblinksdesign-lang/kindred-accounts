@@ -162,7 +162,7 @@ export const updateTeamMember = createServerFn({ method: "POST" })
     if (!member || member.tenant_id !== data.tenantId) throw new Error("Member not found");
     if (member.role === "owner") throw new Error("The owner's access cannot be changed");
 
-    const patch: Record<string, unknown> = {};
+    const patch: { role?: TeamRole; is_active?: boolean } = {};
     if (data.role) patch["role"] = data.role;
     if (typeof data.isActive === "boolean") patch["is_active"] = data.isActive;
     if (!Object.keys(patch).length) return { ok: true };
