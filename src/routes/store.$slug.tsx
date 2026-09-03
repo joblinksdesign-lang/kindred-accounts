@@ -280,6 +280,15 @@ function Storefront() {
                       <div className="text-sm">Quotation <span className="font-semibold">{result.quoteNumber}</span> was created for {company.company_name}.</div>
                       <div className="mt-1 text-lg font-bold">{formatMoney(result.total, symbol)}</div>
                     </Card>
+                    {result.customerCode && (
+                      <Card className="p-4">
+                        <div className="text-xs uppercase tracking-wide text-muted-foreground">Your shop code</div>
+                        <div className="text-2xl font-extrabold tracking-widest" style={{ color: accent }}>{result.customerCode}</div>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Save this code — next time just enter it at checkout and skip filling in your details.
+                        </p>
+                      </Card>
+                    )}
                     <Button className="w-full gap-2 text-white" style={{ background: "#25D366" }} onClick={() => sendWhatsApp(result)}>
                       <Send className="h-4 w-4" />Send order to shop owner
                     </Button>

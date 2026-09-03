@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, Users, Package, FileText, Receipt, CreditCard, FileSignature,
-  BarChart3, Settings, LogOut, Search, Building2, ShieldCheck, LayoutGrid, Tag, Sparkles, Bell, Wallet, Store, ScanBarcode,
+  BarChart3, Settings, LogOut, Search, Building2, ShieldCheck, LayoutGrid, Tag, Sparkles, Bell, Wallet, Store, ScanBarcode, UsersRound,
 } from "lucide-react";
 
 import {
@@ -57,6 +57,12 @@ function AppSidebar() {
         ? pathname === "/dashboard" || pathname === "/"
         : pathname === to || pathname.startsWith(to + "/");
 
+  // POS-only staff (default role) see just the counter tools.
+  const posOnly = role === "sales_agent";
+  const visibleWorkspaceNav = posOnly
+    ? workspaceNav.filter((i) => i.to === "/dashboard" || i.to === "/notifications")
+    : workspaceNav;
+
   const showWorkspace = !isSuperAdmin && !!tenant;
   const showAdmin = isSuperAdmin;
 
@@ -95,7 +101,7 @@ function AppSidebar() {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )}
-                {workspaceNav.map((item) => (
+                {visibleWorkspaceNav.map((item) => (
 
                   <SidebarMenuItem key={item.to}>
                     <SidebarMenuButton asChild isActive={isActive(item.to)} tooltip={item.title}>
@@ -124,6 +130,13 @@ function AppSidebar() {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )}
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isActive("/team")} tooltip="Users & access">
+                    <Link to="/team" className="flex items-center gap-2">
+                      <UsersRound className="h-4 w-4" /><span>Users & access</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild isActive={isActive("/settings")} tooltip="Settings">
                     <Link to="/settings" className="flex items-center gap-2">

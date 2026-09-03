@@ -16,6 +16,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as StoreSlugRouteImport } from './routes/store.$slug'
+import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated/team'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedReceiptsRouteImport } from './routes/_authenticated/receipts'
@@ -71,6 +72,11 @@ const StoreSlugRoute = StoreSlugRouteImport.update({
   id: '/store/$slug',
   path: '/store/$slug',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedTeamRoute = AuthenticatedTeamRouteImport.update({
+  id: '/team',
+  path: '/team',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
@@ -204,6 +210,7 @@ export interface FileRoutesByFullPath {
   '/receipts': typeof AuthenticatedReceiptsRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/team': typeof AuthenticatedTeamRoute
   '/store/$slug': typeof StoreSlugRoute
   '/admin/plans': typeof AuthenticatedAdminPlansRoute
   '/admin/tenants': typeof AuthenticatedAdminTenantsRoute
@@ -232,6 +239,7 @@ export interface FileRoutesByTo {
   '/receipts': typeof AuthenticatedReceiptsRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/team': typeof AuthenticatedTeamRoute
   '/store/$slug': typeof StoreSlugRoute
   '/admin/plans': typeof AuthenticatedAdminPlansRoute
   '/admin/tenants': typeof AuthenticatedAdminTenantsRoute
@@ -263,6 +271,7 @@ export interface FileRoutesById {
   '/_authenticated/receipts': typeof AuthenticatedReceiptsRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/team': typeof AuthenticatedTeamRoute
   '/store/$slug': typeof StoreSlugRoute
   '/_authenticated/admin/plans': typeof AuthenticatedAdminPlansRoute
   '/_authenticated/admin/tenants': typeof AuthenticatedAdminTenantsRoute
@@ -294,6 +303,7 @@ export interface FileRouteTypes {
     | '/receipts'
     | '/reports'
     | '/settings'
+    | '/team'
     | '/store/$slug'
     | '/admin/plans'
     | '/admin/tenants'
@@ -322,6 +332,7 @@ export interface FileRouteTypes {
     | '/receipts'
     | '/reports'
     | '/settings'
+    | '/team'
     | '/store/$slug'
     | '/admin/plans'
     | '/admin/tenants'
@@ -352,6 +363,7 @@ export interface FileRouteTypes {
     | '/_authenticated/receipts'
     | '/_authenticated/reports'
     | '/_authenticated/settings'
+    | '/_authenticated/team'
     | '/store/$slug'
     | '/_authenticated/admin/plans'
     | '/_authenticated/admin/tenants'
@@ -422,6 +434,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/store/$slug'
       preLoaderRoute: typeof StoreSlugRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/team': {
+      id: '/_authenticated/team'
+      path: '/team'
+      fullPath: '/team'
+      preLoaderRoute: typeof AuthenticatedTeamRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/settings': {
       id: '/_authenticated/settings'
@@ -603,6 +622,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedReceiptsRoute: typeof AuthenticatedReceiptsRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedTeamRoute: typeof AuthenticatedTeamRoute
   AuthenticatedInvoicesIdRoute: typeof AuthenticatedInvoicesIdRoute
   AuthenticatedInvoicesNewRoute: typeof AuthenticatedInvoicesNewRoute
   AuthenticatedInvoicesIndexRoute: typeof AuthenticatedInvoicesIndexRoute
@@ -624,6 +644,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedReceiptsRoute: AuthenticatedReceiptsRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedTeamRoute: AuthenticatedTeamRoute,
   AuthenticatedInvoicesIdRoute: AuthenticatedInvoicesIdRoute,
   AuthenticatedInvoicesNewRoute: AuthenticatedInvoicesNewRoute,
   AuthenticatedInvoicesIndexRoute: AuthenticatedInvoicesIndexRoute,
