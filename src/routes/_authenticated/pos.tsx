@@ -444,9 +444,14 @@ function PosPage() {
                 </div>
               </div>
             )}
+            {stockProblem && (
+              <div className="rounded-md border border-destructive/40 bg-destructive/10 p-2 text-xs font-medium text-destructive">
+                {stockProblem.name} only has {stockOf(stockProblem.product_id)} in stock. Reduce the quantity to charge this sale.
+              </div>
+            )}
             <Button
               className="h-12 w-full gradient-emerald text-base text-white"
-              disabled={cart.length === 0 || checkout.isPending}
+              disabled={cart.length === 0 || checkout.isPending || !!stockProblem}
               onClick={() => checkout.mutate()}
             >
               {checkout.isPending ? "Processing…" : `Charge ${formatMoney(total, sym)}`}
