@@ -14,6 +14,7 @@ import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as ManifestDotwebmanifestRouteImport } from './routes/manifest[.]webmanifest'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AppIconDotpngRouteImport } from './routes/app-icon[.]png'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as StoreSlugRouteImport } from './routes/store.$slug'
@@ -63,6 +64,11 @@ const ManifestDotwebmanifestRoute = ManifestDotwebmanifestRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppIconDotpngRoute = AppIconDotpngRouteImport.update({
+  id: '/app-icon.png',
+  path: '/app-icon.png',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
@@ -198,6 +204,7 @@ const AuthenticatedInvoicesEditIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/app-icon.png': typeof AppIconDotpngRoute
   '/auth': typeof AuthRoute
   '/manifest.webmanifest': typeof ManifestDotwebmanifestRoute
   '/onboarding': typeof OnboardingRoute
@@ -229,6 +236,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/app-icon.png': typeof AppIconDotpngRoute
   '/auth': typeof AuthRoute
   '/manifest.webmanifest': typeof ManifestDotwebmanifestRoute
   '/onboarding': typeof OnboardingRoute
@@ -261,6 +269,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/app-icon.png': typeof AppIconDotpngRoute
   '/auth': typeof AuthRoute
   '/manifest.webmanifest': typeof ManifestDotwebmanifestRoute
   '/onboarding': typeof OnboardingRoute
@@ -294,6 +303,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/app-icon.png'
     | '/auth'
     | '/manifest.webmanifest'
     | '/onboarding'
@@ -325,6 +335,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/app-icon.png'
     | '/auth'
     | '/manifest.webmanifest'
     | '/onboarding'
@@ -356,6 +367,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/app-icon.png'
     | '/auth'
     | '/manifest.webmanifest'
     | '/onboarding'
@@ -389,6 +401,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AppIconDotpngRoute: typeof AppIconDotpngRoute
   AuthRoute: typeof AuthRoute
   ManifestDotwebmanifestRoute: typeof ManifestDotwebmanifestRoute
   OnboardingRoute: typeof OnboardingRoute
@@ -432,6 +445,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app-icon.png': {
+      id: '/app-icon.png'
+      path: '/app-icon.png'
+      fullPath: '/app-icon.png'
+      preLoaderRoute: typeof AppIconDotpngRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -677,6 +697,7 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AppIconDotpngRoute: AppIconDotpngRoute,
   AuthRoute: AuthRoute,
   ManifestDotwebmanifestRoute: ManifestDotwebmanifestRoute,
   OnboardingRoute: OnboardingRoute,
