@@ -703,6 +703,66 @@ export type Database = {
         }
         Relationships: []
       }
+      pwa_settings: {
+        Row: {
+          app_name: string
+          background_color: string
+          created_at: string
+          description: string
+          display_mode: string
+          icon_sizes: number[]
+          icon_url: string | null
+          id: string
+          install_enabled: boolean
+          short_name: string
+          singleton: boolean
+          splash_height: number
+          splash_url: string | null
+          splash_width: number
+          start_url: string
+          theme_color: string
+          updated_at: string
+        }
+        Insert: {
+          app_name?: string
+          background_color?: string
+          created_at?: string
+          description?: string
+          display_mode?: string
+          icon_sizes?: number[]
+          icon_url?: string | null
+          id?: string
+          install_enabled?: boolean
+          short_name?: string
+          singleton?: boolean
+          splash_height?: number
+          splash_url?: string | null
+          splash_width?: number
+          start_url?: string
+          theme_color?: string
+          updated_at?: string
+        }
+        Update: {
+          app_name?: string
+          background_color?: string
+          created_at?: string
+          description?: string
+          display_mode?: string
+          icon_sizes?: number[]
+          icon_url?: string | null
+          id?: string
+          install_enabled?: boolean
+          short_name?: string
+          singleton?: boolean
+          splash_height?: number
+          splash_url?: string | null
+          splash_width?: number
+          start_url?: string
+          theme_color?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       quotation_items: {
         Row: {
           created_at: string
