@@ -12,7 +12,10 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as ManifestDotwebmanifestRouteImport } from './routes/manifest[.]webmanifest'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AppSplashDotpngRouteImport } from './routes/app-splash[.]png'
+import { Route as AppIconDotpngRouteImport } from './routes/app-icon[.]png'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as StoreSlugRouteImport } from './routes/store.$slug'
@@ -37,6 +40,7 @@ import { Route as AuthenticatedInvoicesNewRouteImport } from './routes/_authenti
 import { Route as AuthenticatedInvoicesIdRouteImport } from './routes/_authenticated/invoices.$id'
 import { Route as AuthenticatedAdminTenantsRouteImport } from './routes/_authenticated/admin.tenants'
 import { Route as AuthenticatedAdminPlansRouteImport } from './routes/_authenticated/admin.plans'
+import { Route as AuthenticatedAdminAppInstallRouteImport } from './routes/_authenticated/admin.app-install'
 import { Route as AuthenticatedInvoicesEditIdRouteImport } from './routes/_authenticated/invoices.edit.$id'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -54,9 +58,24 @@ const OnboardingRoute = OnboardingRouteImport.update({
   path: '/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ManifestDotwebmanifestRoute = ManifestDotwebmanifestRouteImport.update({
+  id: '/manifest.webmanifest',
+  path: '/manifest.webmanifest',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppSplashDotpngRoute = AppSplashDotpngRouteImport.update({
+  id: '/app-splash.png',
+  path: '/app-splash.png',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppIconDotpngRoute = AppIconDotpngRouteImport.update({
+  id: '/app-icon.png',
+  path: '/app-icon.png',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
@@ -183,6 +202,12 @@ const AuthenticatedAdminPlansRoute = AuthenticatedAdminPlansRouteImport.update({
   path: '/plans',
   getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
+const AuthenticatedAdminAppInstallRoute =
+  AuthenticatedAdminAppInstallRouteImport.update({
+    id: '/app-install',
+    path: '/app-install',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedInvoicesEditIdRoute =
   AuthenticatedInvoicesEditIdRouteImport.update({
     id: '/invoices/edit/$id',
@@ -192,7 +217,10 @@ const AuthenticatedInvoicesEditIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/app-icon.png': typeof AppIconDotpngRoute
+  '/app-splash.png': typeof AppSplashDotpngRoute
   '/auth': typeof AuthRoute
+  '/manifest.webmanifest': typeof ManifestDotwebmanifestRoute
   '/onboarding': typeof OnboardingRoute
   '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -212,6 +240,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/team': typeof AuthenticatedTeamRoute
   '/store/$slug': typeof StoreSlugRoute
+  '/admin/app-install': typeof AuthenticatedAdminAppInstallRoute
   '/admin/plans': typeof AuthenticatedAdminPlansRoute
   '/admin/tenants': typeof AuthenticatedAdminTenantsRoute
   '/invoices/$id': typeof AuthenticatedInvoicesIdRoute
@@ -222,7 +251,10 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/app-icon.png': typeof AppIconDotpngRoute
+  '/app-splash.png': typeof AppSplashDotpngRoute
   '/auth': typeof AuthRoute
+  '/manifest.webmanifest': typeof ManifestDotwebmanifestRoute
   '/onboarding': typeof OnboardingRoute
   '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -241,6 +273,7 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
   '/team': typeof AuthenticatedTeamRoute
   '/store/$slug': typeof StoreSlugRoute
+  '/admin/app-install': typeof AuthenticatedAdminAppInstallRoute
   '/admin/plans': typeof AuthenticatedAdminPlansRoute
   '/admin/tenants': typeof AuthenticatedAdminTenantsRoute
   '/invoices/$id': typeof AuthenticatedInvoicesIdRoute
@@ -253,7 +286,10 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/app-icon.png': typeof AppIconDotpngRoute
+  '/app-splash.png': typeof AppSplashDotpngRoute
   '/auth': typeof AuthRoute
+  '/manifest.webmanifest': typeof ManifestDotwebmanifestRoute
   '/onboarding': typeof OnboardingRoute
   '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -273,6 +309,7 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/team': typeof AuthenticatedTeamRoute
   '/store/$slug': typeof StoreSlugRoute
+  '/_authenticated/admin/app-install': typeof AuthenticatedAdminAppInstallRoute
   '/_authenticated/admin/plans': typeof AuthenticatedAdminPlansRoute
   '/_authenticated/admin/tenants': typeof AuthenticatedAdminTenantsRoute
   '/_authenticated/invoices/$id': typeof AuthenticatedInvoicesIdRoute
@@ -285,7 +322,10 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/app-icon.png'
+    | '/app-splash.png'
     | '/auth'
+    | '/manifest.webmanifest'
     | '/onboarding'
     | '/pricing'
     | '/reset-password'
@@ -305,6 +345,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/team'
     | '/store/$slug'
+    | '/admin/app-install'
     | '/admin/plans'
     | '/admin/tenants'
     | '/invoices/$id'
@@ -315,7 +356,10 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/app-icon.png'
+    | '/app-splash.png'
     | '/auth'
+    | '/manifest.webmanifest'
     | '/onboarding'
     | '/pricing'
     | '/reset-password'
@@ -334,6 +378,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/team'
     | '/store/$slug'
+    | '/admin/app-install'
     | '/admin/plans'
     | '/admin/tenants'
     | '/invoices/$id'
@@ -345,7 +390,10 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/app-icon.png'
+    | '/app-splash.png'
     | '/auth'
+    | '/manifest.webmanifest'
     | '/onboarding'
     | '/pricing'
     | '/reset-password'
@@ -365,6 +413,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/_authenticated/team'
     | '/store/$slug'
+    | '/_authenticated/admin/app-install'
     | '/_authenticated/admin/plans'
     | '/_authenticated/admin/tenants'
     | '/_authenticated/invoices/$id'
@@ -377,7 +426,10 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AppIconDotpngRoute: typeof AppIconDotpngRoute
+  AppSplashDotpngRoute: typeof AppSplashDotpngRoute
   AuthRoute: typeof AuthRoute
+  ManifestDotwebmanifestRoute: typeof ManifestDotwebmanifestRoute
   OnboardingRoute: typeof OnboardingRoute
   PricingRoute: typeof PricingRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
@@ -407,11 +459,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OnboardingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/manifest.webmanifest': {
+      id: '/manifest.webmanifest'
+      path: '/manifest.webmanifest'
+      fullPath: '/manifest.webmanifest'
+      preLoaderRoute: typeof ManifestDotwebmanifestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app-splash.png': {
+      id: '/app-splash.png'
+      path: '/app-splash.png'
+      fullPath: '/app-splash.png'
+      preLoaderRoute: typeof AppSplashDotpngRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app-icon.png': {
+      id: '/app-icon.png'
+      path: '/app-icon.png'
+      fullPath: '/app-icon.png'
+      preLoaderRoute: typeof AppIconDotpngRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -582,6 +655,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminPlansRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/app-install': {
+      id: '/_authenticated/admin/app-install'
+      path: '/app-install'
+      fullPath: '/admin/app-install'
+      preLoaderRoute: typeof AuthenticatedAdminAppInstallRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/invoices/edit/$id': {
       id: '/_authenticated/invoices/edit/$id'
       path: '/invoices/edit/$id'
@@ -593,12 +673,14 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminAppInstallRoute: typeof AuthenticatedAdminAppInstallRoute
   AuthenticatedAdminPlansRoute: typeof AuthenticatedAdminPlansRoute
   AuthenticatedAdminTenantsRoute: typeof AuthenticatedAdminTenantsRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminAppInstallRoute: AuthenticatedAdminAppInstallRoute,
   AuthenticatedAdminPlansRoute: AuthenticatedAdminPlansRoute,
   AuthenticatedAdminTenantsRoute: AuthenticatedAdminTenantsRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
@@ -657,7 +739,10 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AppIconDotpngRoute: AppIconDotpngRoute,
+  AppSplashDotpngRoute: AppSplashDotpngRoute,
   AuthRoute: AuthRoute,
+  ManifestDotwebmanifestRoute: ManifestDotwebmanifestRoute,
   OnboardingRoute: OnboardingRoute,
   PricingRoute: PricingRoute,
   ResetPasswordRoute: ResetPasswordRoute,
