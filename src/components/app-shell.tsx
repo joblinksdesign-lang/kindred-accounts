@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, Users, Package, FileText, Receipt, CreditCard, FileSignature,
-  BarChart3, Settings, LogOut, Search, Building2, ShieldCheck, LayoutGrid, Tag, Sparkles, Bell, Wallet, Store, ScanBarcode, UsersRound,
+  BarChart3, Settings, LogOut, Search, Building2, ShieldCheck, LayoutGrid, Tag, Sparkles, Bell, Wallet, Store, ScanBarcode, UsersRound, Smartphone, Download,
 } from "lucide-react";
 
 import {
@@ -19,6 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser } from "@/lib/use-current-user";
 import { useActiveTenant } from "@/lib/tenant";
 import { useTenantModules } from "@/lib/modules";
+import { useInstallPrompt, usePwaSettings } from "@/lib/pwa";
 import type { ReactNode } from "react";
 
 const workspaceNav = [
@@ -38,6 +39,7 @@ const adminNav = [
   { title: "Overview", to: "/admin", icon: LayoutGrid },
   { title: "Businesses", to: "/admin/tenants", icon: Building2 },
   { title: "Plans", to: "/admin/plans", icon: Tag },
+  { title: "App install", to: "/admin/app-install", icon: Smartphone },
 ] as const;
 
 function AppSidebar() {
@@ -191,6 +193,8 @@ function Topbar() {
   const { user } = useCurrentUser();
   const { tenant, memberships } = useActiveTenant();
   const { data: modules } = useTenantModules();
+  const { data: pwa } = usePwaSettings();
+  const { canInstall, promptInstall } = useInstallPrompt();
 
   const initials = (user?.email || "U").slice(0, 2).toUpperCase();
   const signOut = async () => {
@@ -217,6 +221,11 @@ function Topbar() {
           </Button>
         )}
 
+        {canInstall && (pwa?.install_enabled ?? true) && (
+          <Button variant="outline" size="sm" onClick={() => promptInstall()} title="Install app">
+            <Download className="h-4 w-4 md:mr-1.5" /><span className="hidden md:inline">Install app</span>
+          </Button>
+        )}
         <NotificationBell />
         <div className="flex items-center gap-2 rounded-lg border bg-background px-2 py-1">
           <Avatar className="h-7 w-7">
