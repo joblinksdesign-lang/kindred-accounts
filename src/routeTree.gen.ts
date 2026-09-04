@@ -40,6 +40,7 @@ import { Route as AuthenticatedInvoicesNewRouteImport } from './routes/_authenti
 import { Route as AuthenticatedInvoicesIdRouteImport } from './routes/_authenticated/invoices.$id'
 import { Route as AuthenticatedAdminTenantsRouteImport } from './routes/_authenticated/admin.tenants'
 import { Route as AuthenticatedAdminPlansRouteImport } from './routes/_authenticated/admin.plans'
+import { Route as AuthenticatedAdminAppInstallRouteImport } from './routes/_authenticated/admin.app-install'
 import { Route as AuthenticatedInvoicesEditIdRouteImport } from './routes/_authenticated/invoices.edit.$id'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -201,6 +202,12 @@ const AuthenticatedAdminPlansRoute = AuthenticatedAdminPlansRouteImport.update({
   path: '/plans',
   getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
+const AuthenticatedAdminAppInstallRoute =
+  AuthenticatedAdminAppInstallRouteImport.update({
+    id: '/app-install',
+    path: '/app-install',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedInvoicesEditIdRoute =
   AuthenticatedInvoicesEditIdRouteImport.update({
     id: '/invoices/edit/$id',
@@ -233,6 +240,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/team': typeof AuthenticatedTeamRoute
   '/store/$slug': typeof StoreSlugRoute
+  '/admin/app-install': typeof AuthenticatedAdminAppInstallRoute
   '/admin/plans': typeof AuthenticatedAdminPlansRoute
   '/admin/tenants': typeof AuthenticatedAdminTenantsRoute
   '/invoices/$id': typeof AuthenticatedInvoicesIdRoute
@@ -265,6 +273,7 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
   '/team': typeof AuthenticatedTeamRoute
   '/store/$slug': typeof StoreSlugRoute
+  '/admin/app-install': typeof AuthenticatedAdminAppInstallRoute
   '/admin/plans': typeof AuthenticatedAdminPlansRoute
   '/admin/tenants': typeof AuthenticatedAdminTenantsRoute
   '/invoices/$id': typeof AuthenticatedInvoicesIdRoute
@@ -300,6 +309,7 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/team': typeof AuthenticatedTeamRoute
   '/store/$slug': typeof StoreSlugRoute
+  '/_authenticated/admin/app-install': typeof AuthenticatedAdminAppInstallRoute
   '/_authenticated/admin/plans': typeof AuthenticatedAdminPlansRoute
   '/_authenticated/admin/tenants': typeof AuthenticatedAdminTenantsRoute
   '/_authenticated/invoices/$id': typeof AuthenticatedInvoicesIdRoute
@@ -335,6 +345,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/team'
     | '/store/$slug'
+    | '/admin/app-install'
     | '/admin/plans'
     | '/admin/tenants'
     | '/invoices/$id'
@@ -367,6 +378,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/team'
     | '/store/$slug'
+    | '/admin/app-install'
     | '/admin/plans'
     | '/admin/tenants'
     | '/invoices/$id'
@@ -401,6 +413,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/_authenticated/team'
     | '/store/$slug'
+    | '/_authenticated/admin/app-install'
     | '/_authenticated/admin/plans'
     | '/_authenticated/admin/tenants'
     | '/_authenticated/invoices/$id'
@@ -642,6 +655,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminPlansRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/app-install': {
+      id: '/_authenticated/admin/app-install'
+      path: '/app-install'
+      fullPath: '/admin/app-install'
+      preLoaderRoute: typeof AuthenticatedAdminAppInstallRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/invoices/edit/$id': {
       id: '/_authenticated/invoices/edit/$id'
       path: '/invoices/edit/$id'
@@ -653,12 +673,14 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminAppInstallRoute: typeof AuthenticatedAdminAppInstallRoute
   AuthenticatedAdminPlansRoute: typeof AuthenticatedAdminPlansRoute
   AuthenticatedAdminTenantsRoute: typeof AuthenticatedAdminTenantsRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminAppInstallRoute: AuthenticatedAdminAppInstallRoute,
   AuthenticatedAdminPlansRoute: AuthenticatedAdminPlansRoute,
   AuthenticatedAdminTenantsRoute: AuthenticatedAdminTenantsRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,

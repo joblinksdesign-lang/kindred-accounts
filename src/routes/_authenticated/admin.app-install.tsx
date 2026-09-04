@@ -97,7 +97,7 @@ function AppInstallAdmin() {
     <div className="space-y-6">
       <PageHeader
         title="App install"
-        description="Control how SmartInvoice Pro installs on phones and desktops: icon, splash screen, colours and sizes."
+        subtitle="Control how SmartInvoice Pro installs on phones and desktops: icon, splash screen, colours and sizes."
       />
 
       <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
