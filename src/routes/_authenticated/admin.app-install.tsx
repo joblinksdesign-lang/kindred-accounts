@@ -48,7 +48,7 @@ function AppInstallAdmin() {
   const upload = async (kind: "icon_url" | "splash_url", file?: File | null) => {
     if (!file) return;
     try {
-      const dataUrl = await fileToDataUrl(file, kind === "icon_url" ? 512 * 1024 : 1024 * 1024);
+      const dataUrl = await fileToDataUrl(file, kind === "icon_url" ? 512 : 1440);
       set(kind, dataUrl);
       toast.success(kind === "icon_url" ? "Icon ready — remember to save" : "Splash ready — remember to save");
     } catch (e) {
