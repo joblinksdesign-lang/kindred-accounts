@@ -17,6 +17,7 @@ import { useTenantModules } from "@/lib/modules";
 import { useProductImageUrls } from "@/lib/product-images";
 import { generateReceiptPdf, generateThermalReceiptPdf, loadCompanyLogo, savePdf, printPdf } from "@/lib/pdf";
 import { toast } from "sonner";
+import { BarcodeScannerDialog } from "@/components/barcode-scanner";
 import {
   ShoppingCart, Minus, Plus, Trash2, PackageSearch, Search, ScanLine, CheckCircle2, Printer, Download, Receipt as ReceiptIcon,
 } from "lucide-react";
@@ -67,6 +68,7 @@ function PosPage() {
   const [method, setMethod] = useState("cash");
   const [tendered, setTendered] = useState<string>("");
   const [sale, setSale] = useState<SaleResult | null>(null);
+  const [scanOpen, setScanOpen] = useState(false);
 
   const { data: products = [] } = useQuery({
     queryKey: ["pos_products"],
@@ -136,6 +138,13 @@ function PosPage() {
 
 
   const reset = () => { setCart([]); setDiscount(0); setTendered(""); setCustomerId("walkin"); setMethod("cash"); };
+
+  const onScanCode = (code: string) => {
+    const term = code.trim().toLowerCase();
+    const hit = products.find((p) => (p.barcode ?? "").toLowerCase() === term || (p.sku ?? "").toLowerCase() === term);
+    if (hit) { add(hit); toast.success(`${hit.name} added`); }
+    else { setQ(code); toast.error(`No product matches ${code}`); }
+  };
 
   const onScanEnter = () => {
     const term = q.trim().toLowerCase();
@@ -295,7 +304,9 @@ function PosPage() {
                   className="h-9 pl-8"
                 />
               </div>
-              <Badge variant="outline" className="hidden gap-1 sm:inline-flex"><ScanLine className="h-3 w-3" />Scanner ready</Badge>
+              <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0" onClick={() => setScanOpen(true)} aria-label="Scan barcode with camera">
+                <ScanLine className="h-4 w-4" />
+              </Button>
             </div>
             {categories.length > 0 && (
               <div className="mt-2 flex gap-1.5 overflow-x-auto pb-1">
@@ -482,6 +493,8 @@ function PosPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      <BarcodeScannerDialog open={scanOpen} onOpenChange={setScanOpen} onDetected={onScanCode} />
     </div>
   );
 }
