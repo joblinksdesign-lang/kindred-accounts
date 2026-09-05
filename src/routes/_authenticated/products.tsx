@@ -464,6 +464,8 @@ function ProductsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <BarcodeScannerDialog open={scanOpen} onOpenChange={setScanOpen} onDetected={(code) => setBarcode(code)} />
     </div>
   );
 }
