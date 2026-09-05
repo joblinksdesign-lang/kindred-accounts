@@ -48,7 +48,7 @@ function AppInstallAdmin() {
   const upload = async (kind: "icon_url" | "splash_url", file?: File | null) => {
     if (!file) return;
     try {
-      const dataUrl = await fileToDataUrl(file, kind === "icon_url" ? 512 * 1024 : 1024 * 1024);
+      const dataUrl = await fileToDataUrl(file, kind === "icon_url" ? 512 : 1440);
       set(kind, dataUrl);
       toast.success(kind === "icon_url" ? "Icon ready — remember to save" : "Splash ready — remember to save");
     } catch (e) {
@@ -59,7 +59,7 @@ function AppInstallAdmin() {
   const save = async () => {
     if (!form) return;
     setSaving(true);
-    const { error } = await supabase
+    const { data: saved, error } = await supabase
       .from("pwa_settings")
       .update({
         app_name: form.app_name,
@@ -76,9 +76,12 @@ function AppInstallAdmin() {
         splash_height: form.splash_height,
         install_enabled: form.install_enabled,
       })
-      .eq("id", form.id);
+      .eq("id", form.id)
+      .select("id");
     setSaving(false);
     if (error) return toast.error(error.message);
+    if (!saved || saved.length === 0)
+      return toast.error("Nothing was saved — your account may not have admin permission.");
     qc.invalidateQueries({ queryKey: ["pwa_settings"] });
     toast.success("App install settings saved");
   };
@@ -159,7 +162,7 @@ function AppInstallAdmin() {
 
           <Card className="p-5 space-y-4">
             <h2 className="text-sm font-semibold">App icon</h2>
-            <p className="text-xs text-muted-foreground">Square PNG, at least 512×512, under 512KB.</p>
+            <p className="text-xs text-muted-foreground">Square image — any size works, it is resized automatically.</p>
             <div className="flex flex-wrap items-center gap-3">
               <Label className="inline-flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-accent">
                 <Upload className="h-4 w-4" /> Upload icon
@@ -237,11 +240,13 @@ function AppInstallAdmin() {
 
         <Card className="p-5 space-y-4 h-fit lg:sticky lg:top-20">
           <h2 className="text-sm font-semibold flex items-center gap-2"><Smartphone className="h-4 w-4" />Preview</h2>
-          <div className="rounded-2xl border p-4" style={{ backgroundColor: form.background_color }}>
-            <div className="mx-auto flex w-full max-w-[220px] flex-col items-center gap-3 py-6">
+          <div className="overflow-hidden border" style={{ backgroundColor: form.background_color }}>
+            <div className="mx-auto flex w-full flex-col items-center gap-3">
               {form.splash_url ? (
-                <img src={form.splash_url} alt="Splash preview" className="w-full rounded-lg object-cover" />
+                <img src={form.splash_url} alt="Splash preview" className="block w-full object-cover" />
               ) : null}
+              <div className="pb-6" />
+
               <div className="grid h-20 w-20 place-items-center overflow-hidden rounded-[22%] shadow-elevated"
                 style={{ backgroundColor: form.theme_color }}>
                 {form.icon_url
