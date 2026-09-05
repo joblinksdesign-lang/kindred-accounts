@@ -13,11 +13,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PageHeader, ListToolbar, EmptyState } from "@/components/page-helpers";
-import { Plus, Pencil, Trash2, ArrowUpRight, ArrowDownRight, Sliders, ImagePlus, X, PackageSearch } from "lucide-react";
+import { Plus, Pencil, Trash2, ArrowUpRight, ArrowDownRight, Sliders, ImagePlus, X, PackageSearch, ScanLine } from "lucide-react";
 import { toast } from "sonner";
 import { formatMoney, useCompanySettings } from "@/lib/company";
 import { useActiveTenantId } from "@/lib/tenant";
 import { MAX_PRODUCT_IMAGES, uploadProductImages, useProductImageUrls } from "@/lib/product-images";
+import { BarcodeScannerDialog } from "@/components/barcode-scanner";
 
 
 export const Route = createFileRoute("/_authenticated/products")({
@@ -47,6 +48,8 @@ function ProductsPage() {
   const [newSupplier, setNewSupplier] = useState("");
   const [images, setImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [barcode, setBarcode] = useState("");
+  const [scanOpen, setScanOpen] = useState(false);
 
 
   const { data: products = [] } = useQuery({
@@ -116,6 +119,7 @@ function ProductsPage() {
   const openDialog = (p: Product | null) => {
     setEditing(p);
     setImages(p?.image_paths ?? []);
+    setBarcode(p?.barcode ?? "");
     setOpen(true);
   };
 
@@ -320,7 +324,15 @@ function ProductsPage() {
           <form onSubmit={onSubmit} className="grid grid-cols-2 gap-3">
             <div className="col-span-2"><Label>Name *</Label><Input name="name" defaultValue={editing?.name} required /></div>
             <div><Label>SKU</Label><Input name="sku" defaultValue={editing?.sku ?? ""} /></div>
-            <div><Label>Barcode</Label><Input name="barcode" defaultValue={editing?.barcode ?? ""} /></div>
+            <div>
+              <Label>Barcode</Label>
+              <div className="flex gap-2">
+                <Input name="barcode" value={barcode} onChange={(e) => setBarcode(e.target.value)} placeholder="Scan or type" />
+                <Button type="button" variant="outline" size="icon" className="shrink-0" onClick={() => setScanOpen(true)} aria-label="Scan barcode">
+                  <ScanLine className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
             <div>
               <Label>Category</Label>
               <Select name="category" defaultValue={editing?.category ?? ""}>
@@ -452,6 +464,8 @@ function ProductsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <BarcodeScannerDialog open={scanOpen} onOpenChange={setScanOpen} onDetected={(code) => setBarcode(code)} />
     </div>
   );
 }
