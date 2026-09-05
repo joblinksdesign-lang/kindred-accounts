@@ -39,18 +39,37 @@ export function usePwaSettings() {
   });
 }
 
-/** Reads a device file into a data URL, rejecting oversized or non-image files. */
-export function fileToDataUrl(file: File, maxBytes = 512 * 1024): Promise<string> {
+/** Reads an image file and shrinks it so it always fits comfortably in the database. */
+export function fileToDataUrl(file: File, maxDimension = 1024): Promise<string> {
   return new Promise((resolve, reject) => {
     if (!file.type.startsWith("image/")) return reject(new Error(`${file.name} is not an image`));
-    if (file.size > maxBytes)
-      return reject(new Error(`${file.name} is ${(file.size / 1024).toFixed(0)}KB — keep it under ${Math.round(maxBytes / 1024)}KB`));
     const reader = new FileReader();
     reader.onerror = () => reject(new Error("Could not read that file"));
-    reader.onload = () => resolve(String(reader.result));
+    reader.onload = () => {
+      const original = String(reader.result);
+      const img = new Image();
+      img.onerror = () => reject(new Error("That image could not be opened"));
+      img.onload = () => {
+        const scale = Math.min(1, maxDimension / Math.max(img.width, img.height));
+        const w = Math.max(1, Math.round(img.width * scale));
+        const h = Math.max(1, Math.round(img.height * scale));
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return resolve(original);
+        ctx.drawImage(img, 0, 0, w, h);
+        let out = canvas.toDataURL("image/png");
+        // Fall back to JPEG when the PNG is still heavy (photos, gradients).
+        if (out.length > 900_000) out = canvas.toDataURL("image/jpeg", 0.85);
+        resolve(out);
+      };
+      img.src = original;
+    };
     reader.readAsDataURL(file);
   });
 }
+
 
 type InstallPromptEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
 
