@@ -237,11 +237,13 @@ function AppInstallAdmin() {
 
         <Card className="p-5 space-y-4 h-fit lg:sticky lg:top-20">
           <h2 className="text-sm font-semibold flex items-center gap-2"><Smartphone className="h-4 w-4" />Preview</h2>
-          <div className="rounded-2xl border p-4" style={{ backgroundColor: form.background_color }}>
-            <div className="mx-auto flex w-full max-w-[220px] flex-col items-center gap-3 py-6">
+          <div className="overflow-hidden border" style={{ backgroundColor: form.background_color }}>
+            <div className="mx-auto flex w-full flex-col items-center gap-3">
               {form.splash_url ? (
-                <img src={form.splash_url} alt="Splash preview" className="w-full rounded-lg object-cover" />
+                <img src={form.splash_url} alt="Splash preview" className="block w-full object-cover" />
               ) : null}
+              <div className="pb-6" />
+
               <div className="grid h-20 w-20 place-items-center overflow-hidden rounded-[22%] shadow-elevated"
                 style={{ backgroundColor: form.theme_color }}>
                 {form.icon_url
