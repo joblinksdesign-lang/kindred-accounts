@@ -59,7 +59,7 @@ function AppInstallAdmin() {
   const save = async () => {
     if (!form) return;
     setSaving(true);
-    const { error } = await supabase
+    const { data: saved, error } = await supabase
       .from("pwa_settings")
       .update({
         app_name: form.app_name,
