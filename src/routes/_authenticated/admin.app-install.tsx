@@ -159,7 +159,7 @@ function AppInstallAdmin() {
 
           <Card className="p-5 space-y-4">
             <h2 className="text-sm font-semibold">App icon</h2>
-            <p className="text-xs text-muted-foreground">Square PNG, at least 512×512, under 512KB.</p>
+            <p className="text-xs text-muted-foreground">Square image — any size works, it is resized automatically.</p>
             <div className="flex flex-wrap items-center gap-3">
               <Label className="inline-flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-accent">
                 <Upload className="h-4 w-4" /> Upload icon
