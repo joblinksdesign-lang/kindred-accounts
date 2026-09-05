@@ -76,9 +76,12 @@ function AppInstallAdmin() {
         splash_height: form.splash_height,
         install_enabled: form.install_enabled,
       })
-      .eq("id", form.id);
+      .eq("id", form.id)
+      .select("id");
     setSaving(false);
     if (error) return toast.error(error.message);
+    if (!saved || saved.length === 0)
+      return toast.error("Nothing was saved — your account may not have admin permission.");
     qc.invalidateQueries({ queryKey: ["pwa_settings"] });
     toast.success("App install settings saved");
   };
