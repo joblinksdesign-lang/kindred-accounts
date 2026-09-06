@@ -167,8 +167,8 @@ function AdminPlans() {
             <div><Label>Slug *</Label><Input name="slug" defaultValue={editing?.slug} required /></div>
             <div className="col-span-2"><Label>Tagline</Label><Input name="tagline" defaultValue={editing?.tagline ?? ""} /></div>
             <div className="col-span-2"><Label>Description</Label><Textarea name="description" rows={2} defaultValue={editing?.description ?? ""} /></div>
-            <div><Label>Monthly price ($)</Label><Input name="price_monthly" type="number" step="0.01" defaultValue={editing?.price_monthly ?? 0} /></div>
-            <div><Label>Annual price ($)</Label><Input name="price_annual" type="number" step="0.01" defaultValue={editing?.price_annual ?? 0} /></div>
+            <div><Label>Monthly price (USh)</Label><Input name="price_monthly" type="number" step="1" defaultValue={editing?.price_monthly ?? 0} /></div>
+            <div><Label>Annual price (USh)</Label><Input name="price_annual" type="number" step="1" defaultValue={editing?.price_annual ?? 0} /></div>
             <div><Label>Trial days</Label><Input name="trial_days" type="number" defaultValue={editing?.trial_days ?? 0} /></div>
             <div><Label>Sort order</Label><Input name="sort_order" type="number" defaultValue={editing?.sort_order ?? 0} /></div>
             <div><Label>Max invoices / mo (blank = ∞)</Label><Input name="max_invoices_per_month" type="number" defaultValue={editing?.max_invoices_per_month ?? ""} /></div>
