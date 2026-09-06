@@ -89,12 +89,14 @@ export function BarcodeScannerDialog({ open, onOpenChange, onDetected }: Props) 
       const caps = track.getCapabilities() as MediaTrackCapabilities & { focusMode?: string[] };
       const modes = caps.focusMode;
       if (!modes || modes.length === 0) return;
+      const withFocus = (focusMode: string) =>
+        ({ advanced: [{ focusMode }] } as unknown as MediaTrackConstraints);
       if (modes.includes("manual")) {
-        void track.applyConstraints({ advanced: [{ focusMode: "manual" }] } as MediaTrackConstraints)
-          .then(() => track.applyConstraints({ advanced: [{ focusMode: modes.includes("continuous") ? "continuous" : modes[0] }] } as MediaTrackConstraints))
+        void track.applyConstraints(withFocus("manual"))
+          .then(() => track.applyConstraints(withFocus(modes.includes("continuous") ? "continuous" : modes[0])))
           .catch(() => {});
       } else {
-        void track.applyConstraints({ advanced: [{ focusMode: modes[0] }] } as MediaTrackConstraints).catch(() => {});
+        void track.applyConstraints(withFocus(modes[0])).catch(() => {});
       }
     } catch {
       /* refocus is best-effort */
