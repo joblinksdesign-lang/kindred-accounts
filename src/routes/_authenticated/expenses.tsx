@@ -103,7 +103,7 @@ function ExpensesPage() {
     },
   });
 
-  // Materialise any recurring expenses that are due.
+  // Materialise any recurring expenses that are due (never duplicates).
   const runDue = useMutation({
     mutationFn: async () => {
       const t = today();
@@ -112,32 +112,45 @@ function ExpensesPage() {
       );
       let created = 0;
       for (const tpl of due) {
+        // Dates already posted for this schedule — never post them twice.
+        const { data: existing, error: existErr } = await supabase
+          .from("expenses")
+          .select("expense_date")
+          .eq("parent_expense_id", tpl.id);
+        if (existErr) throw existErr;
+        const posted = new Set([tpl.expense_date, ...(existing ?? []).map((r) => r.expense_date as string)]);
+
         let next = tpl.next_run_date!;
         const guard = 400;
         let i = 0;
         while (next <= t && (!tpl.recurrence_end || next <= tpl.recurrence_end) && i++ < guard) {
-          const { error } = await supabase.from("expenses").insert({
-            tenant_id: tpl.tenant_id,
-            expense_date: next,
-            category: tpl.category,
-            vendor: tpl.vendor,
-            description: tpl.description,
-            amount: tpl.amount,
-            method: tpl.method,
-            reference: tpl.reference,
-            notes: tpl.notes,
-            recurrence: "none",
-            parent_expense_id: tpl.id,
-          } as never);
-          if (error) throw error;
-          created++;
+          if (!posted.has(next)) {
+            const { error } = await supabase.from("expenses").insert({
+              tenant_id: tpl.tenant_id,
+              expense_date: next,
+              category: tpl.category,
+              vendor: tpl.vendor,
+              description: tpl.description,
+              amount: tpl.amount,
+              method: tpl.method,
+              reference: tpl.reference,
+              notes: tpl.notes,
+              recurrence: "none",
+              parent_expense_id: tpl.id,
+            } as never);
+            if (error) throw error;
+            posted.add(next);
+            created++;
+          }
           next = advance(next, tpl.recurrence);
         }
         const stop = tpl.recurrence_end && next > tpl.recurrence_end;
-        await supabase
+        const { error: updErr } = await supabase
           .from("expenses")
           .update({ next_run_date: stop ? null : next, recurrence: stop ? "none" : tpl.recurrence } as never)
           .eq("id", tpl.id);
+        // If the schedule cannot be moved forward, stop instead of looping forever.
+        if (updErr) throw updErr;
       }
       return created;
     },
@@ -147,15 +160,19 @@ function ExpensesPage() {
         qc.invalidateQueries({ queryKey: ["expenses"] });
       }
     },
+    onError: (e: Error) => toast.error(e.message || "Could not post recurring expenses"),
   });
 
+  const ranDue = useRef(false);
   useEffect(() => {
-    if (!canWrite || isLoading || expenses.length === 0 || runDue.isPending) return;
+    if (ranDue.current || !canWrite || isLoading || expenses.length === 0 || runDue.isPending) return;
     const t = today();
     const hasDue = expenses.some((e) => e.recurrence !== "none" && e.next_run_date && e.next_run_date <= t);
-    if (hasDue) runDue.mutate();
+    if (hasDue) { ranDue.current = true; runDue.mutate(); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [expenses, isLoading, canWrite]);
+
+
 
   const save = useMutation({
     mutationFn: async () => {
