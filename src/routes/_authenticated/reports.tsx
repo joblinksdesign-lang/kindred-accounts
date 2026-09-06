@@ -384,16 +384,16 @@ function ReportsPage() {
     { header: "Amount", align: "right", width: 40 },
   ];
   const plReportRows: (string | number)[][] = [
-    ["Revenue (invoiced sales)", formatMoney(pl.revenue, sym)],
-    ["Cost of goods sold", `- ${formatMoney(pl.cogs, sym)}`],
-    ["Gross profit", formatMoney(pl.grossProfit, sym)],
-    [`Gross margin`, `${pl.grossMargin.toFixed(1)}%`],
-    ...pl.expenseCategories.map((c) => [`Expense — ${c.category}`, `- ${formatMoney(c.amount, sym)}`]),
-    ["Total expenses", `- ${formatMoney(pl.expenseTotal, sym)}`],
-    ["Cash collected", formatMoney(pl.collected, sym)],
-    ["Net margin", `${pl.netMargin.toFixed(1)}%`],
+    ["1. Total sales (what customers bought)", formatMoney(pl.revenue, sym)],
+    ["2. Cost of the goods you sold (buying/restocking)", `- ${formatMoney(pl.cogs, sym)}`],
+    ["3. Gross profit (sales minus goods cost)", formatMoney(pl.grossProfit, sym)],
+    [`   Gross margin (profit per 100 of sales)`, `${pl.grossMargin.toFixed(1)}%`],
+    ...pl.expenseCategories.map((c, i) => [`4.${i + 1} Expense — ${c.category}`, `- ${formatMoney(c.amount, sym)}`]),
+    ["4. Total expenses (rent, transport, salaries…)", `- ${formatMoney(pl.expenseTotal, sym)}`],
+    ["Cash collected in period", formatMoney(pl.collected, sym)],
+    ["Net margin (profit per 100 of sales)", `${pl.netMargin.toFixed(1)}%`],
   ];
-  const plTotalsRow = ["Net profit / (loss)", formatMoney(pl.netProfit, sym)];
+  const plTotalsRow = ["5. Net profit / (loss) — what truly remains", formatMoney(pl.netProfit, sym)];
 
   const exportPlPdf = async () => {
     if (!company) return;
@@ -878,18 +878,18 @@ function ReportsPage() {
                   <TableRow><TableHead>Line</TableHead><TableHead className="text-right">Amount</TableHead></TableRow>
                 </TableHeader>
                 <TableBody>
-                  <TableRow><TableCell>Revenue (invoiced sales)</TableCell><TableCell className="text-right tabular-nums whitespace-nowrap">{formatMoney(pl.revenue, sym)}</TableCell></TableRow>
-                  <TableRow><TableCell>Cost of goods sold</TableCell><TableCell className="text-right tabular-nums whitespace-nowrap text-destructive">- {formatMoney(pl.cogs, sym)}</TableCell></TableRow>
-                  <TableRow className="bg-muted/40 font-semibold"><TableCell>Gross profit ({pl.grossMargin.toFixed(1)}%)</TableCell><TableCell className="text-right tabular-nums whitespace-nowrap">{formatMoney(pl.grossProfit, sym)}</TableCell></TableRow>
+                  <TableRow><TableCell>1. Total sales (what customers bought)</TableCell><TableCell className="text-right tabular-nums whitespace-nowrap">{formatMoney(pl.revenue, sym)}</TableCell></TableRow>
+                  <TableRow><TableCell>2. Cost of the goods you sold (buying/restocking)</TableCell><TableCell className="text-right tabular-nums whitespace-nowrap text-destructive">- {formatMoney(pl.cogs, sym)}</TableCell></TableRow>
+                  <TableRow className="bg-muted/40 font-semibold"><TableCell>3. Gross profit — sales minus goods cost ({pl.grossMargin.toFixed(1)}%)</TableCell><TableCell className="text-right tabular-nums whitespace-nowrap">{formatMoney(pl.grossProfit, sym)}</TableCell></TableRow>
                   {pl.expenseCategories.map((c) => (
                     <TableRow key={c.category}>
-                      <TableCell className="pl-6 capitalize">{c.category}</TableCell>
+                      <TableCell className="pl-6 capitalize">4. Expense — {c.category}</TableCell>
                       <TableCell className="text-right tabular-nums whitespace-nowrap text-destructive">- {formatMoney(c.amount, sym)}</TableCell>
                     </TableRow>
                   ))}
-                  <TableRow><TableCell>Total expenses</TableCell><TableCell className="text-right tabular-nums whitespace-nowrap text-destructive">- {formatMoney(pl.expenseTotal, sym)}</TableCell></TableRow>
+                  <TableRow><TableCell>4. Total expenses (rent, transport, salaries…)</TableCell><TableCell className="text-right tabular-nums whitespace-nowrap text-destructive">- {formatMoney(pl.expenseTotal, sym)}</TableCell></TableRow>
                   <TableRow className="bg-primary/5 font-bold">
-                    <TableCell>Net profit / (loss) — {pl.netMargin.toFixed(1)}% margin</TableCell>
+                    <TableCell>5. Net profit / (loss) — what truly remains ({pl.netMargin.toFixed(1)}% of sales)</TableCell>
                     <TableCell className={`text-right tabular-nums whitespace-nowrap ${pl.netProfit < 0 ? "text-destructive" : "text-primary"}`}>{formatMoney(pl.netProfit, sym)}</TableCell>
                   </TableRow>
                   <TableRow><TableCell className="text-muted-foreground">Cash collected in period</TableCell><TableCell className="text-right tabular-nums whitespace-nowrap">{formatMoney(pl.collected, sym)}</TableCell></TableRow>
