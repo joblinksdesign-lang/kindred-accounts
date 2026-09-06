@@ -183,7 +183,7 @@ function Dashboard() {
         totalRevenue, outstanding, lowStock,
         totalCustomers: customers.count ?? 0,
         totalProducts: (products.data ?? []).length,
-        periodSales, periodInvoiced, periodInvoiceCount,
+        periodSales, periodInvoiced, periodInvoiceCount, prevPeriodInvoiced,
         series, statusBreakdown,
         pl: { revenue: plRevenue, cogs: plCogs, grossProfit, expenses: plExpenses, netProfit, margin },
         recentInvoices: invs.slice(0, 6),
