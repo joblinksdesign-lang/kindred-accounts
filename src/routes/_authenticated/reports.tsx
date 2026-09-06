@@ -818,16 +818,56 @@ function ReportsPage() {
               </div>
             </div>
 
+            {/* Where the money went — plain language */}
+            {(() => {
+              const pct = (v: number) => (pl.revenue > 0 ? Math.max(0, Math.min(100, (v / pl.revenue) * 100)) : 0);
+              const cogsPct = pct(pl.cogs);
+              const expPct = Math.max(0, Math.min(100 - cogsPct, pct(pl.expenseTotal)));
+              const profitPct = pl.netProfit > 0 ? pct(pl.netProfit) : 0;
+              return (
+                <div className="rounded-lg border bg-muted/30 p-4">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                    Where your money went — in plain language
+                  </div>
+                  <ol className="space-y-1.5 text-sm leading-relaxed list-decimal list-inside">
+                    <li>You sold goods worth <b>{formatMoney(pl.revenue, sym)}</b>.</li>
+                    <li>Buying (or restocking) those goods cost you <b className="text-destructive">{formatMoney(pl.cogs, sym)}</b> — leaving <b>{formatMoney(pl.grossProfit, sym)}</b>.</li>
+                    <li>Other business costs like rent, transport and salaries took <b className="text-destructive">{formatMoney(pl.expenseTotal, sym)}</b>
+                      {pl.expenseCategories[0] ? <> — biggest: <b>{pl.expenseCategories[0].category}</b> at {formatMoney(pl.expenseCategories[0].amount, sym)}</> : null}.
+                    </li>
+                    <li>{pl.netProfit >= 0 ? "What remains in your pocket (profit):" : "You lost (money gone):"}{" "}
+                      <b className={pl.netProfit < 0 ? "text-destructive" : "text-primary"}>{formatMoney(pl.netProfit, sym)}</b>.
+                    </li>
+                  </ol>
+                  {pl.revenue > 0 && (
+                    <div className="mt-3">
+                      <div className="flex h-3 w-full overflow-hidden rounded-full bg-muted">
+                        <div className="bg-amber-500" style={{ width: `${cogsPct}%` }} />
+                        <div className="bg-destructive" style={{ width: `${expPct}%` }} />
+                        <div className="bg-primary" style={{ width: `${profitPct}%` }} />
+                      </div>
+                      <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
+                        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-500" />Cost of goods {pct(pl.cogs).toFixed(0)}%</span>
+                        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-destructive" />Expenses {pct(pl.expenseTotal).toFixed(0)}%</span>
+                        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-primary" />Profit {pl.netProfit > 0 ? profitPct.toFixed(0) : 0}%</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
             <div className="grid gap-3 sm:grid-cols-4">
               {[
-                { label: "Revenue", value: formatMoney(pl.revenue, sym) },
-                { label: "Cost of goods", value: formatMoney(pl.cogs, sym) },
-                { label: "Gross profit", value: formatMoney(pl.grossProfit, sym) },
-                { label: "Net profit", value: formatMoney(pl.netProfit, sym) },
+                { label: "Revenue (total sales)", value: formatMoney(pl.revenue, sym), hint: "Money customers bought from you" },
+                { label: "Cost of goods", value: formatMoney(pl.cogs, sym), hint: "What you paid to buy/make what you sold" },
+                { label: "Gross profit", value: formatMoney(pl.grossProfit, sym), hint: "Sales minus cost of goods" },
+                { label: "Net profit", value: formatMoney(pl.netProfit, sym), hint: "What truly remains for you" },
               ].map((k) => (
                 <div key={k.label} className="rounded-lg border bg-card p-3">
                   <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{k.label}</div>
                   <div className="mt-1 text-base sm:text-lg xl:text-xl font-bold tabular-nums break-words [overflow-wrap:anywhere]">{k.value}</div>
+                  <div className="text-[11px] text-muted-foreground mt-0.5 leading-tight">{k.hint}</div>
                 </div>
               ))}
             </div>
