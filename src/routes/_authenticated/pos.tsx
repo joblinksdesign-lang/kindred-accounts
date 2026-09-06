@@ -449,17 +449,11 @@ function PosPage() {
               <span className="text-xl font-extrabold tabular-nums text-primary [overflow-wrap:anywhere]">{formatMoney(total, sym)}</span>
             </div>
             {method === "cash" && (
-              <div className="grid grid-cols-2 items-center gap-2">
-                <div>
-                  <Label className="text-[11px]">Cash received</Label>
-                  <Input className="h-9 text-right" type="number" step="0.01" value={tendered} onChange={(e) => setTendered(e.target.value)} />
-                </div>
-                <div className="pt-4 text-right">
-                  <div className="text-[11px] text-muted-foreground">Change</div>
-                  <div className="font-bold tabular-nums">{formatMoney(change, sym)}</div>
-                </div>
+              <div className="rounded-md border bg-muted/40 p-2 text-xs text-muted-foreground">
+                Cash sale — collect the full amount of {formatMoney(total, sym)}.
               </div>
             )}
+
             {stockProblem && (
               <div className="rounded-md border border-destructive/40 bg-destructive/10 p-2 text-xs font-medium text-destructive">
                 {stockProblem.name} only has {stockOf(stockProblem.product_id)} in stock. Reduce the quantity to charge this sale.
