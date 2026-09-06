@@ -611,7 +611,20 @@ function ReportsPage() {
                 <h3 className="font-semibold">Sales record</h3>
                 <p className="text-xs text-muted-foreground">One row per sale — the customer, what they were invoiced, what they paid, and what's left.</p>
               </div>
-...
+              <div>
+                <Label className="text-xs">From</Label>
+                <Input type="date" value={from} max={to} onChange={(e) => setFrom(e.target.value)} className="h-9 w-[9.5rem]" />
+              </div>
+              <div>
+                <Label className="text-xs">To</Label>
+                <Input type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} className="h-9 w-[9.5rem]" />
+              </div>
+              <div className="flex gap-1">
+                {[["30 days", 30], ["90 days", 90], ["365 days", 365]].map(([label, d]) => (
+                  <Button key={String(label)} size="sm" variant="outline" className="h-9" onClick={() => quick(Number(d))}>{label}</Button>
+                ))}
+              </div>
+              <div className="ml-auto flex gap-2">
                 <Button size="sm" variant="outline" className="h-9" disabled={!saleReportRows.length}
                   onClick={() => downloadCsv(`sales-record-${from}-to-${to}.csv`, toCsv(saleColumns, saleReportRows))}>
                   <FileSpreadsheet className="h-4 w-4 mr-1.5" />CSV
