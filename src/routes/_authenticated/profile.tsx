@@ -15,9 +15,9 @@ import { useCurrentUser } from "@/lib/use-current-user";
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({
     meta: [
-      { title: "My profile — SoftfrackPos" },
-      { name: "description", content: "Update your name, phone number and sign-in password for your SoftfrackPos account." },
-      { property: "og:title", content: "My profile — SoftfrackPos" },
+      { title: "My profile — Softtrack Pos" },
+      { name: "description", content: "Update your name, phone number and sign-in password for your Softtrack Pos account." },
+      { property: "og:title", content: "My profile — Softtrack Pos" },
       { property: "og:description", content: "Update your personal details and password." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

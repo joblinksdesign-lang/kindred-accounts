@@ -10,8 +10,8 @@ export const Route = createFileRoute("/manifest.webmanifest")({
         const version = s?.updated_at ? Date.parse(s.updated_at) : Date.now();
         const iconSrc = s?.icon_url ? `/app-icon.png?v=${version}` : "/favicon.ico";
         const manifest = {
-          name: s?.app_name || "SoftfrackPos",
-          short_name: s?.short_name || "SoftfrackPos",
+          name: s?.app_name || "Softtrack Pos",
+          short_name: s?.short_name || "Softtrack Pos",
           description: s?.description || "Invoicing, receipts, inventory and POS.",
           start_url: s?.start_url || "/",
           scope: "/",

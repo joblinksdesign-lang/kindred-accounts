@@ -31,7 +31,7 @@ export const Route = createFileRoute("/onboarding")({
       throw redirect({ to: "/admin" });
     }
   },
-  head: () => ({ meta: [{ title: "Register your business — SoftfrackPos" }] }),
+  head: () => ({ meta: [{ title: "Register your business — Softtrack Pos" }] }),
   component: OnboardingPage,
 });
 

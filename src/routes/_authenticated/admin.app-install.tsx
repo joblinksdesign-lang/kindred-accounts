@@ -24,9 +24,9 @@ import {
 export const Route = createFileRoute("/_authenticated/admin/app-install")({
   head: () => ({
     meta: [
-      { title: "App install & branding — SoftfrackPos admin" },
+      { title: "App install & branding — Softtrack Pos admin" },
       { name: "description", content: "Configure the installable app icon, splash screen, colours and sizes." },
-      { property: "og:title", content: "App install & branding — SoftfrackPos admin" },
+      { property: "og:title", content: "App install & branding — Softtrack Pos admin" },
       { property: "og:description", content: "Configure the installable app icon, splash screen, colours and sizes." },
     ],
   }),
@@ -101,7 +101,7 @@ function AppInstallAdmin() {
     <div className="space-y-6">
       <PageHeader
         title="App install"
-        subtitle="Control how SoftfrackPos installs on phones and desktops: icon, splash screen, colours and sizes."
+        subtitle="Control how Softtrack Pos installs on phones and desktops: icon, splash screen, colours and sizes."
       />
 
       <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">

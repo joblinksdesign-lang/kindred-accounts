@@ -15,7 +15,7 @@ import { TrendingUp, ShieldCheck, Sparkles } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
-  head: () => ({ meta: [{ title: "Sign in — SoftfrackPos" }] }),
+  head: () => ({ meta: [{ title: "Sign in — Softtrack Pos" }] }),
   component: AuthPage,
 });
 
@@ -112,7 +112,7 @@ function AuthPage() {
             </div>
             <div>
               <div className="text-lg font-bold leading-tight">Growth Point</div>
-              <div className="text-xs uppercase tracking-[0.18em] text-white/70">SoftfrackPos</div>
+              <div className="text-xs uppercase tracking-[0.18em] text-white/70">Softtrack Pos</div>
             </div>
           </div>
         </div>

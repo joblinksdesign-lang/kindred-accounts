@@ -80,7 +80,7 @@ function AppSidebar() {
           {!collapsed && (
             <div className="min-w-0">
               <div className="truncate text-sm font-bold leading-tight">
-                {isSuperAdmin ? "Platform Admin" : tenant?.business_name || "SoftfrackPos"}
+                {isSuperAdmin ? "Platform Admin" : tenant?.business_name || "Softtrack Pos"}
               </div>
               <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
                 {isSuperAdmin ? "SaaS control center" : role || "Workspace"}
