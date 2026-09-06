@@ -80,6 +80,29 @@ export function BarcodeScannerDialog({ open, onOpenChange, onDetected }: Props) 
   const stopRef = useRef<(() => void) | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  /** Tap the view to clear a stuck focus: toggle manual single-shot focus then back to continuous. */
+  const refocus = () => {
+    try {
+      const stream = videoRef.current?.srcObject;
+      const track = stream instanceof MediaStream ? stream.getVideoTracks()[0] : undefined;
+      if (!track) return;
+      const caps = track.getCapabilities() as MediaTrackCapabilities & { focusMode?: string[] };
+      const modes = caps.focusMode;
+      if (!modes || modes.length === 0) return;
+      const withFocus = (focusMode: string) =>
+        ({ advanced: [{ focusMode }] } as unknown as MediaTrackConstraints);
+      if (modes.includes("manual")) {
+        void track.applyConstraints(withFocus("manual"))
+          .then(() => track.applyConstraints(withFocus(modes.includes("continuous") ? "continuous" : modes[0])))
+          .catch(() => {});
+      } else {
+        void track.applyConstraints(withFocus(modes[0])).catch(() => {});
+      }
+    } catch {
+      /* refocus is best-effort */
+    }
+  };
+
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
@@ -103,14 +126,24 @@ export function BarcodeScannerDialog({ open, onOpenChange, onDetected }: Props) 
               BarcodeFormat.CODE_128, BarcodeFormat.CODE_39, BarcodeFormat.ITF, BarcodeFormat.QR_CODE,
             ],
           ],
-          [DecodeHintType.TRY_HARDER, false],
+          // TRY_HARDER decodes tougher barcodes on the first frame instead of needing many retries.
+          [DecodeHintType.TRY_HARDER, true],
         ]);
         const reader = new BrowserMultiFormatReader(hints as never, {
-          delayBetweenScanAttempts: 40,
-          delayBetweenScanSuccess: 40,
+          delayBetweenScanAttempts: 25,
+          delayBetweenScanSuccess: 25,
         });
         const controls = await reader.decodeFromConstraints(
-          { video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } } },
+          {
+            video: {
+              facingMode: { ideal: "environment" },
+              // Lower resolution frames decode much faster; barcodes don't need HD.
+              width: { ideal: 640 },
+              height: { ideal: 480 },
+              // Prefer continuous autofocus when the hardware supports it.
+              focusMode: "continuous",
+            },
+          } as MediaStreamConstraints,
           videoRef.current!,
           (result) => {
             if (!result || cancelled) return;
@@ -152,10 +185,16 @@ export function BarcodeScannerDialog({ open, onOpenChange, onDetected }: Props) 
         ) : (
           <div className="space-y-2">
             <div className="relative overflow-hidden rounded-lg bg-black">
-              <video ref={videoRef} className="h-64 w-full object-cover" muted playsInline />
+              <video
+                ref={videoRef}
+                className="h-64 w-full cursor-pointer object-cover"
+                muted
+                playsInline
+                onClick={refocus}
+              />
               <div className="pointer-events-none absolute inset-6 rounded-lg border-2 border-white/70" />
             </div>
-            <p className="text-center text-xs text-muted-foreground">Hold the barcode inside the frame.</p>
+            <p className="text-center text-xs text-muted-foreground">Hold the barcode inside the frame. Tap the view to refocus.</p>
           </div>
         )}
       </DialogContent>
