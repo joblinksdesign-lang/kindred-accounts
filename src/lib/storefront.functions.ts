@@ -1,21 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-async function publicClient() {
-  const { createClient } = await import("@supabase/supabase-js");
-  const key = process.env["SUPABASE_PUBLISHABLE_KEY"]!;
-  return createClient(process.env["SUPABASE_URL"]!, key, {
-    auth: { persistSession: false, autoRefreshToken: false },
-    global: {
-      fetch: (input: RequestInfo | URL, init?: RequestInit) => {
-        const h = new Headers(init?.headers);
-        if (key.startsWith("sb_") && h.get("Authorization") === `Bearer ${key}`) h.delete("Authorization");
-        h.set("apikey", key);
-        return fetch(input as never, { ...init, headers: h });
-      },
-    },
-  });
-}
 
 export type StorefrontProduct = {
   id: string;
@@ -57,14 +42,16 @@ export type StorefrontData = {
 export const getStorefront = createServerFn({ method: "GET" })
   .inputValidator((data) => z.object({ slug: z.string().min(1).max(120) }).parse(data))
   .handler(async ({ data }): Promise<StorefrontData | null> => {
-    const sb = await publicClient();
+    // Storefront reads run server-side with an explicit store check so no
+    // internal tenant/product columns are ever readable by anonymous clients.
+    const { supabaseAdmin: sb } = await import("@/integrations/supabase/client.server");
 
     const { data: tenant } = await sb
       .from("tenants")
-      .select("id, slug, business_name, currency, currency_symbol")
+      .select("id, slug, business_name, currency, currency_symbol, status")
       .eq("slug", data.slug)
       .maybeSingle();
-    if (!tenant) return null;
+    if (!tenant || tenant.status !== "active") return null;
 
     const [{ data: company }, { data: products }] = await Promise.all([
       sb
@@ -81,7 +68,9 @@ export const getStorefront = createServerFn({ method: "GET" })
         .eq("is_active", true)
         .order("name"),
     ]);
-    if (!company) return null;
+    if (!company?.store_enabled) return null;
+
+
 
     let logoUrl: string | null = company.logo_url ?? null;
     const admin = (await import("@/integrations/supabase/client.server")).supabaseAdmin;
@@ -106,7 +95,14 @@ export const getStorefront = createServerFn({ method: "GET" })
 
     return {
 
-      tenant: tenant as StorefrontData["tenant"],
+      tenant: {
+        id: tenant.id,
+        slug: tenant.slug,
+        business_name: tenant.business_name,
+        currency: tenant.currency,
+        currency_symbol: tenant.currency_symbol,
+      },
+
       company: {
         company_name: company.company_name,
         tagline: company.tagline,
