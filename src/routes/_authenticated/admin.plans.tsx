@@ -127,8 +127,8 @@ function AdminPlans() {
                     <div className="text-xs text-muted-foreground">{p.tagline}</div>
                   </TableCell>
                   <TableCell className="text-xs">
-                    <div>${p.price_monthly}/mo</div>
-                    <div className="text-muted-foreground">${p.price_annual}/yr</div>
+                    <div>USh {Number(p.price_monthly).toLocaleString()}/mo</div>
+                    <div className="text-muted-foreground">USh {Number(p.price_annual).toLocaleString()}/yr</div>
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
                     Inv: {p.max_invoices_per_month ?? "∞"} • Cust: {p.max_customers ?? "∞"} • Users: {p.max_users ?? "∞"}
