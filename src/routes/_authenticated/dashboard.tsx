@@ -50,14 +50,23 @@ function Dashboard() {
   const { data: stats } = useQuery({
     queryKey: ["dashboard_stats", period, rangeKey],
     queryFn: async () => {
-      const [invoices, customers, products, payments] = await Promise.all([
+      const [invoices, customers, products, payments, expensesRes, itemsRes] = await Promise.all([
         supabase.from("invoices").select("id,total,balance,status,invoice_date,invoice_number,customer_id,created_at").order("created_at", { ascending: false }),
         supabase.from("customers").select("id", { count: "exact", head: true }),
         supabase.from("products").select("id,name,quantity,reorder_level"),
         supabase.from("payments").select("amount,payment_date,created_at").order("created_at", { ascending: false }).limit(500),
+        supabase.from("expenses").select("amount,expense_date"),
+        supabase.from("invoice_items").select("quantity,invoices(invoice_date,status),products(cost_price)"),
       ]);
       const invs = invoices.data ?? [];
       const pays = payments.data ?? [];
+      const expenseRows = (expensesRes.data ?? []) as { amount: number; expense_date: string }[];
+      const itemRows = (itemsRes.data ?? []) as unknown as {
+        quantity: number;
+        invoices: { invoice_date: string | null; status: string } | null;
+        products: { cost_price: number } | null;
+      }[];
+
       const totalRevenue = invs.reduce((s, i) => s + Number(i.total) - Number(i.balance), 0);
       const outstanding = invs.reduce((s, i) => s + Number(i.balance), 0);
       const lowStock = (products.data ?? []).filter((p) => Number(p.quantity) <= Number(p.reorder_level));
