@@ -458,12 +458,15 @@ function ReportsPage() {
       )}
       <PageHeader title="Reports" subtitle="Sales, payments, expenses, inventory and customer reports." />
       <Tabs defaultValue="sales" className="space-y-4">
-        <TabsList>
+        <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="sales">Sales</TabsTrigger>
+          <TabsTrigger value="profit">Profit &amp; loss</TabsTrigger>
           <TabsTrigger value="customers">Customers</TabsTrigger>
           <TabsTrigger value="inventory">Inventory</TabsTrigger>
           <TabsTrigger value="financial">Financial</TabsTrigger>
+          <TabsTrigger value="audit">Audit</TabsTrigger>
         </TabsList>
+
 
         <TabsContent value="sales" className="space-y-4">
           <Card className="p-5 shadow-soft border-0 space-y-4">
