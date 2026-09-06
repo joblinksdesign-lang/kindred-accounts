@@ -198,11 +198,18 @@ function AdminTenants() {
     onSuccess: () => { toast.success("Request denied"); qc.invalidateQueries({ queryKey: ["pending_plan_requests"] }); },
   });
 
+  const PAGE_SIZE = 50;
+  const [page, setPage] = useState(0);
+
   const filtered = tenants.filter((t) => {
     if (filter !== "all" && t.status !== filter) return false;
     const term = q.toLowerCase();
     return !term || [t.business_name, t.email, t.country].some((v) => v?.toLowerCase().includes(term));
   });
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount - 1);
+  const paged = filtered.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE);
 
   return (
     <div>
