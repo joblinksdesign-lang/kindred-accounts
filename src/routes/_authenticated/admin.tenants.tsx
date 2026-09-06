@@ -380,6 +380,16 @@ function AdminTenants() {
             </TableBody>
           </Table>
         </div>
+        <div className="flex items-center justify-between mt-3 text-xs text-muted-foreground">
+          <span>
+            Showing {filtered.length === 0 ? 0 : safePage * PAGE_SIZE + 1}–{Math.min(filtered.length, (safePage + 1) * PAGE_SIZE)} of {filtered.length} businesses
+          </span>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" disabled={safePage === 0} onClick={() => setPage(safePage - 1)}>Previous</Button>
+            <span>Page {safePage + 1} of {pageCount}</span>
+            <Button size="sm" variant="outline" disabled={safePage >= pageCount - 1} onClick={() => setPage(safePage + 1)}>Next</Button>
+          </div>
+        </div>
       </Card>
 
       <Dialog open={!!purgeTarget} onOpenChange={(o) => { if (!o) { setPurgeTarget(null); setPurgePassword(""); } }}>
