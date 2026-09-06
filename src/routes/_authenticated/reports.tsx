@@ -103,7 +103,7 @@ function ReportsPage() {
       const valuation = products.reduce((s, p) => s + Number(p.quantity) * Number(p.cost_price), 0);
       const retailValue = products.reduce((s, p) => s + Number(p.quantity) * Number(p.unit_price), 0);
 
-      return { monthly, customerBalances, methods, valuation, retailValue, products, invoices, payments, expenses };
+      return { monthly, customerBalances, methods, valuation, retailValue, products, invoices, payments, expenses, customers };
     },
   });
 
