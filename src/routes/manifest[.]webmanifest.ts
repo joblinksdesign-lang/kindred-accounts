@@ -7,7 +7,8 @@ export const Route = createFileRoute("/manifest.webmanifest")({
       GET: async () => {
         const s = await loadPwaSettings();
         const sizes = (s?.icon_sizes?.length ? s.icon_sizes : [192, 512]).slice().sort((a, b) => a - b);
-        const iconSrc = s?.icon_url ? "/app-icon.png" : "/favicon.ico";
+        const version = s?.updated_at ? Date.parse(s.updated_at) : Date.now();
+        const iconSrc = s?.icon_url ? `/app-icon.png?v=${version}` : "/favicon.ico";
         const manifest = {
           name: s?.app_name || "SmartInvoice Pro",
           short_name: s?.short_name || "SmartInvoice",
@@ -27,7 +28,7 @@ export const Route = createFileRoute("/manifest.webmanifest")({
         return new Response(JSON.stringify(manifest, null, 2), {
           headers: {
             "Content-Type": "application/manifest+json",
-            "Cache-Control": "public, max-age=0, must-revalidate",
+            "Cache-Control": "no-store, max-age=0, must-revalidate",
           },
         });
       },

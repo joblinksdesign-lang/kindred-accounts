@@ -11,7 +11,7 @@ export const Route = createFileRoute("/app-icon.png")({
         return new Response(decoded.bytes.buffer as ArrayBuffer, {
           headers: {
             "Content-Type": decoded.contentType,
-            "Cache-Control": "public, max-age=300, must-revalidate",
+            "Cache-Control": "no-store, max-age=0, must-revalidate",
           },
         });
       },
