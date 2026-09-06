@@ -80,6 +80,27 @@ export function BarcodeScannerDialog({ open, onOpenChange, onDetected }: Props) 
   const stopRef = useRef<(() => void) | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  /** Tap the view to clear a stuck focus: toggle manual single-shot focus then back to continuous. */
+  const refocus = () => {
+    try {
+      const stream = videoRef.current?.srcObject;
+      const track = stream instanceof MediaStream ? stream.getVideoTracks()[0] : undefined;
+      if (!track) return;
+      const caps = track.getCapabilities() as MediaTrackCapabilities & { focusMode?: string[] };
+      const modes = caps.focusMode;
+      if (!modes || modes.length === 0) return;
+      if (modes.includes("manual")) {
+        void track.applyConstraints({ advanced: [{ focusMode: "manual" }] } as MediaTrackConstraints)
+          .then(() => track.applyConstraints({ advanced: [{ focusMode: modes.includes("continuous") ? "continuous" : modes[0] }] } as MediaTrackConstraints))
+          .catch(() => {});
+      } else {
+        void track.applyConstraints({ advanced: [{ focusMode: modes[0] }] } as MediaTrackConstraints).catch(() => {});
+      }
+    } catch {
+      /* refocus is best-effort */
+    }
+  };
+
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
