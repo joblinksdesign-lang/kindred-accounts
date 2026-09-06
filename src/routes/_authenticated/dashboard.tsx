@@ -167,7 +167,9 @@ function Dashboard() {
         totalProducts: (products.data ?? []).length,
         periodSales, periodInvoiced, periodInvoiceCount,
         series, statusBreakdown,
+        pl: { revenue: plRevenue, cogs: plCogs, grossProfit, expenses: plExpenses, netProfit, margin },
         recentInvoices: invs.slice(0, 6),
+
       };
     },
   });
