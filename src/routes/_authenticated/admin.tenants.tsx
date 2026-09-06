@@ -238,8 +238,8 @@ function AdminTenants() {
 
       <Card className="p-4 shadow-soft border-0">
         <div className="flex flex-col md:flex-row gap-3 mb-4">
-          <Input placeholder="Search businesses…" value={q} onChange={(e) => setQ(e.target.value)} className="md:max-w-sm" />
-          <Select value={filter} onValueChange={setFilter}>
+          <Input placeholder="Search businesses…" value={q} onChange={(e) => { setQ(e.target.value); setPage(0); }} className="md:max-w-sm" />
+          <Select value={filter} onValueChange={(v) => { setFilter(v); setPage(0); }}>
             <SelectTrigger className="md:w-48"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All statuses</SelectItem>
@@ -265,7 +265,7 @@ function AdminTenants() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((t) => (
+              {paged.map((t) => (
                 <TableRow key={t.id} className={tenantParam === t.id ? "bg-primary/10 ring-1 ring-primary/30" : ""}>
                   <TableCell>
                     <div className="font-medium">{t.business_name}</div>
