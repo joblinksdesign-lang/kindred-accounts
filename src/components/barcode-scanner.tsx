@@ -118,9 +118,9 @@ export function BarcodeScannerDialog({ open, onOpenChange, onDetected }: Props) 
               width: { ideal: 640 },
               height: { ideal: 480 },
               // Prefer continuous autofocus when the hardware supports it.
-              focusMode: { ideal: "continuous" } as MediaTrackConstraintSet["focusMode"],
-            } as MediaTrackConstraints["video"] extends never ? MediaStreamConstraints["video"] : MediaTrackConstraints & { focusMode?: string },
-          },
+              focusMode: "continuous",
+            },
+          } as MediaStreamConstraints,
           videoRef.current!,
           (result) => {
             if (!result || cancelled) return;
