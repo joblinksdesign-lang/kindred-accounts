@@ -225,10 +225,19 @@ function Dashboard() {
     const changePct = previous > 0 ? ((current - previous) / previous) * 100 : 0;
     const salesDown = previous > 0 && current < previous && changePct <= -10;
     if (net < 0) {
+      const cogs = stats?.pl.cogs ?? 0;
+      const gross = stats?.pl.grossProfit ?? 0;
+      const expenses = stats?.pl.expenses ?? 0;
+      let cause = "Review your costs, prices, and sales to turn things around.";
+      if (gross < 0) {
+        cause = `The goods you sold cost ${formatMoney(cogs, sym)} to buy, but you sold them for only ${formatMoney(current, sym)}. Your selling prices are too low — raise prices or find cheaper suppliers.`;
+      } else if (expenses > gross) {
+        cause = `Your other expenses (rent, transport, salaries…) of ${formatMoney(expenses, sym)} were bigger than the ${formatMoney(gross, sym)} left after paying for stock. Cut unnecessary expenses or sell more.`;
+      }
       return {
         tone: "danger" as const,
         title: "You are running at a loss",
-        body: `Your business recorded a loss of ${formatMoney(Math.abs(net), sym)} this period. Review your costs, pricing, and sales strategy to turn things around.`,
+        body: `Your business lost ${formatMoney(Math.abs(net), sym)} this period. ${cause}`,
         Icon: AlertTriangle,
       };
     }
@@ -355,13 +364,54 @@ function Dashboard() {
             </div>
           </div>
         </div>
+        {/* Where the money went — plain language */}
+        {(() => {
+          const rev = stats?.pl.revenue ?? 0;
+          const cogs = stats?.pl.cogs ?? 0;
+          const gross = stats?.pl.grossProfit ?? 0;
+          const exp = stats?.pl.expenses ?? 0;
+          const net = stats?.pl.netProfit ?? 0;
+          const pct = (v: number) => (rev > 0 ? Math.max(0, Math.min(100, (v / rev) * 100)) : 0);
+          const profitPct = net > 0 ? pct(net) : 0;
+          const cogsPct = pct(cogs);
+          const expPct = Math.max(0, Math.min(100 - cogsPct, pct(exp)));
+          return (
+            <div className="mb-4 rounded-lg border bg-muted/30 p-4">
+              <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                Where your money went — {periodLabel}
+              </div>
+              <ol className="space-y-1.5 text-sm leading-relaxed list-decimal list-inside">
+                <li>You sold goods worth <b>{formatMoney(rev, sym)}</b>.</li>
+                <li>Buying (or restocking) those goods cost you <b className="text-destructive">{formatMoney(cogs, sym)}</b> — leaving <b>{formatMoney(gross, sym)}</b>.</li>
+                <li>Other business costs like rent, transport and salaries took <b className="text-destructive">{formatMoney(exp, sym)}</b>.</li>
+                <li>{net >= 0 ? "What remains in your pocket (profit):" : "You lost (money gone):"}{" "}
+                  <b className={net < 0 ? "text-destructive" : "text-primary"}>{formatMoney(net, sym)}</b>.
+                </li>
+              </ol>
+              {rev > 0 && (
+                <div className="mt-3">
+                  <div className="flex h-3 w-full overflow-hidden rounded-full bg-muted">
+                    <div className="bg-amber-500" style={{ width: `${cogsPct}%` }} title={`Cost of goods ${pct(cogs).toFixed(0)}%`} />
+                    <div className="bg-destructive" style={{ width: `${expPct}%` }} title={`Expenses ${pct(exp).toFixed(0)}%`} />
+                    <div className="bg-primary" style={{ width: `${profitPct}%` }} title={`Profit ${profitPct.toFixed(0)}%`} />
+                  </div>
+                  <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
+                    <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-500" />Cost of goods {pct(cogs).toFixed(0)}%</span>
+                    <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-destructive" />Expenses {pct(exp).toFixed(0)}%</span>
+                    <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-primary" />Profit {net > 0 ? profitPct.toFixed(0) : 0}%</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
           {[
-            { label: "Revenue", value: stats?.pl.revenue ?? 0, tone: "plain" },
-            { label: "Cost of goods", value: -(stats?.pl.cogs ?? 0), tone: "cost" },
-            { label: "Gross profit", value: stats?.pl.grossProfit ?? 0, tone: "plain" },
-            { label: "Expenses", value: -(stats?.pl.expenses ?? 0), tone: "cost" },
-            { label: "Net profit", value: stats?.pl.netProfit ?? 0, tone: "net" },
+            { label: "Revenue (total sales)", value: stats?.pl.revenue ?? 0, tone: "plain", hint: "Money customers bought from you" },
+            { label: "Cost of goods", value: -(stats?.pl.cogs ?? 0), tone: "cost", hint: "What you paid to buy/make what you sold" },
+            { label: "Gross profit", value: stats?.pl.grossProfit ?? 0, tone: "plain", hint: "Sales minus cost of goods" },
+            { label: "Expenses", value: -(stats?.pl.expenses ?? 0), tone: "cost", hint: "Rent, transport, salaries, other costs" },
+            { label: "Net profit", value: stats?.pl.netProfit ?? 0, tone: "net", hint: "What truly remains for you" },
           ].map((k) => (
             <div key={k.label} className={`rounded-lg border p-3 ${k.tone === "net" ? "bg-primary/5 border-primary/20" : "bg-card"}`}>
               <div className="text-[11px] uppercase tracking-wide text-muted-foreground leading-tight">{k.label}</div>
@@ -370,9 +420,9 @@ function Dashboard() {
               }`}>
                 {formatMoney(k.value, sym)}
               </div>
-              {k.label === "Net profit" && (
-                <div className="text-[11px] text-muted-foreground mt-0.5">Margin {(stats?.pl.margin ?? 0).toFixed(1)}%</div>
-              )}
+              <div className="text-[11px] text-muted-foreground mt-0.5 leading-tight">
+                {k.label === "Net profit" ? `Margin ${(stats?.pl.margin ?? 0).toFixed(1)}% — ${k.hint}` : k.hint}
+              </div>
             </div>
           ))}
         </div>
