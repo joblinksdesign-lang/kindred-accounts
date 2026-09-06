@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { PageHeader } from "@/components/page-helpers";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { usePlanLimits, planBlockReason } from "@/lib/plan-limits";
 import { formatMoney, useCompanySettings } from "@/lib/company";
 import { useActiveTenantId } from "@/lib/tenant";
 
@@ -68,8 +69,12 @@ function NewInvoicePage() {
     updateLine(lineId, { product_id: p.id, description: p.name, unit_price: Number(p.unit_price) });
   };
 
+  const { data: planLimits } = usePlanLimits();
+
   const save = useMutation({
     mutationFn: async () => {
+      const blocked = planBlockReason(planLimits, "invoices");
+      if (blocked) throw new Error(blocked);
       if (!customerId) throw new Error("Select a customer");
       if (lines.length === 0 || lines.some((l) => !l.description)) throw new Error("Add at least one line item with a description");
       const { data: u } = await supabase.auth.getUser();
