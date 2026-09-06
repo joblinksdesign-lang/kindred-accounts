@@ -30,8 +30,15 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 });
 
 function Dashboard() {
+  const navigate = useNavigate();
+  const { role, isLoading: rolesLoading } = useActiveTenant();
+  useEffect(() => {
+    // POS-only staff have no dashboard — send them to the counter.
+    if (!rolesLoading && role === "sales_agent") navigate({ to: "/pos", replace: true });
+  }, [role, rolesLoading, navigate]);
   const { data: company } = useCompanySettings();
   const sym = company?.currency_symbol || "USh ";
+
   const [period, setPeriod] = useState<Period>("month");
   const [range, setRange] = useState<DateRange | undefined>();
 
