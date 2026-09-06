@@ -230,22 +230,20 @@ function ReportsPage() {
 
   const customerColumns: ReportColumn[] = [
     { header: "#", align: "right", width: 7 },
-    { header: "Customer", align: "left", width: 36 },
-    { header: "Contact person", align: "left", width: 24 },
-    { header: "Code", align: "left", width: 13 },
-    { header: "Phone", align: "left", width: 22 },
-    { header: "Email", align: "left", width: 34 },
-    { header: "City", align: "left", width: 16 },
-    { header: "Invoices", align: "right", width: 13 },
-    { header: "Sales", align: "right", width: 21 },
-    { header: "Paid", align: "right", width: 21 },
-    { header: "Balance", align: "right", width: 21 },
-    { header: "Overdue", align: "right", width: 21 },
-    { header: "Last invoice", align: "left", width: 19 },
+    { header: "Customer", align: "left", width: 42 },
+    { header: "Contact person", align: "left", width: 28 },
+    { header: "Code", align: "left", width: 15 },
+    { header: "City", align: "left", width: 20 },
+    { header: "Invoices", align: "right", width: 15 },
+    { header: "Sales", align: "right", width: 24 },
+    { header: "Paid", align: "right", width: 24 },
+    { header: "Balance", align: "right", width: 24 },
+    { header: "Overdue", align: "right", width: 24 },
+    { header: "Last invoice", align: "left", width: 22 },
   ];
 
   const customerReportRows = customerRows.map((r, i) => [
-    i + 1, r.name, r.contact || "—", r.code || "—", r.phone || "—", r.email || "—", r.city || "—",
+    i + 1, r.name, r.contact || "—", r.code || "—", r.city || "—",
     r.invoices,
     formatMoney(r.sales, sym),
     formatMoney(r.paid, sym),
@@ -622,15 +620,14 @@ function ReportsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Customer</TableHead>
+                    <TableHead className="whitespace-nowrap">Customer</TableHead>
                     <TableHead className="whitespace-nowrap">Code</TableHead>
-                    <TableHead className="whitespace-nowrap">Phone</TableHead>
-                    <TableHead className="whitespace-nowrap">Email</TableHead>
-                    <TableHead className="text-right">Invoices</TableHead>
-                    <TableHead className="text-right">Sales</TableHead>
-                    <TableHead className="text-right">Paid</TableHead>
-                    <TableHead className="text-right">Balance</TableHead>
-                    <TableHead className="text-right">Overdue</TableHead>
+                    <TableHead className="whitespace-nowrap">City</TableHead>
+                    <TableHead className="text-right whitespace-nowrap">Invoices</TableHead>
+                    <TableHead className="text-right whitespace-nowrap">Sales</TableHead>
+                    <TableHead className="text-right whitespace-nowrap">Paid</TableHead>
+                    <TableHead className="text-right whitespace-nowrap">Balance</TableHead>
+                    <TableHead className="text-right whitespace-nowrap">Overdue</TableHead>
                     <TableHead className="whitespace-nowrap">Last invoice</TableHead>
                   </TableRow>
                 </TableHeader>
