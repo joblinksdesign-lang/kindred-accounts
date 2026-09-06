@@ -168,6 +168,105 @@ function ReportsPage() {
 
   const rangeText = `${new Date(from + "T00:00:00").toLocaleDateString()} – ${new Date(to + "T00:00:00").toLocaleDateString()} · grouped by ${grouping}`;
 
+  // ---- Per-customer report ----
+  type CustomerRow = {
+    name: string; contact: string; email: string; phone: string; city: string; code: string;
+    invoices: number; sales: number; paid: number; balance: number; last: string; overdue: number;
+  };
+  const customerRows: CustomerRow[] = useMemo(() => {
+    const customers = (data?.customers ?? []) as {
+      id: string; name: string; company_name: string | null; email: string | null;
+      phone: string | null; city: string | null; store_code: string | null;
+    }[];
+    const invoices = data?.invoices ?? [];
+    const inRange = (d?: string | null) => !!d && d >= from && d <= to;
+    const scoped = invoices.filter((i) => inRange(i.invoice_date));
+
+    return customers
+      .map((c) => {
+        const mine = scoped.filter((i) => i.customer_id === c.id);
+        const sales = mine.reduce((s, i) => s + Number(i.total), 0);
+        const paid = mine.reduce((s, i) => s + Number(i.amount_paid), 0);
+        const balance = mine.reduce((s, i) => s + Number(i.balance), 0);
+        const overdue = mine.filter((i) => i.status === "overdue").reduce((s, i) => s + Number(i.balance), 0);
+        const last = mine.map((i) => i.invoice_date!).sort().slice(-1)[0] ?? "";
+        return {
+          name: c.company_name || c.name,
+          contact: c.company_name ? c.name : "",
+          email: c.email || "",
+          phone: c.phone || "",
+          city: c.city || "",
+          code: c.store_code || "",
+          invoices: mine.length,
+          sales, paid, balance, overdue,
+          last,
+        };
+      })
+      .filter((r) => r.invoices > 0 || r.balance !== 0)
+      .sort((a, b) => b.sales - a.sales);
+  }, [data, from, to]);
+
+  const customerTotals = customerRows.reduce(
+    (a, r) => ({ invoices: a.invoices + r.invoices, sales: a.sales + r.sales, paid: a.paid + r.paid, balance: a.balance + r.balance, overdue: a.overdue + r.overdue }),
+    { invoices: 0, sales: 0, paid: 0, balance: 0, overdue: 0 },
+  );
+
+  const customerColumns: ReportColumn[] = [
+    { header: "#", align: "right", width: 10 },
+    { header: "Customer", align: "left", width: 48 },
+    { header: "Contact person", align: "left", width: 34 },
+    { header: "Code", align: "left", width: 16 },
+    { header: "Phone", align: "left", width: 28 },
+    { header: "Email", align: "left", width: 46 },
+    { header: "City", align: "left", width: 24 },
+    { header: "Invoices", align: "right", width: 18 },
+    { header: "Sales", align: "right", width: 28 },
+    { header: "Paid", align: "right", width: 28 },
+    { header: "Balance", align: "right", width: 28 },
+    { header: "Overdue", align: "right", width: 26 },
+    { header: "Last invoice", align: "left", width: 24 },
+  ];
+  const customerReportRows = customerRows.map((r, i) => [
+    i + 1, r.name, r.contact || "—", r.code || "—", r.phone || "—", r.email || "—", r.city || "—",
+    r.invoices,
+    formatMoney(r.sales, sym),
+    formatMoney(r.paid, sym),
+    formatMoney(r.balance, sym),
+    formatMoney(r.overdue, sym),
+    r.last ? new Date(r.last + "T00:00:00").toLocaleDateString() : "—",
+  ]);
+  const customerTotalsRow = [
+    "", "Total", "", "", "", "", "",
+    customerTotals.invoices,
+    formatMoney(customerTotals.sales, sym),
+    formatMoney(customerTotals.paid, sym),
+    formatMoney(customerTotals.balance, sym),
+    formatMoney(customerTotals.overdue, sym),
+    "",
+  ];
+  const customerRangeText = `${new Date(from + "T00:00:00").toLocaleDateString()} – ${new Date(to + "T00:00:00").toLocaleDateString()} · ${customerRows.length} customers`;
+
+  const exportCustomerPdf = async () => {
+    if (!company) return;
+    try {
+      await downloadReportPdf(
+        {
+          title: "Customer report",
+          subtitle: customerRangeText,
+          columns: customerColumns,
+          rows: customerReportRows,
+          totalsRow: customerTotalsRow,
+          orientation: "landscape",
+        },
+        company,
+        `customer-report-${from}-to-${to}.pdf`,
+      );
+    } catch (err) {
+      toast.error("Could not create PDF", { description: (err as Error).message });
+    }
+  };
+
+
   const exportPdf = async () => {
     if (!company) return;
     try {
