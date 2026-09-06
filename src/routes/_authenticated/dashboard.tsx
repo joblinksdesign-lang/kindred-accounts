@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import type { DateRange } from "react-day-picker";
 import {
-  DollarSign, Users, Package, FileText, AlertTriangle, TrendingUp, Plus, ArrowUpRight, Calendar as CalendarIcon,
+  DollarSign, Users, Package, FileText, AlertTriangle, TrendingUp, TrendingDown, Trophy, Plus, ArrowUpRight, Calendar as CalendarIcon,
 } from "lucide-react";
 import {
   Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid,
