@@ -18,7 +18,7 @@ import { toast } from "sonner";
 import { formatMoney, useCompanySettings } from "@/lib/company";
 import { useActiveTenantId } from "@/lib/tenant";
 import { MAX_PRODUCT_IMAGES, uploadProductImages, useProductImageUrls } from "@/lib/product-images";
-import { BarcodeScannerDialog } from "@/components/barcode-scanner";
+import { BarcodeScannerDialog, unlockAudio } from "@/components/barcode-scanner";
 
 
 export const Route = createFileRoute("/_authenticated/products")({

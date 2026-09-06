@@ -17,7 +17,7 @@ import { useTenantModules } from "@/lib/modules";
 import { useProductImageUrls } from "@/lib/product-images";
 import { generateReceiptPdf, generateThermalReceiptPdf, loadCompanyLogo, savePdf, printPdf } from "@/lib/pdf";
 import { toast } from "sonner";
-import { BarcodeScannerDialog } from "@/components/barcode-scanner";
+import { BarcodeScannerDialog, unlockAudio } from "@/components/barcode-scanner";
 import {
   ShoppingCart, Minus, Plus, Trash2, PackageSearch, Search, ScanLine, CheckCircle2, Printer, Download, Receipt as ReceiptIcon,
 } from "lucide-react";
