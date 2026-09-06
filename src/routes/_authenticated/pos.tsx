@@ -17,7 +17,7 @@ import { useTenantModules } from "@/lib/modules";
 import { useProductImageUrls } from "@/lib/product-images";
 import { generateReceiptPdf, generateThermalReceiptPdf, loadCompanyLogo, savePdf, printPdf } from "@/lib/pdf";
 import { toast } from "sonner";
-import { BarcodeScannerDialog } from "@/components/barcode-scanner";
+import { BarcodeScannerDialog, unlockAudio } from "@/components/barcode-scanner";
 import {
   ShoppingCart, Minus, Plus, Trash2, PackageSearch, Search, ScanLine, CheckCircle2, Printer, Download, Receipt as ReceiptIcon,
 } from "lucide-react";
@@ -304,7 +304,7 @@ function PosPage() {
                   className="h-9 pl-8"
                 />
               </div>
-              <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0" onClick={() => setScanOpen(true)} aria-label="Scan barcode with camera">
+              <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0" onClick={() => { unlockAudio(); setScanOpen(true); }} aria-label="Scan barcode with camera">
                 <ScanLine className="h-4 w-4" />
               </Button>
             </div>

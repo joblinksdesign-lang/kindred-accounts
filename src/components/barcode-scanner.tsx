@@ -26,8 +26,8 @@ function getCtx(): AudioContext | null {
   }
 }
 
-/** Called from a user gesture so mobile browsers allow sound later. */
-function unlockAudio() {
+/** Called from a user gesture so mobile browsers allow sound later. Exported so scan buttons can unlock audio on tap. */
+export function unlockAudio() {
   const ctx = getCtx();
   if (!ctx) return;
   void ctx.resume().catch(() => {});
@@ -84,6 +84,8 @@ export function BarcodeScannerDialog({ open, onOpenChange, onDetected }: Props) 
     if (!open) return;
     let cancelled = false;
     setError(null);
+    // The scan button tap is a user gesture — unlock audio in the same task so the beep plays later.
+    unlockAudio();
 
     (async () => {
       try {
@@ -137,7 +139,7 @@ export function BarcodeScannerDialog({ open, onOpenChange, onDetected }: Props) 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" onPointerDown={unlockAudio}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2"><ScanLine className="h-4 w-4" />Scan barcode</DialogTitle>
         </DialogHeader>
