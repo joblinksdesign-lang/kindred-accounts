@@ -149,6 +149,21 @@ export function BarcodeScannerDialog({ open, onOpenChange, onDetected }: Props) 
             if (!result || cancelled) return;
             const text = result.getText().trim();
             if (!text) return;
+
+            // Ignore very small/distant barcodes so the user must hold the code close enough.
+            const points = result.getResultPoints?.() ?? [];
+            if (points && points.length >= 2) {
+              const xs = points.map((p) => p.getX());
+              const ys = points.map((p) => p.getY());
+              const width = Math.max(0, Math.max(...xs) - Math.min(...xs));
+              const height = Math.max(0, Math.max(...ys) - Math.min(...ys));
+              const minDimension = 70; // pixels
+              const minArea = 2000; // pixels squared
+              if (width < minDimension || height < minDimension || width * height < minArea) {
+                return;
+              }
+            }
+
             cancelled = true;
             beep();
             stopRef.current?.();
