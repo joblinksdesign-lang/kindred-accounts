@@ -197,7 +197,7 @@ export function BarcodeScannerDialog({ open, onOpenChange, onDetected }: Props) 
               />
               <div className="pointer-events-none absolute inset-6 rounded-lg border-2 border-white/70" />
             </div>
-            <p className="text-center text-xs text-muted-foreground">Hold the barcode inside the frame. Tap the view to refocus.</p>
+            <p className="text-center text-xs text-muted-foreground">Point at any barcode — small or faint codes work too. Tap the view if it looks blurry to refocus.</p>
           </div>
         )}
       </DialogContent>
