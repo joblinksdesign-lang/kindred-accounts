@@ -652,7 +652,7 @@ function ReportsPage() {
                   ))}
                   {customerRows.length > 0 && (
                     <TableRow className="bg-muted/50 font-semibold">
-                      <TableCell colSpan={4}>Total</TableCell>
+                      <TableCell colSpan={3}>Total</TableCell>
                       <TableCell className="text-right tabular-nums">{customerTotals.invoices}</TableCell>
                       <TableCell className="text-right tabular-nums whitespace-nowrap">{formatMoney(customerTotals.sales, sym)}</TableCell>
                       <TableCell className="text-right tabular-nums whitespace-nowrap">{formatMoney(customerTotals.paid, sym)}</TableCell>
