@@ -764,6 +764,29 @@ function ReportsPage() {
 
         <TabsContent value="profit" className="space-y-4">
           <Card className="p-5 shadow-soft border-0 space-y-4">
+            <div className={cn("rounded-xl border p-4 border-l-4 shadow-soft",
+              plMessage.tone === "success" ? "border-l-emerald-500 bg-emerald-50/40 dark:bg-emerald-950/20"
+              : plMessage.tone === "warning" ? "border-l-amber-500 bg-amber-50/40 dark:bg-amber-950/20"
+              : "border-l-destructive bg-destructive/5"
+            )}>
+              <div className="flex items-start gap-3">
+                <div className={cn("grid h-10 w-10 shrink-0 place-items-center rounded-full",
+                  plMessage.tone === "success" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"
+                  : plMessage.tone === "warning" ? "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300"
+                  : "bg-destructive/10 text-destructive"
+                )}>
+                  <plMessage.Icon className="h-5 w-5" />
+                </div>
+                <div>
+                  <h4 className={cn("font-semibold",
+                    plMessage.tone === "success" ? "text-emerald-800 dark:text-emerald-200"
+                    : plMessage.tone === "warning" ? "text-amber-800 dark:text-amber-200"
+                    : "text-destructive"
+                  )}>{plMessage.title}</h4>
+                  <p className="text-sm mt-0.5 text-muted-foreground leading-relaxed">{plMessage.body}</p>
+                </div>
+              </div>
+            </div>
             <div className="flex flex-wrap items-end gap-3">
               <div>
                 <h3 className="font-semibold">Profit &amp; loss</h3>
