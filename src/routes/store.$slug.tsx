@@ -163,7 +163,15 @@ function Storefront() {
     onSuccess: (res) => {
       setResult(res);
       setCart([]);
+      setWaMsg(buildWhatsAppMessage(res, false));
       toast.success(`Order ${res.quoteNumber} created`);
+      // Make sending effortless: try to open the shop owner's WhatsApp straight away.
+      // If the browser blocks the popup, the green button below does the same thing.
+      const digits = (res.whatsappNumber || "").replace(/\D/g, "");
+      if (digits) {
+        const w = window.open(`https://wa.me/${digits}?text=${encodeURIComponent(buildWhatsAppMessage(res, false))}`, "_blank");
+        if (!w) toast.info("Tap the green WhatsApp button to send your order");
+      }
     },
     onError: (e: Error) => toast.error(e.message || "Could not submit your order"),
   });
