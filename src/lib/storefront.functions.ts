@@ -57,14 +57,16 @@ export type StorefrontData = {
 export const getStorefront = createServerFn({ method: "GET" })
   .inputValidator((data) => z.object({ slug: z.string().min(1).max(120) }).parse(data))
   .handler(async ({ data }): Promise<StorefrontData | null> => {
-    const sb = await publicClient();
+    // Storefront reads run server-side with an explicit store check so no
+    // internal tenant/product columns are ever readable by anonymous clients.
+    const { supabaseAdmin: sb } = await import("@/integrations/supabase/client.server");
 
     const { data: tenant } = await sb
       .from("tenants")
-      .select("id, slug, business_name, currency, currency_symbol")
+      .select("id, slug, business_name, currency, currency_symbol, status")
       .eq("slug", data.slug)
       .maybeSingle();
-    if (!tenant) return null;
+    if (!tenant || tenant.status !== "active") return null;
 
     const [{ data: company }, { data: products }] = await Promise.all([
       sb
@@ -81,7 +83,9 @@ export const getStorefront = createServerFn({ method: "GET" })
         .eq("is_active", true)
         .order("name"),
     ]);
-    if (!company) return null;
+    if (!company?.store_enabled) return null;
+
+
 
     let logoUrl: string | null = company.logo_url ?? null;
     const admin = (await import("@/integrations/supabase/client.server")).supabaseAdmin;
