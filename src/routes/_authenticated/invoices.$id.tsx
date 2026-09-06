@@ -63,7 +63,7 @@ function InvoiceDetail() {
   const recordPayment = useMutation({
     mutationFn: async (form: FormData) => {
       const { data: u } = await supabase.auth.getUser();
-      const { error } = await supabase.from("payments").insert({
+      const { data: payment, error } = await supabase.from("payments").insert({
         tenant_id: tenantId,
         invoice_id: id,
         amount: Number(form.get("amount")),
@@ -72,8 +72,12 @@ function InvoiceDetail() {
         reference: String(form.get("reference") || ""),
         notes: String(form.get("notes") || ""),
         created_by: u.user?.id,
-      } as never);
+      } as never).select("id").single();
       if (error) throw error;
+      if (payment?.id) {
+        // Email the business owner their payment confirmation (never blocks the save).
+        sendReceiptEmail({ data: { paymentId: payment.id } }).catch(() => {});
+      }
     },
     onSuccess: () => {
       toast.success("Payment recorded");
