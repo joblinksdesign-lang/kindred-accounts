@@ -59,32 +59,33 @@ function AppInstallAdmin() {
   const save = async () => {
     if (!form) return;
     setSaving(true);
-    const { data: saved, error } = await supabase
-      .from("pwa_settings")
-      .update({
-        app_name: form.app_name,
-        short_name: form.short_name,
-        description: form.description,
-        theme_color: form.theme_color,
-        background_color: form.background_color,
-        display_mode: form.display_mode,
-        start_url: form.start_url,
-        icon_url: form.icon_url,
-        splash_url: form.splash_url,
-        icon_sizes: form.icon_sizes,
-        splash_width: form.splash_width,
-        splash_height: form.splash_height,
-        install_enabled: form.install_enabled,
-      })
-      .eq("id", form.id)
-      .select("id");
-    setSaving(false);
-    if (error) return toast.error(error.message);
-    if (!saved || saved.length === 0)
-      return toast.error("Nothing was saved — your account may not have admin permission.");
-    qc.invalidateQueries({ queryKey: ["pwa_settings"] });
-    refreshInstallAssets();
-    toast.success("App install settings saved");
+    try {
+      await saveSettings({
+        data: {
+          id: form.id,
+          app_name: form.app_name,
+          short_name: form.short_name,
+          description: form.description ?? "",
+          theme_color: form.theme_color,
+          background_color: form.background_color,
+          display_mode: form.display_mode,
+          start_url: form.start_url || "/",
+          icon_url: form.icon_url,
+          splash_url: form.splash_url,
+          icon_sizes: form.icon_sizes,
+          splash_width: form.splash_width,
+          splash_height: form.splash_height,
+          install_enabled: form.install_enabled,
+        },
+      });
+      qc.invalidateQueries({ queryKey: ["pwa_settings"] });
+      refreshInstallAssets();
+      toast.success("App install settings saved");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not save the settings");
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (isLoading || !form) {
