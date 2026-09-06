@@ -608,28 +608,15 @@ function ReportsPage() {
           <Card className="p-5 shadow-soft border-0 space-y-4">
             <div className="flex flex-wrap items-end gap-3">
               <div>
-                <h3 className="font-semibold">Report per customer</h3>
-                <p className="text-xs text-muted-foreground">Full record of every customer's invoices, payments and balances.</p>
+                <h3 className="font-semibold">Sales record</h3>
+                <p className="text-xs text-muted-foreground">One row per sale — the customer, what they were invoiced, what they paid, and what's left.</p>
               </div>
-              <div>
-                <Label className="text-xs">From</Label>
-                <Input type="date" value={from} max={to} onChange={(e) => setFrom(e.target.value)} className="h-9 w-[9.5rem]" />
-              </div>
-              <div>
-                <Label className="text-xs">To</Label>
-                <Input type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} className="h-9 w-[9.5rem]" />
-              </div>
-              <div className="flex gap-1">
-                {[["30 days", 30], ["90 days", 90], ["365 days", 365]].map(([label, d]) => (
-                  <Button key={String(label)} size="sm" variant="outline" className="h-9" onClick={() => quick(Number(d))}>{label}</Button>
-                ))}
-              </div>
-              <div className="ml-auto flex gap-2">
-                <Button size="sm" variant="outline" className="h-9" disabled={!customerReportRows.length}
-                  onClick={() => downloadCsv(`customer-report-${from}-to-${to}.csv`, toCsv(customerColumns, customerReportRows))}>
+...
+                <Button size="sm" variant="outline" className="h-9" disabled={!saleReportRows.length}
+                  onClick={() => downloadCsv(`sales-record-${from}-to-${to}.csv`, toCsv(saleColumns, saleReportRows))}>
                   <FileSpreadsheet className="h-4 w-4 mr-1.5" />CSV
                 </Button>
-                <Button size="sm" className="h-9 gradient-emerald text-white" disabled={!customerReportRows.length || !company} onClick={exportCustomerPdf}>
+                <Button size="sm" className="h-9 gradient-emerald text-white" disabled={!saleReportRows.length || !company} onClick={exportSalesPdf}>
                   <Download className="h-4 w-4 mr-1.5" />PDF (A4 landscape)
                 </Button>
               </div>
@@ -637,10 +624,10 @@ function ReportsPage() {
 
             <div className="grid gap-3 sm:grid-cols-4">
               {[
-                { label: "Customers", value: String(customerRows.length) },
-                { label: "Sales", value: formatMoney(customerTotals.sales, sym) },
-                { label: "Paid", value: formatMoney(customerTotals.paid, sym) },
-                { label: "Outstanding", value: formatMoney(customerTotals.balance, sym) },
+                { label: "Sales", value: String(saleRows.length) },
+                { label: "Total invoiced", value: formatMoney(saleTotals.sales, sym) },
+                { label: "Collected", value: formatMoney(saleTotals.paid, sym) },
+                { label: "Still owed", value: formatMoney(saleTotals.balance, sym) },
               ].map((k) => (
                 <div key={k.label} className="rounded-lg border bg-card p-3">
                   <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{k.label}</div>
@@ -653,45 +640,47 @@ function ReportsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="whitespace-nowrap">Date</TableHead>
+                    <TableHead className="whitespace-nowrap">Invoice no.</TableHead>
                     <TableHead className="whitespace-nowrap">Customer</TableHead>
                     <TableHead className="whitespace-nowrap">Code</TableHead>
-                    <TableHead className="whitespace-nowrap">City</TableHead>
-                    <TableHead className="text-right whitespace-nowrap">Invoices</TableHead>
-                    <TableHead className="text-right whitespace-nowrap">Sales</TableHead>
+                    <TableHead className="whitespace-nowrap">Status</TableHead>
+                    <TableHead className="text-right whitespace-nowrap">Total</TableHead>
                     <TableHead className="text-right whitespace-nowrap">Paid</TableHead>
                     <TableHead className="text-right whitespace-nowrap">Balance</TableHead>
-                    <TableHead className="text-right whitespace-nowrap">Overdue</TableHead>
-                    <TableHead className="whitespace-nowrap">Last invoice</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {customerRows.length === 0 ? (
-                    <TableRow><TableCell colSpan={9} className="py-10 text-center text-sm text-muted-foreground">No customer activity in this period.</TableCell></TableRow>
-                  ) : customerRows.map((r, i) => (
-                    <TableRow key={`${r.name}-${i}`}>
-                      <TableCell className="font-medium whitespace-nowrap">
-                        {r.name}
-                        {r.contact && <span className="ml-1 text-xs text-muted-foreground">({r.contact})</span>}
-                      </TableCell>
+                  {saleRows.length === 0 ? (
+                    <TableRow><TableCell colSpan={8} className="py-10 text-center text-sm text-muted-foreground">No sales in this period.</TableCell></TableRow>
+                  ) : saleRows.map((r) => (
+                    <TableRow key={r.id}>
+                      <TableCell className="whitespace-nowrap">{new Date(r.date + "T00:00:00").toLocaleDateString()}</TableCell>
+                      <TableCell className="whitespace-nowrap font-medium">{r.invoiceNumber}</TableCell>
+                      <TableCell className="whitespace-nowrap">{r.customer}</TableCell>
                       <TableCell className="whitespace-nowrap">{r.code || "—"}</TableCell>
-                      <TableCell className="whitespace-nowrap">{r.city || "—"}</TableCell>
-                      <TableCell className="text-right tabular-nums">{r.invoices}</TableCell>
-                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatMoney(r.sales, sym)}</TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        <span className={cn(
+                          "inline-block rounded-full px-2 py-0.5 text-xs font-medium capitalize",
+                          r.status === "paid" && "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300",
+                          r.status === "partial" && "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300",
+                          r.status === "overdue" && "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300",
+                          (r.status === "sent" || r.status === "pending") && "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300",
+                        )}>
+                          {r.status}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatMoney(r.total, sym)}</TableCell>
                       <TableCell className="text-right tabular-nums whitespace-nowrap">{formatMoney(r.paid, sym)}</TableCell>
-                      <TableCell className="text-right tabular-nums whitespace-nowrap font-semibold">{formatMoney(r.balance, sym)}</TableCell>
-                      <TableCell className="text-right tabular-nums whitespace-nowrap text-destructive">{formatMoney(r.overdue, sym)}</TableCell>
-                      <TableCell className="whitespace-nowrap">{r.last ? new Date(r.last + "T00:00:00").toLocaleDateString() : "—"}</TableCell>
+                      <TableCell className={cn("text-right tabular-nums whitespace-nowrap font-semibold", r.balance > 0 && "text-destructive")}>{formatMoney(r.balance, sym)}</TableCell>
                     </TableRow>
                   ))}
-                  {customerRows.length > 0 && (
+                  {saleRows.length > 0 && (
                     <TableRow className="bg-muted/50 font-semibold">
-                      <TableCell colSpan={3}>Total</TableCell>
-                      <TableCell className="text-right tabular-nums">{customerTotals.invoices}</TableCell>
-                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatMoney(customerTotals.sales, sym)}</TableCell>
-                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatMoney(customerTotals.paid, sym)}</TableCell>
-                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatMoney(customerTotals.balance, sym)}</TableCell>
-                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatMoney(customerTotals.overdue, sym)}</TableCell>
-                      <TableCell />
+                      <TableCell colSpan={5}>Total</TableCell>
+                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatMoney(saleTotals.sales, sym)}</TableCell>
+                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatMoney(saleTotals.paid, sym)}</TableCell>
+                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatMoney(saleTotals.balance, sym)}</TableCell>
                     </TableRow>
                   )}
                 </TableBody>
