@@ -9,7 +9,7 @@ import { formatDate } from "@/lib/company";
 import { Building2, Users, Clock, TrendingUp, Receipt, ArrowRight } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
-  head: () => ({ meta: [{ title: "Super Admin — SmartInvoice Pro" }] }),
+  head: () => ({ meta: [{ title: "Super Admin — SoftfrackPos" }] }),
   component: AdminOverview,
 });
 

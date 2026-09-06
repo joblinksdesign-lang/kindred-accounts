@@ -27,9 +27,9 @@ import {
 export const Route = createFileRoute("/_authenticated/team")({
   head: () => ({
     meta: [
-      { title: "Team & user access — SmartInvoice Pro" },
+      { title: "Team & user access — SoftfrackPos" },
       { name: "description", content: "Add staff to your business and choose what each person can access, from POS-only sellers to managers." },
-      { property: "og:title", content: "Team & user access — SmartInvoice Pro" },
+      { property: "og:title", content: "Team & user access — SoftfrackPos" },
       { property: "og:description", content: "Invite staff and assign roles for your business workspace." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

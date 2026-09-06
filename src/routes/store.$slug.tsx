@@ -478,7 +478,7 @@ function Storefront() {
 
       <footer className="border-t py-8 text-center text-xs text-muted-foreground">
         <div>{company.company_name}{company.phone ? ` • ${company.phone}` : ""}{company.email ? ` • ${company.email}` : ""}</div>
-        <div className="mt-1">Powered by SmartInvoice Pro</div>
+        <div className="mt-1">Powered by SoftfrackPos</div>
       </footer>
       <Toaster richColors position="top-right" />
     </div>
