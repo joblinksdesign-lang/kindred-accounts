@@ -317,6 +317,15 @@ function ReportsPage() {
     const netProfit = grossProfit - expenseTotal;
     const collected = (data?.payments ?? []).filter((p) => inRange(p.payment_date)).reduce((s, p) => s + Number(p.amount), 0);
 
+    const dayMs = 86400000;
+    const rangeDays = Math.max(1, Math.round((new Date(to + "T00:00:00").getTime() - new Date(from + "T00:00:00").getTime()) / dayMs) + 1);
+    const prevFrom = new Date(new Date(from + "T00:00:00").getTime() - rangeDays * dayMs).toISOString().slice(0, 10);
+    const prevTo = new Date(new Date(from + "T00:00:00").getTime() - dayMs).toISOString().slice(0, 10);
+    const allInvoices = data?.invoices ?? [];
+    const prevRevenue = allInvoices
+      .filter((i) => i.invoice_date && i.invoice_date >= prevFrom && i.invoice_date <= prevTo && counted(i.status))
+      .reduce((s, i) => s + Number(i.total), 0);
+
     const byCategory = new Map<string, number>();
     expenses.forEach((e) => {
       const key = e.category?.trim() || "Uncategorised";
@@ -327,7 +336,7 @@ function ReportsPage() {
       .sort((a, b) => b.amount - a.amount);
 
     return {
-      revenue, cogs, grossProfit, expenseTotal, netProfit, collected, expenseCategories,
+      revenue, cogs, grossProfit, expenseTotal, netProfit, collected, expenseCategories, prevRevenue,
       grossMargin: revenue > 0 ? (grossProfit / revenue) * 100 : 0,
       netMargin: revenue > 0 ? (netProfit / revenue) * 100 : 0,
     };
