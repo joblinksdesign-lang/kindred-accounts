@@ -638,7 +638,7 @@ function ReportsPage() {
                     <TableRow key={`${r.name}-${i}`}>
                       <TableCell className="font-medium whitespace-nowrap">
                         {r.name}
-                        {r.contact && <span className="ml-1 text-xs text-muted-nowrap text-muted-foreground">({r.contact})</span>}
+                        {r.contact && <span className="ml-1 text-xs text-muted-foreground">({r.contact})</span>}
                       </TableCell>
                       <TableCell className="whitespace-nowrap">{r.code || "—"}</TableCell>
                       <TableCell className="whitespace-nowrap">{r.city || "—"}</TableCell>
