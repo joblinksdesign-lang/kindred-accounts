@@ -212,20 +212,21 @@ function ReportsPage() {
   );
 
   const customerColumns: ReportColumn[] = [
-    { header: "#", align: "right", width: 10 },
-    { header: "Customer", align: "left", width: 48 },
-    { header: "Contact person", align: "left", width: 34 },
-    { header: "Code", align: "left", width: 16 },
-    { header: "Phone", align: "left", width: 28 },
-    { header: "Email", align: "left", width: 46 },
-    { header: "City", align: "left", width: 24 },
-    { header: "Invoices", align: "right", width: 18 },
-    { header: "Sales", align: "right", width: 28 },
-    { header: "Paid", align: "right", width: 28 },
-    { header: "Balance", align: "right", width: 28 },
-    { header: "Overdue", align: "right", width: 26 },
-    { header: "Last invoice", align: "left", width: 24 },
+    { header: "#", align: "right", width: 7 },
+    { header: "Customer", align: "left", width: 36 },
+    { header: "Contact person", align: "left", width: 24 },
+    { header: "Code", align: "left", width: 13 },
+    { header: "Phone", align: "left", width: 22 },
+    { header: "Email", align: "left", width: 34 },
+    { header: "City", align: "left", width: 16 },
+    { header: "Invoices", align: "right", width: 13 },
+    { header: "Sales", align: "right", width: 21 },
+    { header: "Paid", align: "right", width: 21 },
+    { header: "Balance", align: "right", width: 21 },
+    { header: "Overdue", align: "right", width: 21 },
+    { header: "Last invoice", align: "left", width: 19 },
   ];
+
   const customerReportRows = customerRows.map((r, i) => [
     i + 1, r.name, r.contact || "—", r.code || "—", r.phone || "—", r.email || "—", r.city || "—",
     r.invoices,
