@@ -43,6 +43,19 @@ const adminNav = [
   { title: "Notifications", to: "/notifications", icon: Bell },
 ] as const;
 
+function MobileNavLink(props: React.ComponentProps<typeof Link>) {
+  const { isMobile, setOpenMobile } = useSidebar();
+  return (
+    <Link
+      {...props}
+      onClick={(e) => {
+        props.onClick?.(e);
+        if (isMobile) setOpenMobile(false);
+      }}
+    />
+  );
+}
+
 function AppSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { state } = useSidebar();
@@ -99,9 +112,9 @@ function AppSidebar() {
                 {hasPos && (
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild isActive={isActive("/pos")} tooltip="Point of Sale">
-                      <Link to="/pos" className="flex items-center gap-2 font-semibold">
+                      <MobileNavLink to="/pos" className="flex items-center gap-2 font-semibold">
                         <ScanBarcode className="h-4 w-4" /><span>Point of Sale</span>
-                      </Link>
+                      </MobileNavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )}
@@ -109,18 +122,18 @@ function AppSidebar() {
 
                   <SidebarMenuItem key={item.to}>
                     <SidebarMenuButton asChild isActive={isActive(item.to)} tooltip={item.title}>
-                      <Link to={item.to} className="flex items-center gap-2">
+                      <MobileNavLink to={item.to} className="flex items-center gap-2">
                         <item.icon className="h-4 w-4" />
                         <span>{item.title}</span>
-                      </Link>
+                      </MobileNavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild isActive={isActive("/profile")} tooltip="My profile">
-                    <Link to="/profile" className="flex items-center gap-2">
+                    <MobileNavLink to="/profile" className="flex items-center gap-2">
                       <UserRound className="h-4 w-4" /><span>My profile</span>
-                    </Link>
+                    </MobileNavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>
@@ -136,32 +149,32 @@ function AppSidebar() {
                 {hasStore && (
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild isActive={isActive("/online-store")} tooltip="Online store">
-                      <Link to="/online-store" className="flex items-center gap-2">
+                      <MobileNavLink to="/online-store" className="flex items-center gap-2">
                         <Store className="h-4 w-4" /><span>Online store</span>
-                      </Link>
+                      </MobileNavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )}
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild isActive={isActive("/team")} tooltip="Users & access">
-                    <Link to="/team" className="flex items-center gap-2">
+                    <MobileNavLink to="/team" className="flex items-center gap-2">
                       <UsersRound className="h-4 w-4" /><span>Users & access</span>
-                    </Link>
+                    </MobileNavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild isActive={isActive("/settings")} tooltip="Settings">
-                    <Link to="/settings" className="flex items-center gap-2">
+                    <MobileNavLink to="/settings" className="flex items-center gap-2">
                       <Settings className="h-4 w-4" /><span>Settings</span>
-                    </Link>
+                    </MobileNavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 {role === "owner" && (
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild isActive={isActive("/billing")} tooltip="Billing">
-                      <Link to="/billing" className="flex items-center gap-2">
+                      <MobileNavLink to="/billing" className="flex items-center gap-2">
                         <Sparkles className="h-4 w-4" /><span>Billing & Plan</span>
-                      </Link>
+                      </MobileNavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )}
@@ -177,10 +190,10 @@ function AppSidebar() {
                 {adminNav.map((item) => (
                   <SidebarMenuItem key={item.to}>
                     <SidebarMenuButton asChild isActive={isActive(item.to)} tooltip={item.title}>
-                      <Link to={item.to} className="flex items-center gap-2">
+                      <MobileNavLink to={item.to} className="flex items-center gap-2">
                         <item.icon className="h-4 w-4" />
                         <span>{item.title}</span>
-                      </Link>
+                      </MobileNavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
