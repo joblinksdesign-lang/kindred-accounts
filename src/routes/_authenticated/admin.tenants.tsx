@@ -1,6 +1,6 @@
 import { createFileRoute, useRouterState } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -18,7 +18,7 @@ import { toast } from "sonner";
 import { formatDate } from "@/lib/company";
 import { Check, X, Pause, Play, Trash2, Eraser } from "lucide-react";
 import { purgeTenantData } from "@/lib/admin.functions";
-import { sendBusinessApprovedEmail } from "@/lib/emails.functions";
+import { ensurePlanExpiryCron, sendBusinessApprovedEmail } from "@/lib/emails.functions";
 import { MODULES } from "@/lib/modules";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -80,6 +80,15 @@ function AdminTenants() {
   });
 
   const approvedEmail = useServerFn(sendBusinessApprovedEmail);
+  const ensureCron = useServerFn(ensurePlanExpiryCron);
+  const cronChecked = useRef(false);
+
+  // Make sure the daily plan-expiry reminder job is scheduled.
+  useEffect(() => {
+    if (cronChecked.current) return;
+    cronChecked.current = true;
+    ensureCron({ data: undefined }).catch(() => {});
+  }, [ensureCron]);
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: TenantRow["status"] }) => {
