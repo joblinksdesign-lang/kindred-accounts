@@ -77,6 +77,7 @@ function Storefront() {
   const [category, setCategory] = useState<string>("all");
   const [open, setOpen] = useState(false);
   const [result, setResult] = useState<StoreOrderResult | null>(null);
+  const [waMsg, setWaMsg] = useState("");
 
   const categories = useMemo(
     () => Array.from(new Set(products.map((p) => p.category).filter(Boolean))) as string[],
@@ -229,30 +230,43 @@ function Storefront() {
     }
   };
 
-  const sendWhatsApp = async (res: StoreOrderResult) => {
-    await downloadPdf(res);
-    const digits = (res.whatsappNumber || "").replace(/\D/g, "");
-    if (!digits) {
-      toast.error("This shop hasn't added a WhatsApp number yet.");
-      return;
-    }
-    const lines = [
+  // Builds the WhatsApp notice from the quotation itself — customer, items and totals.
+  const buildWhatsAppMessage = (res: StoreOrderResult, pdfReady: boolean) =>
+    [
       `*New order — ${company.company_name}*`,
       `Quotation: ${res.quoteNumber}`,
+      `Date: ${res.date}`,
       res.customerCode ? `My shop code: ${res.customerCode}` : null,
       `Name: ${res.customerName}`,
       `Phone: ${res.customerPhone}`,
       res.customerAddress ? `Address: ${res.customerAddress}` : null,
       "",
+      "*Items*",
       ...res.items.map((i) => `• ${i.description} x${i.quantity} — ${formatMoney(i.line_total, symbol)}`),
       "",
       `Subtotal: ${formatMoney(res.subtotal, symbol)}`,
       res.taxAmount ? `Tax: ${formatMoney(res.taxAmount, symbol)}` : null,
       `*Total: ${formatMoney(res.total, symbol)}*`,
       "",
-      "The quotation PDF has been downloaded to my device — attaching it here.",
-    ].filter(Boolean);
-    window.open(`https://wa.me/${digits}?text=${encodeURIComponent(lines.join("\n"))}`, "_blank");
+      "Please confirm this quotation and let me know when it will be ready.",
+      pdfReady
+        ? "The quotation PDF has been downloaded to my device — attaching it here."
+        : "I can also share the quotation PDF here if you need it.",
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+  const sendWhatsApp = async (res: StoreOrderResult) => {
+    const digits = (res.whatsappNumber || "").replace(/\D/g, "");
+    if (!digits) {
+      toast.error("This shop hasn't added a WhatsApp number yet.");
+      return;
+    }
+    await downloadPdf(res);
+    // Use whatever is in the message box (the customer may have edited it),
+    // refreshed to mention the PDF now that it has been downloaded.
+    const text = waMsg.trim() || buildWhatsAppMessage(res, true);
+    window.open(`https://wa.me/${digits}?text=${encodeURIComponent(text)}`, "_blank");
   };
 
 
