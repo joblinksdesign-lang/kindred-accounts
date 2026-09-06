@@ -103,3 +103,34 @@ export const sendBusinessApprovedEmail = createServerFn({ method: "POST" })
       return { sent: false as const, reason: "send_failed" };
     }
   });
+
+/**
+ * Schedules (or refreshes) the daily 06:00 job that emails owners before their
+ * plan expires. Super-admin only; safe to call repeatedly.
+ */
+export const ensurePlanExpiryCron = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+
+    const { data: roles, error: rolesError } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
+    if (rolesError) throw rolesError;
+    if (!(roles ?? []).some((r) => r.role === "super_admin")) throw new Error("Forbidden");
+
+    const key = process.env["CRON_SECRET"];
+    if (!key) throw new Error("Reminder scheduling is not configured");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await (supabaseAdmin as unknown as {
+      rpc: (fn: string, args: Record<string, string>) => Promise<{ error: { message: string } | null }>;
+    }).rpc("schedule_plan_expiry_reminders", {
+      _url: `${APP_URL}/api/public/plan-expiry-reminders`,
+      _key: key,
+    });
+    if (error) throw new Error(error.message);
+
+    return { ok: true as const };
+  });
