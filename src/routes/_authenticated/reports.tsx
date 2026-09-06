@@ -13,7 +13,8 @@ import { formatMoney, useCompanyLogoUrl, useCompanySettings } from "@/lib/compan
 import { downloadCsv, downloadReportPdf, toCsv, type ReportColumn } from "@/lib/report-pdf";
 import { BarChart, Bar, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
 import { toast } from "sonner";
-import { Download, FileSpreadsheet } from "lucide-react";
+import { Download, FileSpreadsheet, AlertTriangle, TrendingDown, Trophy } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/reports")({
   head: () => ({
