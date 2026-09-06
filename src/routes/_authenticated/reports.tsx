@@ -303,6 +303,148 @@ function ReportsPage() {
     setFrom(iso(d)); setTo(iso(new Date()));
   };
 
+  // ---- Profit & loss ----
+  const pl = useMemo(() => {
+    const inRange = (d?: string | null) => !!d && d >= from && d <= to;
+    const counted = (status?: string) => status !== "cancelled" && status !== "draft";
+    const invoices = (data?.invoices ?? []).filter((i) => inRange(i.invoice_date) && counted(i.status));
+    const items = (data?.items ?? []).filter((it) => it.invoices && inRange(it.invoices.invoice_date) && counted(it.invoices.status));
+    const expenses = (data?.expenses ?? []).filter((e) => inRange(e.expense_date));
+
+    const revenue = invoices.reduce((s, i) => s + Number(i.total), 0);
+    const cogs = items.reduce((s, it) => s + Number(it.quantity) * Number(it.products?.cost_price ?? 0), 0);
+    const grossProfit = revenue - cogs;
+    const expenseTotal = expenses.reduce((s, e) => s + Number(e.amount), 0);
+    const netProfit = grossProfit - expenseTotal;
+    const collected = (data?.payments ?? []).filter((p) => inRange(p.payment_date)).reduce((s, p) => s + Number(p.amount), 0);
+
+    const byCategory = new Map<string, number>();
+    expenses.forEach((e) => {
+      const key = e.category?.trim() || "Uncategorised";
+      byCategory.set(key, (byCategory.get(key) || 0) + Number(e.amount));
+    });
+    const expenseCategories = Array.from(byCategory.entries())
+      .map(([category, amount]) => ({ category, amount }))
+      .sort((a, b) => b.amount - a.amount);
+
+    return {
+      revenue, cogs, grossProfit, expenseTotal, netProfit, collected, expenseCategories,
+      grossMargin: revenue > 0 ? (grossProfit / revenue) * 100 : 0,
+      netMargin: revenue > 0 ? (netProfit / revenue) * 100 : 0,
+    };
+  }, [data, from, to]);
+
+  const plColumns: ReportColumn[] = [
+    { header: "Line", align: "left" },
+    { header: "Amount", align: "right", width: 40 },
+  ];
+  const plReportRows: (string | number)[][] = [
+    ["Revenue (invoiced sales)", formatMoney(pl.revenue, sym)],
+    ["Cost of goods sold", `- ${formatMoney(pl.cogs, sym)}`],
+    ["Gross profit", formatMoney(pl.grossProfit, sym)],
+    [`Gross margin`, `${pl.grossMargin.toFixed(1)}%`],
+    ...pl.expenseCategories.map((c) => [`Expense — ${c.category}`, `- ${formatMoney(c.amount, sym)}`]),
+    ["Total expenses", `- ${formatMoney(pl.expenseTotal, sym)}`],
+    ["Cash collected", formatMoney(pl.collected, sym)],
+    ["Net margin", `${pl.netMargin.toFixed(1)}%`],
+  ];
+  const plTotalsRow = ["Net profit / (loss)", formatMoney(pl.netProfit, sym)];
+
+  const exportPlPdf = async () => {
+    if (!company) return;
+    try {
+      await downloadReportPdf(
+        { title: "Profit & loss statement", subtitle: `${new Date(from + "T00:00:00").toLocaleDateString()} – ${new Date(to + "T00:00:00").toLocaleDateString()}`, columns: plColumns, rows: plReportRows, totalsRow: plTotalsRow },
+        company,
+        `profit-and-loss-${from}-to-${to}.pdf`,
+      );
+    } catch (err) {
+      toast.error("Could not create PDF", { description: (err as Error).message });
+    }
+  };
+
+  // ---- Audit trail ----
+  type AuditEntry = { at: string; type: string; detail: string; reference: string; amount: string; user: string };
+  const auditRows: AuditEntry[] = useMemo(() => {
+    const nameOf = (id?: string | null) => {
+      if (!id) return "System";
+      const p = (data?.profiles ?? []).find((x) => x.id === id);
+      return p?.full_name || p?.email || "Unknown user";
+    };
+    const inRange = (ts?: string | null) => !!ts && ts.slice(0, 10) >= from && ts.slice(0, 10) <= to;
+    const entries: AuditEntry[] = [];
+
+    (data?.invoices ?? []).forEach((i) => {
+      if (!inRange(i.created_at)) return;
+      entries.push({
+        at: i.created_at!, type: "Invoice created",
+        detail: `Invoice ${i.invoice_number} · ${i.status}`,
+        reference: i.invoice_number ?? "", amount: formatMoney(Number(i.total), sym), user: nameOf(i.created_by),
+      });
+    });
+    (data?.payments ?? []).forEach((p) => {
+      if (!inRange(p.created_at)) return;
+      entries.push({
+        at: p.created_at, type: "Payment received",
+        detail: String(p.method).replace("_", " "),
+        reference: p.reference || "", amount: formatMoney(Number(p.amount), sym), user: nameOf(p.created_by),
+      });
+    });
+    (data?.expenses ?? []).forEach((e) => {
+      if (!inRange(e.created_at)) return;
+      entries.push({
+        at: e.created_at, type: "Expense recorded",
+        detail: `${e.description}${e.vendor ? ` · ${e.vendor}` : ""}`,
+        reference: e.category || "", amount: `- ${formatMoney(Number(e.amount), sym)}`, user: nameOf(e.created_by),
+      });
+    });
+    (data?.movements ?? []).forEach((m) => {
+      if (!inRange(m.created_at)) return;
+      entries.push({
+        at: m.created_at, type: "Stock movement",
+        detail: `${m.products?.name ?? "Product"} · ${String(m.reason).replace("_", " ")}`,
+        reference: m.reference || "",
+        amount: `${Number(m.change_qty) > 0 ? "+" : ""}${Number(m.change_qty)}`,
+        user: nameOf(m.created_by),
+      });
+    });
+
+    return entries.sort((a, b) => (a.at < b.at ? 1 : -1));
+  }, [data, from, to, sym]);
+
+  const [auditType, setAuditType] = useState<string>("all");
+  const filteredAudit = auditType === "all" ? auditRows : auditRows.filter((a) => a.type === auditType);
+  const auditColumns: ReportColumn[] = [
+    { header: "#", align: "right", width: 8 },
+    { header: "Date & time", align: "left", width: 38 },
+    { header: "Activity", align: "left", width: 34 },
+    { header: "Details", align: "left", width: 78 },
+    { header: "Reference", align: "left", width: 38 },
+    { header: "Amount / qty", align: "right", width: 30 },
+    { header: "User", align: "left", width: 42 },
+  ];
+  const auditReportRows = filteredAudit.map((a, i) => [
+    i + 1, new Date(a.at).toLocaleString(), a.type, a.detail || "—", a.reference || "—", a.amount, a.user,
+  ]);
+
+  const exportAuditPdf = async () => {
+    if (!company) return;
+    try {
+      await downloadReportPdf(
+        {
+          title: "Audit trail",
+          subtitle: `${new Date(from + "T00:00:00").toLocaleDateString()} – ${new Date(to + "T00:00:00").toLocaleDateString()} · ${filteredAudit.length} records`,
+          columns: auditColumns, rows: auditReportRows, orientation: "landscape",
+        },
+        company,
+        `audit-trail-${from}-to-${to}.pdf`,
+      );
+    } catch (err) {
+      toast.error("Could not create PDF", { description: (err as Error).message });
+    }
+  };
+
+
   return (
     <div>
       {company && (
