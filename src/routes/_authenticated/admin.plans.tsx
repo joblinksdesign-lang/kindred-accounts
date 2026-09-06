@@ -160,7 +160,7 @@ function AdminPlans() {
       </Card>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto overscroll-contain">
           <DialogHeader><DialogTitle>{editing ? "Edit plan" : "New plan"}</DialogTitle></DialogHeader>
           <form onSubmit={onSubmit} className="grid grid-cols-2 gap-3">
             <div><Label>Name *</Label><Input name="name" defaultValue={editing?.name} required /></div>
