@@ -66,10 +66,10 @@ function AdminOverview() {
     { label: "Active", value: stats?.active ?? 0, icon: TrendingUp, tone: "bg-emerald-500/10 text-emerald-600" },
     { label: "Pending approval", value: stats?.pending ?? 0, icon: Clock, tone: "bg-amber-500/10 text-amber-600" },
     { label: "Suspended", value: stats?.suspended ?? 0, icon: Building2, tone: "bg-red-500/10 text-red-600" },
-    { label: "MRR", value: `$${(stats?.mrr ?? 0).toLocaleString()}`, icon: TrendingUp, tone: "bg-primary/10 text-primary" },
+    { label: "MRR", value: `USh ${(stats?.mrr ?? 0).toLocaleString()}`, icon: TrendingUp, tone: "bg-primary/10 text-primary" },
     { label: "Active users", value: stats?.totalUsers ?? 0, icon: Users, tone: "bg-sky-500/10 text-sky-600" },
     { label: "Invoices created", value: stats?.totalInvoices ?? 0, icon: Receipt, tone: "bg-violet-500/10 text-violet-600" },
-    { label: "Platform GMV", value: `$${(stats?.totalRevenue ?? 0).toLocaleString()}`, icon: TrendingUp, tone: "bg-emerald-500/10 text-emerald-600" },
+    { label: "Platform GMV", value: `USh ${(stats?.totalRevenue ?? 0).toLocaleString()}`, icon: TrendingUp, tone: "bg-emerald-500/10 text-emerald-600" },
   ];
 
   return (
