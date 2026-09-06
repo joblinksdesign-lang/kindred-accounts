@@ -110,7 +110,14 @@ export const getStorefront = createServerFn({ method: "GET" })
 
     return {
 
-      tenant: tenant as StorefrontData["tenant"],
+      tenant: {
+        id: tenant.id,
+        slug: tenant.slug,
+        business_name: tenant.business_name,
+        currency: tenant.currency,
+        currency_symbol: tenant.currency_symbol,
+      },
+
       company: {
         company_name: company.company_name,
         tagline: company.tagline,
