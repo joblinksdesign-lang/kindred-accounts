@@ -92,6 +92,24 @@ function Dashboard() {
       const periodInvoiced = invs.filter((i) => inPeriod(i.invoice_date)).reduce((s, i) => s + Number(i.total), 0);
       const periodInvoiceCount = invs.filter((i) => inPeriod(i.invoice_date)).length;
 
+      // Previous period sales for trend comparison
+      const prevStart = new Date(start);
+      if (period === "day") prevStart.setDate(prevStart.getDate() - 1);
+      else if (period === "week") prevStart.setDate(prevStart.getDate() - 7);
+      else if (period === "month") prevStart.setMonth(prevStart.getMonth() - 1);
+      else if (period === "custom" && customFrom && customTo) {
+        const msDay = 86400000;
+        const spanDays = Math.max(1, Math.round((customTo.getTime() - customFrom.getTime()) / msDay) + 1);
+        prevStart.setTime(customFrom.getTime() - spanDays * msDay);
+      } else {
+        prevStart.setMonth(prevStart.getMonth() - 1);
+      }
+      const prevEnd = new Date(start.getTime() - 1);
+      const prevStartISO = prevStart.toISOString().slice(0, 10);
+      const prevEndISO = prevEnd.toISOString().slice(0, 10);
+      const inPrevPeriod = (d?: string | null) => !!d && d >= prevStartISO && d <= prevEndISO;
+      const prevPeriodInvoiced = invs.filter((i) => inPrevPeriod(i.invoice_date)).reduce((s, i) => s + Number(i.total), 0);
+
       // Profit & loss for the selected period
       const soldInvoices = invs.filter((i) => inPeriod(i.invoice_date) && i.status !== "cancelled" && i.status !== "draft");
       const plRevenue = soldInvoices.reduce((s, i) => s + Number(i.total), 0);
