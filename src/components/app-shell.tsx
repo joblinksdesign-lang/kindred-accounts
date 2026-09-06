@@ -40,6 +40,7 @@ const adminNav = [
   { title: "Businesses", to: "/admin/tenants", icon: Building2 },
   { title: "Plans", to: "/admin/plans", icon: Tag },
   { title: "App install", to: "/admin/app-install", icon: Smartphone },
+  { title: "Notifications", to: "/notifications", icon: Bell },
 ] as const;
 
 function AppSidebar() {

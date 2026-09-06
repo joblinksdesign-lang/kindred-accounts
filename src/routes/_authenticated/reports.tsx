@@ -541,14 +541,14 @@ function ReportsPage() {
                 { label: "Net cash", value: formatMoney(totals.collected - totals.expenses, sym) },
               ].map((k) => (
                 <div key={k.label} className="rounded-lg border bg-card p-3">
-                  <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{k.label}</div>
+                  <div className="text-xs uppercase tracking-wide text-muted-foreground">{k.label}</div>
                   <div className="mt-1 text-base sm:text-lg xl:text-xl font-bold tabular-nums break-words [overflow-wrap:anywhere]">{k.value}</div>
                 </div>
               ))}
             </div>
 
             <div className="overflow-x-auto">
-              <Table>
+              <Table className="text-[15px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead>{periodLabel}</TableHead>
@@ -643,14 +643,14 @@ function ReportsPage() {
                 { label: "Still owed", value: formatMoney(saleTotals.balance, sym) },
               ].map((k) => (
                 <div key={k.label} className="rounded-lg border bg-card p-3">
-                  <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{k.label}</div>
+                  <div className="text-xs uppercase tracking-wide text-muted-foreground">{k.label}</div>
                   <div className="mt-1 text-base sm:text-lg xl:text-xl font-bold tabular-nums break-words [overflow-wrap:anywhere]">{k.value}</div>
                 </div>
               ))}
             </div>
 
             <div className="overflow-x-auto">
-              <Table>
+              <Table className="text-[15px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead className="whitespace-nowrap">Date</TableHead>
@@ -853,7 +853,7 @@ function ReportsPage() {
                 { label: "Net profit", value: formatMoney(pl.netProfit, sym), hint: "What truly remains for you" },
               ].map((k) => (
                 <div key={k.label} className="rounded-lg border bg-card p-3">
-                  <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{k.label}</div>
+                  <div className="text-xs uppercase tracking-wide text-muted-foreground">{k.label}</div>
                   <div className="mt-1 text-base sm:text-lg xl:text-xl font-bold tabular-nums break-words [overflow-wrap:anywhere]">{k.value}</div>
                   <div className="text-[11px] text-muted-foreground mt-0.5 leading-tight">{k.hint}</div>
                 </div>
@@ -861,7 +861,7 @@ function ReportsPage() {
             </div>
 
             <div className="overflow-x-auto">
-              <Table>
+              <Table className="text-[15px]">
                 <TableHeader>
                   <TableRow><TableHead>Line</TableHead><TableHead className="text-right">Amount</TableHead></TableRow>
                 </TableHeader>
@@ -921,7 +921,7 @@ function ReportsPage() {
             </div>
 
             <div className="overflow-x-auto">
-              <Table>
+              <Table className="text-[15px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead className="whitespace-nowrap">Date &amp; time</TableHead>
