@@ -66,18 +66,35 @@ function ReportsPage() {
   const { data } = useQuery({
     queryKey: ["reports"],
     queryFn: async () => {
-      const [inv, pay, cust, prod, exp] = await Promise.all([
-        supabase.from("invoices").select("invoice_date, total, balance, amount_paid, status, customer_id"),
-        supabase.from("payments").select("amount, payment_date, method"),
+      const [inv, pay, cust, prod, exp, itm, stk, prf] = await Promise.all([
+        supabase.from("invoices").select("id, invoice_number, invoice_date, total, balance, amount_paid, status, customer_id, created_at, created_by"),
+        supabase.from("payments").select("amount, payment_date, method, reference, created_at, created_by, invoice_id"),
         supabase.from("customers").select("id, name, company_name, email, phone, city, store_code"),
         supabase.from("products").select("name, quantity, reorder_level, unit_price, cost_price"),
-        supabase.from("expenses").select("expense_date, amount, category"),
+        supabase.from("expenses").select("expense_date, amount, category, description, vendor, created_at, created_by"),
+        supabase.from("invoice_items").select("quantity, description, invoices(invoice_date, status), products(name, cost_price)"),
+        supabase.from("stock_movements").select("change_qty, reason, reference, created_at, created_by, products(name)").order("created_at", { ascending: false }).limit(1000),
+        supabase.from("profiles").select("id, full_name, email"),
       ]);
       const invoices = inv.data ?? [];
       const payments = pay.data ?? [];
       const customers = cust.data ?? [];
       const products = prod.data ?? [];
-      const expenses = (exp.data ?? []) as { expense_date: string; amount: number; category: string | null }[];
+      const expenses = (exp.data ?? []) as {
+        expense_date: string; amount: number; category: string | null; description: string;
+        vendor: string | null; created_at: string; created_by: string | null;
+      }[];
+      const items = (itm.data ?? []) as unknown as {
+        quantity: number; description: string;
+        invoices: { invoice_date: string | null; status: string } | null;
+        products: { name: string; cost_price: number } | null;
+      }[];
+      const movements = (stk.data ?? []) as unknown as {
+        change_qty: number; reason: string; reference: string | null; created_at: string;
+        created_by: string | null; products: { name: string } | null;
+      }[];
+      const profiles = (prf.data ?? []) as { id: string; full_name: string | null; email: string | null }[];
+
 
       const monthly: { label: string; sales: number; collected: number }[] = [];
       for (let i = 11; i >= 0; i--) {
