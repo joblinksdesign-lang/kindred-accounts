@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { PageHeader, ListToolbar, EmptyState } from "@/components/page-helpers";
 import { Plus, Pencil, Trash2, ArrowUpRight, ArrowDownRight, Sliders, ImagePlus, X, PackageSearch, ScanLine } from "lucide-react";
 import { toast } from "sonner";
+import { usePlanLimits, planBlockReason } from "@/lib/plan-limits";
 import { formatMoney, useCompanySettings } from "@/lib/company";
 import { useActiveTenantId } from "@/lib/tenant";
 import { MAX_PRODUCT_IMAGES, uploadProductImages, useProductImageUrls } from "@/lib/product-images";
@@ -144,8 +145,14 @@ function ProductsPage() {
 
 
 
+  const { data: planLimits } = usePlanLimits();
+
   const upsert = useMutation({
     mutationFn: async (form: Record<string, unknown>) => {
+      if (!editing) {
+        const blocked = planBlockReason(planLimits, "products");
+        if (blocked) throw new Error(blocked);
+      }
       const payload = {
         ...form,
         unit_price: Number(form.unit_price || 0),

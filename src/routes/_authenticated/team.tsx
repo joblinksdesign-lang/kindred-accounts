@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
+import { usePlanLimits, planBlockReason } from "@/lib/plan-limits";
 import { UserPlus, Trash2 } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
@@ -59,8 +60,14 @@ function TeamPage() {
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ["team_members", tenantId] });
 
+  const { data: planLimits } = usePlanLimits();
+
   const add = useMutation({
-    mutationFn: () => addFn({ data: { tenantId: tenantId!, ...form } }),
+    mutationFn: async () => {
+      const blocked = planBlockReason(planLimits, "users");
+      if (blocked) throw new Error(blocked);
+      return addFn({ data: { tenantId: tenantId!, ...form } });
+    },
     onSuccess: () => {
       toast.success("User added", { description: "Share the email and password with them so they can sign in." });
       setOpen(false);

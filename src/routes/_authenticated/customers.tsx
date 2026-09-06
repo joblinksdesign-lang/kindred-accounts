@@ -13,6 +13,7 @@ import { PageHeader, ListToolbar, EmptyState } from "@/components/page-helpers";
 import { Plus, Mail, Phone, Trash2, Pencil, Send, Copy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { usePlanLimits, planBlockReason } from "@/lib/plan-limits";
 import { formatDate } from "@/lib/company";
 import { useActiveTenantId } from "@/lib/tenant";
 
@@ -48,9 +49,15 @@ function CustomersPage() {
     [c.name, c.company_name, c.email, c.phone].some((v) => v?.toLowerCase().includes(q.toLowerCase()))
   );
 
+  const { data: planLimits } = usePlanLimits();
+
   const upsert = useMutation({
     mutationFn: async (form: Record<string, unknown>) => {
       const payload = { ...form };
+      if (!editing) {
+        const blocked = planBlockReason(planLimits, "customers");
+        if (blocked) throw new Error(blocked);
+      }
       if (editing) {
         const { error } = await supabase.from("customers").update(payload as never).eq("id", editing.id);
         if (error) throw error;

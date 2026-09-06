@@ -23,7 +23,50 @@ export type PlanLimits = {
   hasAnyLimit: boolean;
   anyOver: boolean;
   anyNear: boolean;
+  status: string | null;
+  periodEnd: string | null;
+  trialEndsAt: string | null;
+  expired: boolean;
+  daysLeft: number | null;
+  expiringSoon: boolean;
 };
+
+export type LimitKind = "invoices" | "customers" | "products" | "users";
+
+const KIND_LABEL: Record<LimitKind, string> = {
+  invoices: "invoices for this month",
+  customers: "customers",
+  products: "products",
+  users: "team members",
+};
+
+/**
+ * Returns an error message when the action is not allowed on the current plan,
+ * or null when it may proceed.
+ */
+export function planBlockReason(
+  limits: PlanLimits | null | undefined,
+  kind: LimitKind,
+): string | null {
+  if (!limits) return null;
+  if (limits.expired) {
+    return `Your ${limits.planName ?? "plan"} has expired. Renew or upgrade your plan to continue.`;
+  }
+  const used =
+    kind === "invoices" ? limits.invoicesThisMonth
+      : kind === "customers" ? limits.customers
+      : kind === "products" ? limits.products
+      : limits.users;
+  const max =
+    kind === "invoices" ? limits.maxInvoicesPerMonth
+      : kind === "customers" ? limits.maxCustomers
+      : kind === "products" ? limits.maxProducts
+      : limits.maxUsers;
+  if (max != null && max > 0 && used >= max) {
+    return `Your ${limits.planName ?? "plan"} allows ${max} ${KIND_LABEL[kind]} and you have used ${used}. Upgrade your plan to add more.`;
+  }
+  return null;
+}
 
 const near = (used: number, limit: number | null) =>
   limit != null && limit > 0 && used >= Math.floor(limit * 0.8) && used < limit;
@@ -41,7 +84,7 @@ export function usePlanLimits() {
 
       const { data: sub } = await supabase
         .from("subscriptions")
-        .select("plan_id, plans:plan_id(name, max_invoices_per_month, max_customers, max_products, max_users)")
+        .select("plan_id, status, current_period_end, trial_ends_at, plans:plan_id(name, max_invoices_per_month, max_customers, max_products, max_users)")
         .eq("tenant_id", tenantId)
         .order("created_at", { ascending: false })
         .limit(1)
@@ -78,6 +121,17 @@ export function usePlanLimits() {
       const maxProducts = plan?.max_products ?? null;
       const maxUsers = plan?.max_users ?? null;
 
+      const status = (sub as { status?: string } | null)?.status ?? null;
+      const periodEnd = (sub as { current_period_end?: string | null } | null)?.current_period_end ?? null;
+      const trialEndsAt = (sub as { trial_ends_at?: string | null } | null)?.trial_ends_at ?? null;
+      const endsAt = status === "trialing" ? (trialEndsAt ?? periodEnd) : periodEnd;
+      const endMs = endsAt ? new Date(endsAt).getTime() : null;
+      const daysLeft = endMs != null ? Math.ceil((endMs - Date.now()) / 86_400_000) : null;
+      const expired =
+        status === "expired" || status === "canceled" ||
+        (endMs != null && endMs < Date.now());
+      const expiringSoon = !expired && daysLeft != null && daysLeft <= 5;
+
       const overInvoices = over(invoicesThisMonth, maxInvoicesPerMonth);
       const overCustomers = over(customers, maxCustomers);
       const overProducts = over(products, maxProducts);
@@ -97,6 +151,7 @@ export function usePlanLimits() {
         hasAnyLimit: [maxInvoicesPerMonth, maxCustomers, maxProducts, maxUsers].some((v) => v != null && v > 0),
         anyOver: overInvoices || overCustomers || overProducts || overUsers,
         anyNear: nearInvoices || nearCustomers || nearProducts || nearUsers,
+        status, periodEnd, trialEndsAt, expired, daysLeft, expiringSoon,
       };
     },
   });

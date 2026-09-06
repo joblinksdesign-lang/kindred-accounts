@@ -30,10 +30,10 @@ export function PlanLimitBanner() {
   const { data } = usePlanLimits();
   const [dismissed, setDismissed] = useState(false);
 
-  if (!data || !data.hasAnyLimit || dismissed) return null;
-  if (!data.anyOver && !data.anyNear) return null;
+  if (!data || dismissed) return null;
+  if (!data.expired && !data.expiringSoon && (!data.hasAnyLimit || (!data.anyOver && !data.anyNear))) return null;
 
-  const critical = data.anyOver;
+  const critical = data.anyOver || data.expired;
 
   return (
     <Card
@@ -50,9 +50,13 @@ export function PlanLimitBanner() {
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2">
             <div className="font-semibold text-sm">
-              {critical
-                ? "You've reached your plan limits"
-                : "You're nearing your plan limits"}
+              {data.expired
+                ? "Your plan has expired"
+                : data.anyOver
+                  ? "You've reached your plan limits"
+                  : data.expiringSoon
+                    ? `Your plan expires in ${data.daysLeft} day${data.daysLeft === 1 ? "" : "s"}`
+                    : "You're nearing your plan limits"}
               {data.planName && <span className="text-muted-foreground font-normal"> — {data.planName}</span>}
             </div>
             <button
@@ -64,9 +68,11 @@ export function PlanLimitBanner() {
             </button>
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            {critical
-              ? "Upgrade your plan to keep creating invoices, customers, and products without interruption."
-              : "Consider upgrading before you hit the ceiling to avoid disruptions."}
+            {data.expired
+              ? "Creating invoices, customers, products and users is paused until your plan is renewed or upgraded."
+              : critical
+                ? "Upgrade your plan to keep creating invoices, customers, and products without interruption."
+                : "Consider upgrading before you hit the ceiling to avoid disruptions."}
           </p>
           <div className="grid gap-2 sm:grid-cols-2 mt-3">
             <Row label="Invoices this month" used={data.invoicesThisMonth} limit={data.maxInvoicesPerMonth} />
@@ -78,7 +84,7 @@ export function PlanLimitBanner() {
             <Button asChild size="sm" className="gradient-emerald text-white">
               <Link to="/billing">
                 <Sparkles className="h-4 w-4 mr-1.5" />
-                Upgrade plan
+                {data.expired ? "Renew plan" : "Upgrade plan"}
               </Link>
             </Button>
           </div>
