@@ -15,7 +15,8 @@ export const Route = createFileRoute("/_authenticated")({
     const isSuper = (roles ?? []).some((r) => r.role === "super_admin");
 
     // Super admins live in /admin/* — bounce them there if they hit a tenant page directly.
-    if (isSuper && !location.pathname.startsWith("/admin")) {
+    const superAllowed = location.pathname.startsWith("/admin") || location.pathname.startsWith("/notifications");
+    if (isSuper && !superAllowed) {
       throw redirect({ to: "/admin" });
     }
 
