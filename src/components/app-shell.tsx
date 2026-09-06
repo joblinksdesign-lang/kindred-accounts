@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, Users, Package, FileText, Receipt, CreditCard, FileSignature,
-  BarChart3, Settings, LogOut, Search, Building2, ShieldCheck, LayoutGrid, Tag, Sparkles, Bell, Wallet, Store, ScanBarcode, UsersRound, Smartphone, Download,
+  BarChart3, Settings, LogOut, Search, Building2, ShieldCheck, LayoutGrid, Tag, Sparkles, Bell, Wallet, Store, ScanBarcode, UsersRound, UserRound, Smartphone, Download,
 } from "lucide-react";
 
 import {
@@ -59,11 +59,12 @@ function AppSidebar() {
         ? pathname === "/dashboard" || pathname === "/"
         : pathname === to || pathname.startsWith(to + "/");
 
-  // POS-only staff (default role) see just the counter tools.
+  // POS-only staff (default role) see just the counter tools — no dashboard.
   const posOnly = role === "sales_agent";
   const visibleWorkspaceNav = posOnly
-    ? workspaceNav.filter((i) => i.to === "/dashboard" || i.to === "/notifications")
+    ? workspaceNav.filter((i) => i.to === "/notifications")
     : workspaceNav;
+
 
   const showWorkspace = !isSuperAdmin && !!tenant;
   const showAdmin = isSuperAdmin;
@@ -114,7 +115,15 @@ function AppSidebar() {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isActive("/profile")} tooltip="My profile">
+                    <Link to="/profile" className="flex items-center gap-2">
+                      <UserRound className="h-4 w-4" /><span>My profile</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               </SidebarMenu>
+
             </SidebarGroupContent>
           </SidebarGroup>
         )}

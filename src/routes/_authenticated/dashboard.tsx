@@ -1,6 +1,6 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -11,6 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { formatMoney, useCompanySettings, formatDate } from "@/lib/company";
 import { PlanLimitBanner } from "@/components/plan-limit-banner";
+import { useActiveTenant } from "@/lib/tenant";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import type { DateRange } from "react-day-picker";
@@ -30,8 +31,15 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 });
 
 function Dashboard() {
+  const navigate = useNavigate();
+  const { role, isLoading: rolesLoading } = useActiveTenant();
+  useEffect(() => {
+    // POS-only staff have no dashboard — send them to the counter.
+    if (!rolesLoading && role === "sales_agent") navigate({ to: "/pos", replace: true });
+  }, [role, rolesLoading, navigate]);
   const { data: company } = useCompanySettings();
   const sym = company?.currency_symbol || "USh ";
+
   const [period, setPeriod] = useState<Period>("month");
   const [range, setRange] = useState<DateRange | undefined>();
 
