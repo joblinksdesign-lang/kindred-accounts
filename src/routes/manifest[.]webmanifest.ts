@@ -22,7 +22,7 @@ export const Route = createFileRoute("/manifest.webmanifest")({
             src: iconSrc,
             sizes: `${size}x${size}`,
             type: s?.icon_url ? "image/png" : "image/x-icon",
-            purpose: "any maskable",
+            purpose: "any",
           })),
         };
         return new Response(JSON.stringify(manifest, null, 2), {
