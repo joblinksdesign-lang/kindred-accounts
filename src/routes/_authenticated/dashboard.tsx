@@ -92,6 +92,18 @@ function Dashboard() {
       const periodInvoiced = invs.filter((i) => inPeriod(i.invoice_date)).reduce((s, i) => s + Number(i.total), 0);
       const periodInvoiceCount = invs.filter((i) => inPeriod(i.invoice_date)).length;
 
+      // Profit & loss for the selected period
+      const soldInvoices = invs.filter((i) => inPeriod(i.invoice_date) && i.status !== "cancelled" && i.status !== "draft");
+      const plRevenue = soldInvoices.reduce((s, i) => s + Number(i.total), 0);
+      const plCogs = itemRows
+        .filter((it) => it.invoices && inPeriod(it.invoices.invoice_date) && it.invoices.status !== "cancelled" && it.invoices.status !== "draft")
+        .reduce((s, it) => s + Number(it.quantity) * Number(it.products?.cost_price ?? 0), 0);
+      const plExpenses = expenseRows.filter((e) => inPeriod(e.expense_date)).reduce((s, e) => s + Number(e.amount), 0);
+      const grossProfit = plRevenue - plCogs;
+      const netProfit = grossProfit - plExpenses;
+      const margin = plRevenue > 0 ? (netProfit / plRevenue) * 100 : 0;
+
+
       // Trend series based on period
       const series: { label: string; revenue: number }[] = [];
       if (period === "day") {
