@@ -4,7 +4,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Smartphone, Upload, Trash2, Save, Download } from "lucide-react";
 
-import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import { savePwaSettings } from "@/lib/pwa.functions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,6 +39,7 @@ function AppInstallAdmin() {
   const qc = useQueryClient();
   const [form, setForm] = useState<PwaSettings | null>(null);
   const [saving, setSaving] = useState(false);
+  const saveSettings = useServerFn(savePwaSettings);
   const { canInstall, installed, promptInstall } = useInstallPrompt();
 
   useEffect(() => { if (data) setForm(data); }, [data]);
@@ -48,7 +50,7 @@ function AppInstallAdmin() {
   const upload = async (kind: "icon_url" | "splash_url", file?: File | null) => {
     if (!file) return;
     try {
-      const dataUrl = await fileToDataUrl(file, kind === "icon_url" ? 512 : 1440);
+      const dataUrl = await fileToDataUrl(file, kind === "icon_url" ? 512 : 1080);
       set(kind, dataUrl);
       toast.success(kind === "icon_url" ? "Icon ready — remember to save" : "Splash ready — remember to save");
     } catch (e) {
@@ -59,32 +61,33 @@ function AppInstallAdmin() {
   const save = async () => {
     if (!form) return;
     setSaving(true);
-    const { data: saved, error } = await supabase
-      .from("pwa_settings")
-      .update({
-        app_name: form.app_name,
-        short_name: form.short_name,
-        description: form.description,
-        theme_color: form.theme_color,
-        background_color: form.background_color,
-        display_mode: form.display_mode,
-        start_url: form.start_url,
-        icon_url: form.icon_url,
-        splash_url: form.splash_url,
-        icon_sizes: form.icon_sizes,
-        splash_width: form.splash_width,
-        splash_height: form.splash_height,
-        install_enabled: form.install_enabled,
-      })
-      .eq("id", form.id)
-      .select("id");
-    setSaving(false);
-    if (error) return toast.error(error.message);
-    if (!saved || saved.length === 0)
-      return toast.error("Nothing was saved — your account may not have admin permission.");
-    qc.invalidateQueries({ queryKey: ["pwa_settings"] });
-    refreshInstallAssets();
-    toast.success("App install settings saved");
+    try {
+      await saveSettings({
+        data: {
+          id: form.id,
+          app_name: form.app_name,
+          short_name: form.short_name,
+          description: form.description ?? "",
+          theme_color: form.theme_color,
+          background_color: form.background_color,
+          display_mode: form.display_mode,
+          start_url: form.start_url || "/",
+          icon_url: form.icon_url,
+          splash_url: form.splash_url,
+          icon_sizes: form.icon_sizes,
+          splash_width: form.splash_width,
+          splash_height: form.splash_height,
+          install_enabled: form.install_enabled,
+        },
+      });
+      qc.invalidateQueries({ queryKey: ["pwa_settings"] });
+      refreshInstallAssets();
+      toast.success("App install settings saved");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not save the settings");
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (isLoading || !form) {

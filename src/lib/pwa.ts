@@ -61,7 +61,8 @@ export function fileToDataUrl(file: File, maxDimension = 1024): Promise<string> 
         ctx.drawImage(img, 0, 0, w, h);
         let out = canvas.toDataURL("image/png");
         // Fall back to JPEG when the PNG is still heavy (photos, gradients).
-        if (out.length > 900_000) out = canvas.toDataURL("image/jpeg", 0.85);
+        if (out.length > 400_000) out = canvas.toDataURL("image/jpeg", 0.82);
+        if (out.length > 900_000) out = canvas.toDataURL("image/jpeg", 0.6);
         resolve(out);
       };
       img.src = original;
