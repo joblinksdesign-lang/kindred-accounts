@@ -185,10 +185,16 @@ export function BarcodeScannerDialog({ open, onOpenChange, onDetected }: Props) 
         ) : (
           <div className="space-y-2">
             <div className="relative overflow-hidden rounded-lg bg-black">
-              <video ref={videoRef} className="h-64 w-full object-cover" muted playsInline />
+              <video
+                ref={videoRef}
+                className="h-64 w-full cursor-pointer object-cover"
+                muted
+                playsInline
+                onClick={refocus}
+              />
               <div className="pointer-events-none absolute inset-6 rounded-lg border-2 border-white/70" />
             </div>
-            <p className="text-center text-xs text-muted-foreground">Hold the barcode inside the frame.</p>
+            <p className="text-center text-xs text-muted-foreground">Hold the barcode inside the frame. Tap the view to refocus.</p>
           </div>
         )}
       </DialogContent>
