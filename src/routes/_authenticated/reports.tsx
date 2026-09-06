@@ -186,97 +186,83 @@ function ReportsPage() {
 
   const rangeText = `${new Date(from + "T00:00:00").toLocaleDateString()} – ${new Date(to + "T00:00:00").toLocaleDateString()} · grouped by ${grouping}`;
 
-  // ---- Per-customer report ----
-  type CustomerRow = {
-    name: string; contact: string; email: string; phone: string; city: string; code: string;
-    invoices: number; sales: number; paid: number; balance: number; last: string; overdue: number;
+  // ---- Sales record (one row per sale) ----
+  type SaleRow = {
+    id: string; date: string; invoiceNumber: string; customer: string; code: string;
+    status: string; total: number; paid: number; balance: number;
   };
-  const customerRows: CustomerRow[] = useMemo(() => {
-    const customers = (data?.customers ?? []) as {
-      id: string; name: string; company_name: string | null; email: string | null;
-      phone: string | null; city: string | null; store_code: string | null;
-    }[];
-    const invoices = data?.invoices ?? [];
+  const saleRows: SaleRow[] = useMemo(() => {
+    const customers = (data?.customers ?? []) as { id: string; name: string; company_name: string | null; store_code: string | null }[];
+    const nameOf = new Map(customers.map((c) => [c.id, c.company_name || c.name]));
+    const codeOf = new Map(customers.map((c) => [c.id, c.store_code || ""]));
     const inRange = (d?: string | null) => !!d && d >= from && d <= to;
-    const scoped = invoices.filter((i) => inRange(i.invoice_date));
 
-    return customers
-      .map((c) => {
-        const mine = scoped.filter((i) => i.customer_id === c.id);
-        const sales = mine.reduce((s, i) => s + Number(i.total), 0);
-        const paid = mine.reduce((s, i) => s + Number(i.amount_paid), 0);
-        const balance = mine.reduce((s, i) => s + Number(i.balance), 0);
-        const overdue = mine.filter((i) => i.status === "overdue").reduce((s, i) => s + Number(i.balance), 0);
-        const last = mine.map((i) => i.invoice_date!).sort().slice(-1)[0] ?? "";
-        return {
-          name: c.company_name || c.name,
-          contact: c.company_name ? c.name : "",
-          email: c.email || "",
-          phone: c.phone || "",
-          city: c.city || "",
-          code: c.store_code || "",
-          invoices: mine.length,
-          sales, paid, balance, overdue,
-          last,
-        };
-      })
-      .filter((r) => r.invoices > 0 || r.balance !== 0)
-      .sort((a, b) => b.sales - a.sales);
+    return (data?.invoices ?? [])
+      .filter((i) => inRange(i.invoice_date) && i.status !== "draft" && i.status !== "cancelled")
+      .map((i) => ({
+        id: i.id,
+        date: i.invoice_date!,
+        invoiceNumber: i.invoice_number,
+        customer: nameOf.get(i.customer_id) || "Walk-in customer",
+        code: codeOf.get(i.customer_id) || "",
+        status: i.status,
+        total: Number(i.total),
+        paid: Number(i.amount_paid),
+        balance: Number(i.balance),
+      }))
+      .sort((a, b) => (a.date < b.date ? 1 : -1));
   }, [data, from, to]);
 
-  const customerTotals = customerRows.reduce(
-    (a, r) => ({ invoices: a.invoices + r.invoices, sales: a.sales + r.sales, paid: a.paid + r.paid, balance: a.balance + r.balance, overdue: a.overdue + r.overdue }),
-    { invoices: 0, sales: 0, paid: 0, balance: 0, overdue: 0 },
+  const saleTotals = saleRows.reduce(
+    (a, r) => ({ sales: a.sales + r.total, paid: a.paid + r.paid, balance: a.balance + r.balance }),
+    { sales: 0, paid: 0, balance: 0 },
   );
 
-  const customerColumns: ReportColumn[] = [
+  const saleColumns: ReportColumn[] = [
     { header: "#", align: "right", width: 7 },
-    { header: "Customer", align: "left", width: 42 },
-    { header: "Contact person", align: "left", width: 28 },
+    { header: "Date", align: "left", width: 22 },
+    { header: "Invoice no.", align: "left", width: 28 },
+    { header: "Customer", align: "left", width: 48 },
     { header: "Code", align: "left", width: 15 },
-    { header: "City", align: "left", width: 20 },
-    { header: "Invoices", align: "right", width: 15 },
-    { header: "Sales", align: "right", width: 24 },
-    { header: "Paid", align: "right", width: 24 },
-    { header: "Balance", align: "right", width: 24 },
-    { header: "Overdue", align: "right", width: 24 },
-    { header: "Last invoice", align: "left", width: 22 },
+    { header: "Status", align: "left", width: 18 },
+    { header: "Total", align: "right", width: 26 },
+    { header: "Paid", align: "right", width: 26 },
+    { header: "Balance", align: "right", width: 26 },
   ];
 
-  const customerReportRows = customerRows.map((r, i) => [
-    i + 1, r.name, r.contact || "—", r.code || "—", r.city || "—",
-    r.invoices,
-    formatMoney(r.sales, sym),
+  const saleReportRows = saleRows.map((r, i) => [
+    i + 1,
+    new Date(r.date + "T00:00:00").toLocaleDateString(),
+    r.invoiceNumber,
+    r.customer,
+    r.code || "—",
+    r.status.charAt(0).toUpperCase() + r.status.slice(1),
+    formatMoney(r.total, sym),
     formatMoney(r.paid, sym),
     formatMoney(r.balance, sym),
-    formatMoney(r.overdue, sym),
-    r.last ? new Date(r.last + "T00:00:00").toLocaleDateString() : "—",
   ]);
-  const customerTotalsRow = [
-    "", "Total", "", "", "",
-    customerTotals.invoices,
-    formatMoney(customerTotals.sales, sym),
-    formatMoney(customerTotals.paid, sym),
-    formatMoney(customerTotals.balance, sym),
-    formatMoney(customerTotals.overdue, sym),
-    "",
+  const saleTotalsRow = [
+    "", "Total", "", "", "", "",
+    formatMoney(saleTotals.sales, sym),
+    formatMoney(saleTotals.paid, sym),
+    formatMoney(saleTotals.balance, sym),
   ];
-  const customerRangeText = `${new Date(from + "T00:00:00").toLocaleDateString()} – ${new Date(to + "T00:00:00").toLocaleDateString()} · ${customerRows.length} customers`;
+  const saleRangeText = `${new Date(from + "T00:00:00").toLocaleDateString()} – ${new Date(to + "T00:00:00").toLocaleDateString()} · ${saleRows.length} sales`;
 
-  const exportCustomerPdf = async () => {
+  const exportSalesPdf = async () => {
     if (!company) return;
     try {
       await downloadReportPdf(
         {
-          title: "Customer report",
-          subtitle: customerRangeText,
-          columns: customerColumns,
-          rows: customerReportRows,
-          totalsRow: customerTotalsRow,
+          title: "Sales record",
+          subtitle: saleRangeText,
+          columns: saleColumns,
+          rows: saleReportRows,
+          totalsRow: saleTotalsRow,
           orientation: "landscape",
         },
         company,
-        `customer-report-${from}-to-${to}.pdf`,
+        `sales-record-${from}-to-${to}.pdf`,
       );
     } catch (err) {
       toast.error("Could not create PDF", { description: (err as Error).message });
@@ -506,7 +492,7 @@ function ReportsPage() {
         <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="sales">Sales</TabsTrigger>
           <TabsTrigger value="profit">Profit &amp; loss</TabsTrigger>
-          <TabsTrigger value="customers">Customers</TabsTrigger>
+          <TabsTrigger value="customers">Sales record</TabsTrigger>
           <TabsTrigger value="inventory">Inventory</TabsTrigger>
           <TabsTrigger value="financial">Financial</TabsTrigger>
           <TabsTrigger value="audit">Audit</TabsTrigger>
@@ -622,8 +608,8 @@ function ReportsPage() {
           <Card className="p-5 shadow-soft border-0 space-y-4">
             <div className="flex flex-wrap items-end gap-3">
               <div>
-                <h3 className="font-semibold">Report per customer</h3>
-                <p className="text-xs text-muted-foreground">Full record of every customer's invoices, payments and balances.</p>
+                <h3 className="font-semibold">Sales record</h3>
+                <p className="text-xs text-muted-foreground">One row per sale — the customer, what they were invoiced, what they paid, and what's left.</p>
               </div>
               <div>
                 <Label className="text-xs">From</Label>
@@ -639,11 +625,11 @@ function ReportsPage() {
                 ))}
               </div>
               <div className="ml-auto flex gap-2">
-                <Button size="sm" variant="outline" className="h-9" disabled={!customerReportRows.length}
-                  onClick={() => downloadCsv(`customer-report-${from}-to-${to}.csv`, toCsv(customerColumns, customerReportRows))}>
+                <Button size="sm" variant="outline" className="h-9" disabled={!saleReportRows.length}
+                  onClick={() => downloadCsv(`sales-record-${from}-to-${to}.csv`, toCsv(saleColumns, saleReportRows))}>
                   <FileSpreadsheet className="h-4 w-4 mr-1.5" />CSV
                 </Button>
-                <Button size="sm" className="h-9 gradient-emerald text-white" disabled={!customerReportRows.length || !company} onClick={exportCustomerPdf}>
+                <Button size="sm" className="h-9 gradient-emerald text-white" disabled={!saleReportRows.length || !company} onClick={exportSalesPdf}>
                   <Download className="h-4 w-4 mr-1.5" />PDF (A4 landscape)
                 </Button>
               </div>
@@ -651,10 +637,10 @@ function ReportsPage() {
 
             <div className="grid gap-3 sm:grid-cols-4">
               {[
-                { label: "Customers", value: String(customerRows.length) },
-                { label: "Sales", value: formatMoney(customerTotals.sales, sym) },
-                { label: "Paid", value: formatMoney(customerTotals.paid, sym) },
-                { label: "Outstanding", value: formatMoney(customerTotals.balance, sym) },
+                { label: "Sales", value: String(saleRows.length) },
+                { label: "Total invoiced", value: formatMoney(saleTotals.sales, sym) },
+                { label: "Collected", value: formatMoney(saleTotals.paid, sym) },
+                { label: "Still owed", value: formatMoney(saleTotals.balance, sym) },
               ].map((k) => (
                 <div key={k.label} className="rounded-lg border bg-card p-3">
                   <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{k.label}</div>
@@ -667,45 +653,47 @@ function ReportsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="whitespace-nowrap">Date</TableHead>
+                    <TableHead className="whitespace-nowrap">Invoice no.</TableHead>
                     <TableHead className="whitespace-nowrap">Customer</TableHead>
                     <TableHead className="whitespace-nowrap">Code</TableHead>
-                    <TableHead className="whitespace-nowrap">City</TableHead>
-                    <TableHead className="text-right whitespace-nowrap">Invoices</TableHead>
-                    <TableHead className="text-right whitespace-nowrap">Sales</TableHead>
+                    <TableHead className="whitespace-nowrap">Status</TableHead>
+                    <TableHead className="text-right whitespace-nowrap">Total</TableHead>
                     <TableHead className="text-right whitespace-nowrap">Paid</TableHead>
                     <TableHead className="text-right whitespace-nowrap">Balance</TableHead>
-                    <TableHead className="text-right whitespace-nowrap">Overdue</TableHead>
-                    <TableHead className="whitespace-nowrap">Last invoice</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {customerRows.length === 0 ? (
-                    <TableRow><TableCell colSpan={9} className="py-10 text-center text-sm text-muted-foreground">No customer activity in this period.</TableCell></TableRow>
-                  ) : customerRows.map((r, i) => (
-                    <TableRow key={`${r.name}-${i}`}>
-                      <TableCell className="font-medium whitespace-nowrap">
-                        {r.name}
-                        {r.contact && <span className="ml-1 text-xs text-muted-foreground">({r.contact})</span>}
-                      </TableCell>
+                  {saleRows.length === 0 ? (
+                    <TableRow><TableCell colSpan={8} className="py-10 text-center text-sm text-muted-foreground">No sales in this period.</TableCell></TableRow>
+                  ) : saleRows.map((r) => (
+                    <TableRow key={r.id}>
+                      <TableCell className="whitespace-nowrap">{new Date(r.date + "T00:00:00").toLocaleDateString()}</TableCell>
+                      <TableCell className="whitespace-nowrap font-medium">{r.invoiceNumber}</TableCell>
+                      <TableCell className="whitespace-nowrap">{r.customer}</TableCell>
                       <TableCell className="whitespace-nowrap">{r.code || "—"}</TableCell>
-                      <TableCell className="whitespace-nowrap">{r.city || "—"}</TableCell>
-                      <TableCell className="text-right tabular-nums">{r.invoices}</TableCell>
-                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatMoney(r.sales, sym)}</TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        <span className={cn(
+                          "inline-block rounded-full px-2 py-0.5 text-xs font-medium capitalize",
+                          r.status === "paid" && "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300",
+                          r.status === "partial" && "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300",
+                          r.status === "overdue" && "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300",
+                          (r.status === "sent" || r.status === "pending") && "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300",
+                        )}>
+                          {r.status}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatMoney(r.total, sym)}</TableCell>
                       <TableCell className="text-right tabular-nums whitespace-nowrap">{formatMoney(r.paid, sym)}</TableCell>
-                      <TableCell className="text-right tabular-nums whitespace-nowrap font-semibold">{formatMoney(r.balance, sym)}</TableCell>
-                      <TableCell className="text-right tabular-nums whitespace-nowrap text-destructive">{formatMoney(r.overdue, sym)}</TableCell>
-                      <TableCell className="whitespace-nowrap">{r.last ? new Date(r.last + "T00:00:00").toLocaleDateString() : "—"}</TableCell>
+                      <TableCell className={cn("text-right tabular-nums whitespace-nowrap font-semibold", r.balance > 0 && "text-destructive")}>{formatMoney(r.balance, sym)}</TableCell>
                     </TableRow>
                   ))}
-                  {customerRows.length > 0 && (
+                  {saleRows.length > 0 && (
                     <TableRow className="bg-muted/50 font-semibold">
-                      <TableCell colSpan={3}>Total</TableCell>
-                      <TableCell className="text-right tabular-nums">{customerTotals.invoices}</TableCell>
-                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatMoney(customerTotals.sales, sym)}</TableCell>
-                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatMoney(customerTotals.paid, sym)}</TableCell>
-                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatMoney(customerTotals.balance, sym)}</TableCell>
-                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatMoney(customerTotals.overdue, sym)}</TableCell>
-                      <TableCell />
+                      <TableCell colSpan={5}>Total</TableCell>
+                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatMoney(saleTotals.sales, sym)}</TableCell>
+                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatMoney(saleTotals.paid, sym)}</TableCell>
+                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatMoney(saleTotals.balance, sym)}</TableCell>
                     </TableRow>
                   )}
                 </TableBody>
