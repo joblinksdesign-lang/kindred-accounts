@@ -39,6 +39,7 @@ function AppInstallAdmin() {
   const qc = useQueryClient();
   const [form, setForm] = useState<PwaSettings | null>(null);
   const [saving, setSaving] = useState(false);
+  const saveSettings = useServerFn(savePwaSettings);
   const { canInstall, installed, promptInstall } = useInstallPrompt();
 
   useEffect(() => { if (data) setForm(data); }, [data]);
