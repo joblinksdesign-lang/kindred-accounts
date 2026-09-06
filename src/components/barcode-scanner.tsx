@@ -103,14 +103,24 @@ export function BarcodeScannerDialog({ open, onOpenChange, onDetected }: Props) 
               BarcodeFormat.CODE_128, BarcodeFormat.CODE_39, BarcodeFormat.ITF, BarcodeFormat.QR_CODE,
             ],
           ],
-          [DecodeHintType.TRY_HARDER, false],
+          // TRY_HARDER decodes tougher barcodes on the first frame instead of needing many retries.
+          [DecodeHintType.TRY_HARDER, true],
         ]);
         const reader = new BrowserMultiFormatReader(hints as never, {
-          delayBetweenScanAttempts: 40,
-          delayBetweenScanSuccess: 40,
+          delayBetweenScanAttempts: 25,
+          delayBetweenScanSuccess: 25,
         });
         const controls = await reader.decodeFromConstraints(
-          { video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } } },
+          {
+            video: {
+              facingMode: { ideal: "environment" },
+              // Lower resolution frames decode much faster; barcodes don't need HD.
+              width: { ideal: 640 },
+              height: { ideal: 480 },
+              // Prefer continuous autofocus when the hardware supports it.
+              focusMode: { ideal: "continuous" } as MediaTrackConstraintSet["focusMode"],
+            } as MediaTrackConstraints["video"] extends never ? MediaStreamConstraints["video"] : MediaTrackConstraints & { focusMode?: string },
+          },
           videoRef.current!,
           (result) => {
             if (!result || cancelled) return;
