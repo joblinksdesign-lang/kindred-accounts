@@ -84,6 +84,8 @@ export function BarcodeScannerDialog({ open, onOpenChange, onDetected }: Props) 
     if (!open) return;
     let cancelled = false;
     setError(null);
+    // The scan button tap is a user gesture — unlock audio in the same task so the beep plays later.
+    unlockAudio();
 
     (async () => {
       try {
