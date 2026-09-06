@@ -19,9 +19,9 @@ import { useTenantModules } from "@/lib/modules";
 export const Route = createFileRoute("/_authenticated/online-store")({
   head: () => ({
     meta: [
-      { title: "Online Store — SoftfrackPos" },
+      { title: "Online Store — Softtrack Pos" },
       { name: "description", content: "Publish your product catalogue and take WhatsApp orders from customers." },
-      { property: "og:title", content: "Online Store — SoftfrackPos" },
+      { property: "og:title", content: "Online Store — Softtrack Pos" },
       { property: "og:description", content: "Publish your product catalogue and take WhatsApp orders from customers." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

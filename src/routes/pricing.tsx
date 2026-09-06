@@ -11,7 +11,7 @@ import { motion } from "framer-motion";
 export const Route = createFileRoute("/pricing")({
   head: () => ({
     meta: [
-      { title: "Pricing — SoftfrackPos" },
+      { title: "Pricing — Softtrack Pos" },
       { name: "description", content: "Simple, transparent pricing for businesses of every size. Manage invoices, receipts, inventory and payments from one place." },
     ],
   }),
@@ -55,7 +55,7 @@ function PricingPage() {
           <Link to="/" className="flex items-center gap-2">
             <div className="grid h-9 w-9 place-items-center rounded-lg gradient-emerald text-white shadow-soft font-bold">GP</div>
             <div>
-              <div className="text-sm font-bold leading-tight">SoftfrackPos</div>
+              <div className="text-sm font-bold leading-tight">Softtrack Pos</div>
               <div className="text-[10px] uppercase tracking-wider text-muted-foreground">by Growth Point</div>
             </div>
           </Link>
@@ -143,7 +143,7 @@ function PricingPage() {
 
       <footer className="border-t bg-card/40">
         <div className="container mx-auto px-4 py-6 text-xs text-muted-foreground flex items-center justify-between">
-          <span>© {new Date().getFullYear()} Growth Point — SoftfrackPos</span>
+          <span>© {new Date().getFullYear()} Growth Point — Softtrack Pos</span>
           <Link to="/auth" className="hover:text-foreground">Sign in →</Link>
         </div>
       </footer>

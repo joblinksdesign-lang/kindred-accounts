@@ -26,7 +26,7 @@ import {
 type Period = "day" | "week" | "month" | "custom";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
-  head: () => ({ meta: [{ title: "Dashboard — SoftfrackPos" }] }),
+  head: () => ({ meta: [{ title: "Dashboard — Softtrack Pos" }] }),
   component: Dashboard,
 });
 

@@ -10,7 +10,7 @@ import { Toaster } from "@/components/ui/sonner";
 
 export const Route = createFileRoute("/reset-password")({
   ssr: false,
-  head: () => ({ meta: [{ title: "Reset password — SoftfrackPos" }] }),
+  head: () => ({ meta: [{ title: "Reset password — Softtrack Pos" }] }),
   component: ResetPasswordPage,
 });
 

@@ -17,9 +17,9 @@ import { useActiveTenantId } from "@/lib/tenant";
 export const Route = createFileRoute("/_authenticated/invoices/edit/$id")({
   head: () => ({
     meta: [
-      { title: "Edit draft invoice — SoftfrackPos" },
+      { title: "Edit draft invoice — Softtrack Pos" },
       { name: "description", content: "Change line items, totals and details on a draft invoice before you send it." },
-      { property: "og:title", content: "Edit draft invoice — SoftfrackPos" },
+      { property: "og:title", content: "Edit draft invoice — Softtrack Pos" },
       { property: "og:description", content: "Update a draft invoice's customer, items and totals." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
