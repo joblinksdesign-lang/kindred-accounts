@@ -244,18 +244,31 @@ function AppInstallAdmin() {
 
         <Card className="p-5 space-y-4 h-fit lg:sticky lg:top-20">
           <h2 className="text-sm font-semibold flex items-center gap-2"><Smartphone className="h-4 w-4" />Preview</h2>
-          <div className="overflow-hidden border" style={{ backgroundColor: form.background_color }}>
-            <div className="mx-auto flex w-full flex-col items-center gap-3">
-              {form.splash_url ? (
-                <img src={form.splash_url} alt="Splash preview" className="block w-full object-cover" />
-              ) : null}
-              <div className="pb-6" />
+          <div
+            className="relative w-full overflow-hidden"
+            style={{
+              backgroundColor: form.background_color,
+              aspectRatio: form.splash_width && form.splash_height
+                ? `${form.splash_width}/${form.splash_height}`
+                : "9/19.5",
+            }}
+          >
+            {form.splash_url ? (
+              <img
+                src={form.splash_url}
+                alt="Splash preview"
+                className="absolute inset-0 h-full w-full object-cover"
+              />
+            ) : null}
 
-              <div className="grid h-20 w-20 place-items-center overflow-hidden rounded-[22%] shadow-elevated"
-                style={{ backgroundColor: form.theme_color }}>
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+              <div
+                className="grid h-20 w-20 place-items-center shadow-elevated"
+                style={{ backgroundColor: form.theme_color }}
+              >
                 {form.icon_url
                   ? <img src={form.icon_url} alt="App icon preview" className="h-full w-full object-cover" />
-                  : <span className="text-2xl font-bold text-white">SI</span>}
+                  : <span className="text-2xl font-bold text-white">ST</span>}
               </div>
               <div className="text-center text-xs font-semibold" style={{ color: form.theme_color }}>
                 {form.short_name || form.app_name}
