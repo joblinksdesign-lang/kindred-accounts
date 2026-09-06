@@ -37,6 +37,7 @@ import { Route as AuthenticatedBillingRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedInvoicesIndexRouteImport } from './routes/_authenticated/invoices.index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
+import { Route as ApiPublicPlanExpiryRemindersRouteImport } from './routes/api/public/plan-expiry-reminders'
 import { Route as AuthenticatedInvoicesNewRouteImport } from './routes/_authenticated/invoices.new'
 import { Route as AuthenticatedInvoicesIdRouteImport } from './routes/_authenticated/invoices.$id'
 import { Route as AuthenticatedAdminTenantsRouteImport } from './routes/_authenticated/admin.tenants'
@@ -189,6 +190,12 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
+const ApiPublicPlanExpiryRemindersRoute =
+  ApiPublicPlanExpiryRemindersRouteImport.update({
+    id: '/api/public/plan-expiry-reminders',
+    path: '/api/public/plan-expiry-reminders',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedInvoicesNewRoute =
   AuthenticatedInvoicesNewRouteImport.update({
     id: '/invoices/new',
@@ -271,6 +278,7 @@ export interface FileRoutesByFullPath {
   '/admin/tenants': typeof AuthenticatedAdminTenantsRoute
   '/invoices/$id': typeof AuthenticatedInvoicesIdRoute
   '/invoices/new': typeof AuthenticatedInvoicesNewRoute
+  '/api/public/plan-expiry-reminders': typeof ApiPublicPlanExpiryRemindersRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/invoices/': typeof AuthenticatedInvoicesIndexRoute
   '/invoices/edit/$id': typeof AuthenticatedInvoicesEditIdRoute
@@ -308,6 +316,7 @@ export interface FileRoutesByTo {
   '/admin/tenants': typeof AuthenticatedAdminTenantsRoute
   '/invoices/$id': typeof AuthenticatedInvoicesIdRoute
   '/invoices/new': typeof AuthenticatedInvoicesNewRoute
+  '/api/public/plan-expiry-reminders': typeof ApiPublicPlanExpiryRemindersRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/invoices': typeof AuthenticatedInvoicesIndexRoute
   '/invoices/edit/$id': typeof AuthenticatedInvoicesEditIdRoute
@@ -348,6 +357,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/tenants': typeof AuthenticatedAdminTenantsRoute
   '/_authenticated/invoices/$id': typeof AuthenticatedInvoicesIdRoute
   '/_authenticated/invoices/new': typeof AuthenticatedInvoicesNewRoute
+  '/api/public/plan-expiry-reminders': typeof ApiPublicPlanExpiryRemindersRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/invoices/': typeof AuthenticatedInvoicesIndexRoute
   '/_authenticated/invoices/edit/$id': typeof AuthenticatedInvoicesEditIdRoute
@@ -388,6 +398,7 @@ export interface FileRouteTypes {
     | '/admin/tenants'
     | '/invoices/$id'
     | '/invoices/new'
+    | '/api/public/plan-expiry-reminders'
     | '/admin/'
     | '/invoices/'
     | '/invoices/edit/$id'
@@ -425,6 +436,7 @@ export interface FileRouteTypes {
     | '/admin/tenants'
     | '/invoices/$id'
     | '/invoices/new'
+    | '/api/public/plan-expiry-reminders'
     | '/admin'
     | '/invoices'
     | '/invoices/edit/$id'
@@ -464,6 +476,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/tenants'
     | '/_authenticated/invoices/$id'
     | '/_authenticated/invoices/new'
+    | '/api/public/plan-expiry-reminders'
     | '/_authenticated/admin/'
     | '/_authenticated/invoices/'
     | '/_authenticated/invoices/edit/$id'
@@ -483,6 +496,7 @@ export interface RootRouteChildren {
   PricingRoute: typeof PricingRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   StoreSlugRoute: typeof StoreSlugRoute
+  ApiPublicPlanExpiryRemindersRoute: typeof ApiPublicPlanExpiryRemindersRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
   LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
@@ -686,6 +700,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/api/public/plan-expiry-reminders': {
+      id: '/api/public/plan-expiry-reminders'
+      path: '/api/public/plan-expiry-reminders'
+      fullPath: '/api/public/plan-expiry-reminders'
+      preLoaderRoute: typeof ApiPublicPlanExpiryRemindersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/invoices/new': {
       id: '/_authenticated/invoices/new'
       path: '/invoices/new'
@@ -829,6 +850,7 @@ const rootRouteChildren: RootRouteChildren = {
   PricingRoute: PricingRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   StoreSlugRoute: StoreSlugRoute,
+  ApiPublicPlanExpiryRemindersRoute: ApiPublicPlanExpiryRemindersRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,
   LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
