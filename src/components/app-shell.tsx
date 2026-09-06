@@ -59,11 +59,12 @@ function AppSidebar() {
         ? pathname === "/dashboard" || pathname === "/"
         : pathname === to || pathname.startsWith(to + "/");
 
-  // POS-only staff (default role) see just the counter tools.
+  // POS-only staff (default role) see just the counter tools — no dashboard.
   const posOnly = role === "sales_agent";
   const visibleWorkspaceNav = posOnly
-    ? workspaceNav.filter((i) => i.to === "/dashboard" || i.to === "/notifications")
+    ? workspaceNav.filter((i) => i.to === "/notifications")
     : workspaceNav;
+
 
   const showWorkspace = !isSuperAdmin && !!tenant;
   const showAdmin = isSuperAdmin;
