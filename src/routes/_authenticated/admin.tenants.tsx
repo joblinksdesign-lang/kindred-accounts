@@ -198,11 +198,18 @@ function AdminTenants() {
     onSuccess: () => { toast.success("Request denied"); qc.invalidateQueries({ queryKey: ["pending_plan_requests"] }); },
   });
 
+  const PAGE_SIZE = 50;
+  const [page, setPage] = useState(0);
+
   const filtered = tenants.filter((t) => {
     if (filter !== "all" && t.status !== filter) return false;
     const term = q.toLowerCase();
     return !term || [t.business_name, t.email, t.country].some((v) => v?.toLowerCase().includes(term));
   });
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount - 1);
+  const paged = filtered.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE);
 
   return (
     <div>
@@ -231,8 +238,8 @@ function AdminTenants() {
 
       <Card className="p-4 shadow-soft border-0">
         <div className="flex flex-col md:flex-row gap-3 mb-4">
-          <Input placeholder="Search businesses…" value={q} onChange={(e) => setQ(e.target.value)} className="md:max-w-sm" />
-          <Select value={filter} onValueChange={setFilter}>
+          <Input placeholder="Search businesses…" value={q} onChange={(e) => { setQ(e.target.value); setPage(0); }} className="md:max-w-sm" />
+          <Select value={filter} onValueChange={(v) => { setFilter(v); setPage(0); }}>
             <SelectTrigger className="md:w-48"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All statuses</SelectItem>
@@ -258,7 +265,7 @@ function AdminTenants() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((t) => (
+              {paged.map((t) => (
                 <TableRow key={t.id} className={tenantParam === t.id ? "bg-primary/10 ring-1 ring-primary/30" : ""}>
                   <TableCell>
                     <div className="font-medium">{t.business_name}</div>
@@ -372,6 +379,16 @@ function AdminTenants() {
               )}
             </TableBody>
           </Table>
+        </div>
+        <div className="flex items-center justify-between mt-3 text-xs text-muted-foreground">
+          <span>
+            Showing {filtered.length === 0 ? 0 : safePage * PAGE_SIZE + 1}–{Math.min(filtered.length, (safePage + 1) * PAGE_SIZE)} of {filtered.length} businesses
+          </span>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="outline" disabled={safePage === 0} onClick={() => setPage(safePage - 1)}>Previous</Button>
+            <span>Page {safePage + 1} of {pageCount}</span>
+            <Button size="sm" variant="outline" disabled={safePage >= pageCount - 1} onClick={() => setPage(safePage + 1)}>Next</Button>
+          </div>
         </div>
       </Card>
 
