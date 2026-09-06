@@ -108,3 +108,18 @@ export function useInstallPrompt() {
     },
   };
 }
+
+/** Forces the browser to re-fetch the manifest, icon and splash after new branding is saved. */
+export function refreshInstallAssets() {
+  if (typeof document === "undefined") return;
+  const v = Date.now();
+  const swap = (selector: string, base: string) => {
+    document.querySelectorAll<HTMLLinkElement>(selector).forEach((link) => {
+      link.href = `${base}?v=${v}`;
+    });
+  };
+  swap('link[rel="manifest"]', "/manifest.webmanifest");
+  swap('link[rel="apple-touch-icon"]', "/app-icon.png");
+  void fetch(`/app-icon.png?v=${v}`, { cache: "reload" }).catch(() => {});
+  void fetch(`/app-splash.png?v=${v}`, { cache: "reload" }).catch(() => {});
+}

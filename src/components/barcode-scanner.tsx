@@ -9,6 +9,27 @@ type Props = {
   onDetected: (code: string) => void;
 };
 
+/** Short confirmation tone so the user hears a successful scan. */
+function beep() {
+  try {
+    const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    const ctx = new Ctx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "square";
+    osc.frequency.value = 1250;
+    gain.gain.setValueAtTime(0.12, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.14);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.15);
+    osc.onended = () => void ctx.close();
+    navigator.vibrate?.(60);
+  } catch {
+    /* audio is a nicety — ignore failures */
+  }
+}
+
 /** Camera barcode scanner. ZXing is loaded lazily so it never runs during SSR. */
 export function BarcodeScannerDialog({ open, onOpenChange, onDetected }: Props) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -22,16 +43,35 @@ export function BarcodeScannerDialog({ open, onOpenChange, onDetected }: Props) 
 
     (async () => {
       try {
-        const { BrowserMultiFormatReader } = await import("@zxing/browser");
-        const reader = new BrowserMultiFormatReader();
-        const controls = await reader.decodeFromVideoDevice(
-          undefined,
+        const [{ BrowserMultiFormatReader }, zxing] = await Promise.all([
+          import("@zxing/browser"),
+          import("@zxing/library"),
+        ]);
+        const { DecodeHintType, BarcodeFormat } = zxing;
+        // Limit formats and scan continuously with almost no delay so reads are instant.
+        const hints = new Map<number, unknown>([
+          [
+            DecodeHintType.POSSIBLE_FORMATS,
+            [
+              BarcodeFormat.EAN_13, BarcodeFormat.EAN_8, BarcodeFormat.UPC_A, BarcodeFormat.UPC_E,
+              BarcodeFormat.CODE_128, BarcodeFormat.CODE_39, BarcodeFormat.ITF, BarcodeFormat.QR_CODE,
+            ],
+          ],
+          [DecodeHintType.TRY_HARDER, false],
+        ]);
+        const reader = new BrowserMultiFormatReader(hints as never, {
+          delayBetweenScanAttempts: 40,
+          delayBetweenScanSuccess: 40,
+        });
+        const controls = await reader.decodeFromConstraints(
+          { video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } } },
           videoRef.current!,
           (result) => {
             if (!result || cancelled) return;
             const text = result.getText().trim();
             if (!text) return;
             cancelled = true;
+            beep();
             stopRef.current?.();
             onDetected(text);
             onOpenChange(false);

@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { PageHeader } from "@/components/page-helpers";
 import {
-  DISPLAY_MODES, ICON_SIZE_OPTIONS, fileToDataUrl, useInstallPrompt, usePwaSettings,
+  DISPLAY_MODES, ICON_SIZE_OPTIONS, fileToDataUrl, refreshInstallAssets, useInstallPrompt, usePwaSettings,
   type PwaSettings,
 } from "@/lib/pwa";
 
@@ -83,6 +83,7 @@ function AppInstallAdmin() {
     if (!saved || saved.length === 0)
       return toast.error("Nothing was saved — your account may not have admin permission.");
     qc.invalidateQueries({ queryKey: ["pwa_settings"] });
+    refreshInstallAssets();
     toast.success("App install settings saved");
   };
 

@@ -13,6 +13,7 @@ export type PwaRow = {
   icon_sizes: number[];
   splash_width: number;
   splash_height: number;
+  updated_at?: string | null;
 };
 
 export async function loadPwaSettings(): Promise<PwaRow | null> {
