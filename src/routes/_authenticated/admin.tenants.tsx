@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { formatDate } from "@/lib/company";
 import { Check, X, Pause, Play, Trash2, Eraser } from "lucide-react";
 import { purgeTenantData } from "@/lib/admin.functions";
+import { sendBusinessApprovedEmail } from "@/lib/emails.functions";
 import { MODULES } from "@/lib/modules";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -78,6 +79,8 @@ function AdminTenants() {
     },
   });
 
+  const approvedEmail = useServerFn(sendBusinessApprovedEmail);
+
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: TenantRow["status"] }) => {
       const patch: { status: TenantRow["status"]; approved_at?: string; suspended_at?: string } = { status };
@@ -85,6 +88,10 @@ function AdminTenants() {
       if (status === "suspended") patch.suspended_at = new Date().toISOString();
       const { error } = await supabase.from("tenants").update(patch).eq("id", id);
       if (error) throw error;
+      if (status === "active") {
+        // Let the owner know their business was approved (never blocks the update).
+        await approvedEmail({ data: { tenantId: id } }).catch(() => {});
+      }
     },
     onSuccess: () => { toast.success("Updated"); qc.invalidateQueries({ queryKey: ["admin_tenants"] }); },
     onError: (e: Error) => toast.error(e.message),
