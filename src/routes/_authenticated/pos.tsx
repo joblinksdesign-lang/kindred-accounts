@@ -67,7 +67,6 @@ function PosPage() {
   const [customerId, setCustomerId] = useState("walkin");
   const [discount, setDiscount] = useState(0);
   const [method, setMethod] = useState("cash");
-  const [tendered, setTendered] = useState<string>("");
   const [sale, setSale] = useState<SaleResult | null>(null);
   const [scanOpen, setScanOpen] = useState(false);
 
@@ -112,7 +111,6 @@ function PosPage() {
   const taxable = Math.max(subtotal - discount, 0);
   const taxAmount = (taxable * taxRate) / 100;
   const total = Math.max(taxable + taxAmount, 0);
-  const change = Math.max(Number(tendered || 0) - total, 0);
   const count = cart.reduce((s, l) => s + l.quantity, 0);
 
   const stockOf = (id: string) => Number(products.find((p) => p.id === id)?.quantity ?? 0);
@@ -138,7 +136,7 @@ function PosPage() {
   const stockProblem = cart.find((l) => l.quantity > stockOf(l.product_id));
 
 
-  const reset = () => { setCart([]); setDiscount(0); setTendered(""); setCustomerId("walkin"); setMethod("cash"); };
+  const reset = () => { setCart([]); setDiscount(0); setCustomerId("walkin"); setMethod("cash"); };
 
   const onScanCode = (code: string) => {
     const term = code.trim().toLowerCase();
