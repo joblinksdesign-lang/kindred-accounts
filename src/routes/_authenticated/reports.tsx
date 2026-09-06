@@ -252,7 +252,7 @@ function ReportsPage() {
     r.last ? new Date(r.last + "T00:00:00").toLocaleDateString() : "—",
   ]);
   const customerTotalsRow = [
-    "", "Total", "", "", "", "", "",
+    "", "Total", "", "", "",
     customerTotals.invoices,
     formatMoney(customerTotals.sales, sym),
     formatMoney(customerTotals.paid, sym),
@@ -633,16 +633,15 @@ function ReportsPage() {
                 </TableHeader>
                 <TableBody>
                   {customerRows.length === 0 ? (
-                    <TableRow><TableCell colSpan={10} className="py-10 text-center text-sm text-muted-foreground">No customer activity in this period.</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={9} className="py-10 text-center text-sm text-muted-foreground">No customer activity in this period.</TableCell></TableRow>
                   ) : customerRows.map((r, i) => (
                     <TableRow key={`${r.name}-${i}`}>
-                      <TableCell className="font-medium">
+                      <TableCell className="font-medium whitespace-nowrap">
                         {r.name}
-                        {r.contact && <div className="text-xs text-muted-foreground">{r.contact}</div>}
+                        {r.contact && <span className="ml-1 text-xs text-muted-nowrap text-muted-foreground">({r.contact})</span>}
                       </TableCell>
                       <TableCell className="whitespace-nowrap">{r.code || "—"}</TableCell>
-                      <TableCell className="whitespace-nowrap">{r.phone || "—"}</TableCell>
-                      <TableCell className="whitespace-nowrap">{r.email || "—"}</TableCell>
+                      <TableCell className="whitespace-nowrap">{r.city || "—"}</TableCell>
                       <TableCell className="text-right tabular-nums">{r.invoices}</TableCell>
                       <TableCell className="text-right tabular-nums whitespace-nowrap">{formatMoney(r.sales, sym)}</TableCell>
                       <TableCell className="text-right tabular-nums whitespace-nowrap">{formatMoney(r.paid, sym)}</TableCell>
