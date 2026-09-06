@@ -117,16 +117,18 @@ export function BarcodeScannerDialog({ open, onOpenChange, onDetected }: Props) 
           import("@zxing/library"),
         ]);
         const { DecodeHintType, BarcodeFormat } = zxing;
-        // Limit formats and scan continuously with almost no delay so reads are instant.
+        // Support every common 1D/2D format so any barcode type can be read.
         const hints = new Map<number, unknown>([
           [
             DecodeHintType.POSSIBLE_FORMATS,
             [
               BarcodeFormat.EAN_13, BarcodeFormat.EAN_8, BarcodeFormat.UPC_A, BarcodeFormat.UPC_E,
-              BarcodeFormat.CODE_128, BarcodeFormat.CODE_39, BarcodeFormat.ITF, BarcodeFormat.QR_CODE,
+              BarcodeFormat.CODE_128, BarcodeFormat.CODE_39, BarcodeFormat.CODE_93, BarcodeFormat.ITF,
+              BarcodeFormat.CODABAR, BarcodeFormat.RSS_14, BarcodeFormat.RSS_EXPANDED,
+              BarcodeFormat.QR_CODE, BarcodeFormat.DATA_MATRIX, BarcodeFormat.AZTEC, BarcodeFormat.PDF_417,
             ],
           ],
-          // TRY_HARDER decodes tougher barcodes on the first frame instead of needing many retries.
+          // TRY_HARDER decodes small, faint and low-contrast barcodes that easy mode misses.
           [DecodeHintType.TRY_HARDER, true],
         ]);
         const reader = new BrowserMultiFormatReader(hints as never, {
@@ -137,9 +139,9 @@ export function BarcodeScannerDialog({ open, onOpenChange, onDetected }: Props) 
           {
             video: {
               facingMode: { ideal: "environment" },
-              // Lower resolution frames decode much faster; barcodes don't need HD.
-              width: { ideal: 640 },
-              height: { ideal: 480 },
+              // Higher resolution keeps small and faint barcodes decodable.
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
               // Prefer continuous autofocus when the hardware supports it.
               focusMode: "continuous",
             },
@@ -149,20 +151,6 @@ export function BarcodeScannerDialog({ open, onOpenChange, onDetected }: Props) 
             if (!result || cancelled) return;
             const text = result.getText().trim();
             if (!text) return;
-
-            // Ignore very small/distant barcodes so the user must hold the code close enough.
-            const points = result.getResultPoints?.() ?? [];
-            if (points && points.length >= 2) {
-              const xs = points.map((p) => p.getX());
-              const ys = points.map((p) => p.getY());
-              const width = Math.max(0, Math.max(...xs) - Math.min(...xs));
-              const height = Math.max(0, Math.max(...ys) - Math.min(...ys));
-              const minDimension = 70; // pixels
-              const minArea = 2000; // pixels squared
-              if (width < minDimension || height < minDimension || width * height < minArea) {
-                return;
-              }
-            }
 
             cancelled = true;
             beep();
@@ -209,7 +197,7 @@ export function BarcodeScannerDialog({ open, onOpenChange, onDetected }: Props) 
               />
               <div className="pointer-events-none absolute inset-6 rounded-lg border-2 border-white/70" />
             </div>
-            <p className="text-center text-xs text-muted-foreground">Hold the barcode inside the frame. Tap the view to refocus.</p>
+            <p className="text-center text-xs text-muted-foreground">Point at any barcode — small or faint codes work too. Tap the view if it looks blurry to refocus.</p>
           </div>
         )}
       </DialogContent>
