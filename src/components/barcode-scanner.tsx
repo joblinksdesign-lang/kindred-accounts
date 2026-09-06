@@ -117,16 +117,18 @@ export function BarcodeScannerDialog({ open, onOpenChange, onDetected }: Props) 
           import("@zxing/library"),
         ]);
         const { DecodeHintType, BarcodeFormat } = zxing;
-        // Limit formats and scan continuously with almost no delay so reads are instant.
+        // Support every common 1D/2D format so any barcode type can be read.
         const hints = new Map<number, unknown>([
           [
             DecodeHintType.POSSIBLE_FORMATS,
             [
               BarcodeFormat.EAN_13, BarcodeFormat.EAN_8, BarcodeFormat.UPC_A, BarcodeFormat.UPC_E,
-              BarcodeFormat.CODE_128, BarcodeFormat.CODE_39, BarcodeFormat.ITF, BarcodeFormat.QR_CODE,
+              BarcodeFormat.CODE_128, BarcodeFormat.CODE_39, BarcodeFormat.CODE_93, BarcodeFormat.ITF,
+              BarcodeFormat.CODABAR, BarcodeFormat.RSS_14, BarcodeFormat.RSS_EXPANDED,
+              BarcodeFormat.QR_CODE, BarcodeFormat.DATA_MATRIX, BarcodeFormat.AZTEC, BarcodeFormat.PDF_417,
             ],
           ],
-          // TRY_HARDER decodes tougher barcodes on the first frame instead of needing many retries.
+          // TRY_HARDER decodes small, faint and low-contrast barcodes that easy mode misses.
           [DecodeHintType.TRY_HARDER, true],
         ]);
         const reader = new BrowserMultiFormatReader(hints as never, {
