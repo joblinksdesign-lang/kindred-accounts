@@ -22,16 +22,35 @@ export function BarcodeScannerDialog({ open, onOpenChange, onDetected }: Props) 
 
     (async () => {
       try {
-        const { BrowserMultiFormatReader } = await import("@zxing/browser");
-        const reader = new BrowserMultiFormatReader();
-        const controls = await reader.decodeFromVideoDevice(
-          undefined,
+        const [{ BrowserMultiFormatReader }, zxing] = await Promise.all([
+          import("@zxing/browser"),
+          import("@zxing/library"),
+        ]);
+        const { DecodeHintType, BarcodeFormat } = zxing;
+        // Limit formats and scan continuously with almost no delay so reads are instant.
+        const hints = new Map<number, unknown>([
+          [
+            DecodeHintType.POSSIBLE_FORMATS,
+            [
+              BarcodeFormat.EAN_13, BarcodeFormat.EAN_8, BarcodeFormat.UPC_A, BarcodeFormat.UPC_E,
+              BarcodeFormat.CODE_128, BarcodeFormat.CODE_39, BarcodeFormat.ITF, BarcodeFormat.QR_CODE,
+            ],
+          ],
+          [DecodeHintType.TRY_HARDER, false],
+        ]);
+        const reader = new BrowserMultiFormatReader(hints as never, {
+          delayBetweenScanAttempts: 40,
+          delayBetweenScanSuccess: 40,
+        });
+        const controls = await reader.decodeFromConstraints(
+          { video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } } },
           videoRef.current!,
           (result) => {
             if (!result || cancelled) return;
             const text = result.getText().trim();
             if (!text) return;
             cancelled = true;
+            beep();
             stopRef.current?.();
             onDetected(text);
             onOpenChange(false);
