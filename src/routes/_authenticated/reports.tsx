@@ -69,7 +69,7 @@ function ReportsPage() {
       const [inv, pay, cust, prod, exp] = await Promise.all([
         supabase.from("invoices").select("invoice_date, total, balance, amount_paid, status, customer_id"),
         supabase.from("payments").select("amount, payment_date, method"),
-        supabase.from("customers").select("id, name, company_name"),
+        supabase.from("customers").select("id, name, company_name, email, phone, city, store_code"),
         supabase.from("products").select("name, quantity, reorder_level, unit_price, cost_price"),
         supabase.from("expenses").select("expense_date, amount, category"),
       ]);
