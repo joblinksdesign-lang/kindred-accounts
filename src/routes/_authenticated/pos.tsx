@@ -67,7 +67,6 @@ function PosPage() {
   const [customerId, setCustomerId] = useState("walkin");
   const [discount, setDiscount] = useState(0);
   const [method, setMethod] = useState("cash");
-  const [tendered, setTendered] = useState<string>("");
   const [sale, setSale] = useState<SaleResult | null>(null);
   const [scanOpen, setScanOpen] = useState(false);
 
@@ -112,7 +111,6 @@ function PosPage() {
   const taxable = Math.max(subtotal - discount, 0);
   const taxAmount = (taxable * taxRate) / 100;
   const total = Math.max(taxable + taxAmount, 0);
-  const change = Math.max(Number(tendered || 0) - total, 0);
   const count = cart.reduce((s, l) => s + l.quantity, 0);
 
   const stockOf = (id: string) => Number(products.find((p) => p.id === id)?.quantity ?? 0);
@@ -138,7 +136,7 @@ function PosPage() {
   const stockProblem = cart.find((l) => l.quantity > stockOf(l.product_id));
 
 
-  const reset = () => { setCart([]); setDiscount(0); setTendered(""); setCustomerId("walkin"); setMethod("cash"); };
+  const reset = () => { setCart([]); setDiscount(0); setCustomerId("walkin"); setMethod("cash"); };
 
   const onScanCode = (code: string) => {
     const term = code.trim().toLowerCase();
@@ -449,17 +447,11 @@ function PosPage() {
               <span className="text-xl font-extrabold tabular-nums text-primary [overflow-wrap:anywhere]">{formatMoney(total, sym)}</span>
             </div>
             {method === "cash" && (
-              <div className="grid grid-cols-2 items-center gap-2">
-                <div>
-                  <Label className="text-[11px]">Cash received</Label>
-                  <Input className="h-9 text-right" type="number" step="0.01" value={tendered} onChange={(e) => setTendered(e.target.value)} />
-                </div>
-                <div className="pt-4 text-right">
-                  <div className="text-[11px] text-muted-foreground">Change</div>
-                  <div className="font-bold tabular-nums">{formatMoney(change, sym)}</div>
-                </div>
+              <div className="rounded-md border bg-muted/40 p-2 text-xs text-muted-foreground">
+                Cash sale — collect the full amount of {formatMoney(total, sym)}.
               </div>
             )}
+
             {stockProblem && (
               <div className="rounded-md border border-destructive/40 bg-destructive/10 p-2 text-xs font-medium text-destructive">
                 {stockProblem.name} only has {stockOf(stockProblem.product_id)} in stock. Reduce the quantity to charge this sale.
