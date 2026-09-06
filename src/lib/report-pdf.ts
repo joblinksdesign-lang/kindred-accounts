@@ -40,7 +40,7 @@ export function generateReportPdf(
   company: CompanySettings,
   logo: LoadedLogo | null = null,
 ): jsPDF {
-  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const doc = new jsPDF({ unit: "mm", format: "a4", orientation: report.orientation ?? "portrait" });
   const W = doc.internal.pageSize.getWidth();
   const accent = hexToRgb(company.brand_color);
   const M = 14;
