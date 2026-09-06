@@ -25,9 +25,9 @@ import {
 export const Route = createFileRoute("/_authenticated/pos")({
   head: () => ({
     meta: [
-      { title: "Point of Sale — SmartInvoice Pro" },
+      { title: "Point of Sale — SoftfrackPos" },
       { name: "description", content: "Fast counter selling: tap products, take payment and print a thermal receipt instantly." },
-      { property: "og:title", content: "Point of Sale — SmartInvoice Pro" },
+      { property: "og:title", content: "Point of Sale — SoftfrackPos" },
       { property: "og:description", content: "Fast counter selling with instant receipts and live stock deduction." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

@@ -15,9 +15,9 @@ import { useCurrentUser } from "@/lib/use-current-user";
 export const Route = createFileRoute("/_authenticated/profile")({
   head: () => ({
     meta: [
-      { title: "My profile — SmartInvoice Pro" },
-      { name: "description", content: "Update your name, phone number and sign-in password for your SmartInvoice Pro account." },
-      { property: "og:title", content: "My profile — SmartInvoice Pro" },
+      { title: "My profile — SoftfrackPos" },
+      { name: "description", content: "Update your name, phone number and sign-in password for your SoftfrackPos account." },
+      { property: "og:title", content: "My profile — SoftfrackPos" },
       { property: "og:description", content: "Update your personal details and password." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

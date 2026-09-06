@@ -1,8 +1,8 @@
 CREATE TABLE public.pwa_settings (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   singleton boolean NOT NULL DEFAULT true UNIQUE,
-  app_name text NOT NULL DEFAULT 'SmartInvoice Pro',
-  short_name text NOT NULL DEFAULT 'SmartInvoice',
+  app_name text NOT NULL DEFAULT 'SoftfrackPos',
+  short_name text NOT NULL DEFAULT 'SoftfrackPos',
   description text NOT NULL DEFAULT 'Invoicing, receipts, inventory and POS for growing businesses.',
   theme_color text NOT NULL DEFAULT '#0B6E4F',
   background_color text NOT NULL DEFAULT '#F5F3EE',

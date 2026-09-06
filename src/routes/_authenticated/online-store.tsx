@@ -19,9 +19,9 @@ import { useTenantModules } from "@/lib/modules";
 export const Route = createFileRoute("/_authenticated/online-store")({
   head: () => ({
     meta: [
-      { title: "Online Store — SmartInvoice Pro" },
+      { title: "Online Store — SoftfrackPos" },
       { name: "description", content: "Publish your product catalogue and take WhatsApp orders from customers." },
-      { property: "og:title", content: "Online Store — SmartInvoice Pro" },
+      { property: "og:title", content: "Online Store — SoftfrackPos" },
       { property: "og:description", content: "Publish your product catalogue and take WhatsApp orders from customers." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
