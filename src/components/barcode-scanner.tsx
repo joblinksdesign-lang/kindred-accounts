@@ -139,7 +139,7 @@ export function BarcodeScannerDialog({ open, onOpenChange, onDetected }: Props) 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" onPointerDown={unlockAudio}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2"><ScanLine className="h-4 w-4" />Scan barcode</DialogTitle>
         </DialogHeader>
