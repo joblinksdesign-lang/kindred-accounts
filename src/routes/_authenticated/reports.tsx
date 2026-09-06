@@ -13,7 +13,8 @@ import { formatMoney, useCompanyLogoUrl, useCompanySettings } from "@/lib/compan
 import { downloadCsv, downloadReportPdf, toCsv, type ReportColumn } from "@/lib/report-pdf";
 import { BarChart, Bar, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
 import { toast } from "sonner";
-import { Download, FileSpreadsheet } from "lucide-react";
+import { Download, FileSpreadsheet, AlertTriangle, TrendingDown, Trophy } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/reports")({
   head: () => ({
@@ -316,6 +317,15 @@ function ReportsPage() {
     const netProfit = grossProfit - expenseTotal;
     const collected = (data?.payments ?? []).filter((p) => inRange(p.payment_date)).reduce((s, p) => s + Number(p.amount), 0);
 
+    const dayMs = 86400000;
+    const rangeDays = Math.max(1, Math.round((new Date(to + "T00:00:00").getTime() - new Date(from + "T00:00:00").getTime()) / dayMs) + 1);
+    const prevFrom = new Date(new Date(from + "T00:00:00").getTime() - rangeDays * dayMs).toISOString().slice(0, 10);
+    const prevTo = new Date(new Date(from + "T00:00:00").getTime() - dayMs).toISOString().slice(0, 10);
+    const allInvoices = data?.invoices ?? [];
+    const prevRevenue = allInvoices
+      .filter((i) => i.invoice_date && i.invoice_date >= prevFrom && i.invoice_date <= prevTo && counted(i.status))
+      .reduce((s, i) => s + Number(i.total), 0);
+
     const byCategory = new Map<string, number>();
     expenses.forEach((e) => {
       const key = e.category?.trim() || "Uncategorised";
@@ -326,11 +336,41 @@ function ReportsPage() {
       .sort((a, b) => b.amount - a.amount);
 
     return {
-      revenue, cogs, grossProfit, expenseTotal, netProfit, collected, expenseCategories,
+      revenue, cogs, grossProfit, expenseTotal, netProfit, collected, expenseCategories, prevRevenue,
       grossMargin: revenue > 0 ? (grossProfit / revenue) * 100 : 0,
       netMargin: revenue > 0 ? (netProfit / revenue) * 100 : 0,
     };
   }, [data, from, to]);
+
+  const plMessage = useMemo(() => {
+    const net = pl.netProfit;
+    const current = pl.revenue;
+    const previous = pl.prevRevenue ?? 0;
+    const changePct = previous > 0 ? ((current - previous) / previous) * 100 : 0;
+    const salesDown = previous > 0 && current < previous && changePct <= -10;
+    if (net < 0) {
+      return {
+        tone: "danger" as const,
+        title: "You are running at a loss",
+        body: `Your business recorded a loss of ${formatMoney(Math.abs(net), sym)} this period. Review your costs, pricing, and sales strategy to turn things around.`,
+        Icon: AlertTriangle,
+      };
+    }
+    if (salesDown) {
+      return {
+        tone: "warning" as const,
+        title: "Sales are declining",
+        body: `Sales dropped by ${Math.abs(changePct).toFixed(1)}% compared to the previous period. Your business may be facing a crisis — investigate low sales, stock levels, and customer outreach.`,
+        Icon: TrendingDown,
+      };
+    }
+    return {
+      tone: "success" as const,
+      title: "Congratulations, keep pushing!",
+      body: `You have made a profit of ${formatMoney(net, sym)} this period. Great work — keep the momentum going.`,
+      Icon: Trophy,
+    };
+  }, [pl.netProfit, pl.revenue, pl.prevRevenue, sym]);
 
   const plColumns: ReportColumn[] = [
     { header: "Line", align: "left" },
@@ -724,6 +764,29 @@ function ReportsPage() {
 
         <TabsContent value="profit" className="space-y-4">
           <Card className="p-5 shadow-soft border-0 space-y-4">
+            <div className={cn("rounded-xl border p-4 border-l-4 shadow-soft",
+              plMessage.tone === "success" ? "border-l-emerald-500 bg-emerald-50/40 dark:bg-emerald-950/20"
+              : plMessage.tone === "warning" ? "border-l-amber-500 bg-amber-50/40 dark:bg-amber-950/20"
+              : "border-l-destructive bg-destructive/5"
+            )}>
+              <div className="flex items-start gap-3">
+                <div className={cn("grid h-10 w-10 shrink-0 place-items-center rounded-full",
+                  plMessage.tone === "success" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"
+                  : plMessage.tone === "warning" ? "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300"
+                  : "bg-destructive/10 text-destructive"
+                )}>
+                  <plMessage.Icon className="h-5 w-5" />
+                </div>
+                <div>
+                  <h4 className={cn("font-semibold",
+                    plMessage.tone === "success" ? "text-emerald-800 dark:text-emerald-200"
+                    : plMessage.tone === "warning" ? "text-amber-800 dark:text-amber-200"
+                    : "text-destructive"
+                  )}>{plMessage.title}</h4>
+                  <p className="text-sm mt-0.5 text-muted-foreground leading-relaxed">{plMessage.body}</p>
+                </div>
+              </div>
+            </div>
             <div className="flex flex-wrap items-end gap-3">
               <div>
                 <h3 className="font-semibold">Profit &amp; loss</h3>

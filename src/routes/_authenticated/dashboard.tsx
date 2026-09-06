@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import type { DateRange } from "react-day-picker";
 import {
-  DollarSign, Users, Package, FileText, AlertTriangle, TrendingUp, Plus, ArrowUpRight, Calendar as CalendarIcon,
+  DollarSign, Users, Package, FileText, AlertTriangle, TrendingUp, TrendingDown, Trophy, Plus, ArrowUpRight, Calendar as CalendarIcon,
 } from "lucide-react";
 import {
   Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid,
@@ -92,6 +92,24 @@ function Dashboard() {
       const periodInvoiced = invs.filter((i) => inPeriod(i.invoice_date)).reduce((s, i) => s + Number(i.total), 0);
       const periodInvoiceCount = invs.filter((i) => inPeriod(i.invoice_date)).length;
 
+      // Previous period sales for trend comparison
+      const prevStart = new Date(start);
+      if (period === "day") prevStart.setDate(prevStart.getDate() - 1);
+      else if (period === "week") prevStart.setDate(prevStart.getDate() - 7);
+      else if (period === "month") prevStart.setMonth(prevStart.getMonth() - 1);
+      else if (period === "custom" && customFrom && customTo) {
+        const msDay = 86400000;
+        const spanDays = Math.max(1, Math.round((customTo.getTime() - customFrom.getTime()) / msDay) + 1);
+        prevStart.setTime(customFrom.getTime() - spanDays * msDay);
+      } else {
+        prevStart.setMonth(prevStart.getMonth() - 1);
+      }
+      const prevEnd = new Date(start.getTime() - 1);
+      const prevStartISO = prevStart.toISOString().slice(0, 10);
+      const prevEndISO = prevEnd.toISOString().slice(0, 10);
+      const inPrevPeriod = (d?: string | null) => !!d && d >= prevStartISO && d <= prevEndISO;
+      const prevPeriodInvoiced = invs.filter((i) => inPrevPeriod(i.invoice_date)).reduce((s, i) => s + Number(i.total), 0);
+
       // Profit & loss for the selected period
       const soldInvoices = invs.filter((i) => inPeriod(i.invoice_date) && i.status !== "cancelled" && i.status !== "draft");
       const plRevenue = soldInvoices.reduce((s, i) => s + Number(i.total), 0);
@@ -165,7 +183,7 @@ function Dashboard() {
         totalRevenue, outstanding, lowStock,
         totalCustomers: customers.count ?? 0,
         totalProducts: (products.data ?? []).length,
-        periodSales, periodInvoiced, periodInvoiceCount,
+        periodSales, periodInvoiced, periodInvoiceCount, prevPeriodInvoiced,
         series, statusBreakdown,
         pl: { revenue: plRevenue, cogs: plCogs, grossProfit, expenses: plExpenses, netProfit, margin },
         recentInvoices: invs.slice(0, 6),
@@ -199,6 +217,36 @@ function Dashboard() {
   ];
 
   const COLORS = ["#0B6E4F", "#F59E0B", "#3B82F6", "#8B5CF6", "#10B981", "#EF4444"];
+
+  const plMessage = (() => {
+    const net = stats?.pl.netProfit ?? 0;
+    const current = stats?.pl.revenue ?? 0;
+    const previous = stats?.prevPeriodInvoiced ?? 0;
+    const changePct = previous > 0 ? ((current - previous) / previous) * 100 : 0;
+    const salesDown = previous > 0 && current < previous && changePct <= -10;
+    if (net < 0) {
+      return {
+        tone: "danger" as const,
+        title: "You are running at a loss",
+        body: `Your business recorded a loss of ${formatMoney(Math.abs(net), sym)} this period. Review your costs, pricing, and sales strategy to turn things around.`,
+        Icon: AlertTriangle,
+      };
+    }
+    if (salesDown) {
+      return {
+        tone: "warning" as const,
+        title: "Sales are declining",
+        body: `Sales dropped by ${Math.abs(changePct).toFixed(1)}% compared to the previous period. Your business may be facing a crisis — investigate low sales, stock levels, and customer outreach.`,
+        Icon: TrendingDown,
+      };
+    }
+    return {
+      tone: "success" as const,
+      title: "Congratulations, keep pushing!",
+      body: `You have made a profit of ${formatMoney(net, sym)} this period. Great work — keep the momentum going.`,
+      Icon: Trophy,
+    };
+  })();
 
   return (
     <div className="space-y-6">
@@ -283,6 +331,29 @@ function Dashboard() {
             <p className="text-xs text-muted-foreground">{periodLabel} — sales less cost of goods and expenses</p>
           </div>
           <Button asChild variant="outline" size="sm"><Link to="/reports">Full report</Link></Button>
+        </div>
+        <div className={cn("rounded-xl border p-4 border-l-4 shadow-soft mb-4",
+          plMessage.tone === "success" ? "border-l-emerald-500 bg-emerald-50/40 dark:bg-emerald-950/20"
+          : plMessage.tone === "warning" ? "border-l-amber-500 bg-amber-50/40 dark:bg-amber-950/20"
+          : "border-l-destructive bg-destructive/5"
+        )}>
+          <div className="flex items-start gap-3">
+            <div className={cn("grid h-10 w-10 shrink-0 place-items-center rounded-full",
+              plMessage.tone === "success" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300"
+              : plMessage.tone === "warning" ? "bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300"
+              : "bg-destructive/10 text-destructive"
+            )}>
+              <plMessage.Icon className="h-5 w-5" />
+            </div>
+            <div>
+              <h4 className={cn("font-semibold",
+                plMessage.tone === "success" ? "text-emerald-800 dark:text-emerald-200"
+                : plMessage.tone === "warning" ? "text-amber-800 dark:text-amber-200"
+                : "text-destructive"
+              )}>{plMessage.title}</h4>
+              <p className="text-sm mt-0.5 text-muted-foreground leading-relaxed">{plMessage.body}</p>
+            </div>
+          </div>
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
           {[
