@@ -115,7 +115,15 @@ function AppSidebar() {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isActive("/profile")} tooltip="My profile">
+                    <Link to="/profile" className="flex items-center gap-2">
+                      <UserRound className="h-4 w-4" /><span>My profile</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               </SidebarMenu>
+
             </SidebarGroupContent>
           </SidebarGroup>
         )}
