@@ -218,6 +218,36 @@ function Dashboard() {
 
   const COLORS = ["#0B6E4F", "#F59E0B", "#3B82F6", "#8B5CF6", "#10B981", "#EF4444"];
 
+  const plMessage = (() => {
+    const net = stats?.pl.netProfit ?? 0;
+    const current = stats?.pl.revenue ?? 0;
+    const previous = stats?.prevPeriodInvoiced ?? 0;
+    const changePct = previous > 0 ? ((current - previous) / previous) * 100 : 0;
+    const salesDown = previous > 0 && current < previous && changePct <= -10;
+    if (net < 0) {
+      return {
+        tone: "danger" as const,
+        title: "You are running at a loss",
+        body: `Your business recorded a loss of ${formatMoney(Math.abs(net), sym)} this period. Review your costs, pricing, and sales strategy to turn things around.`,
+        Icon: AlertTriangle,
+      };
+    }
+    if (salesDown) {
+      return {
+        tone: "warning" as const,
+        title: "Sales are declining",
+        body: `Sales dropped by ${Math.abs(changePct).toFixed(1)}% compared to the previous period. Your business may be facing a crisis — investigate low sales, stock levels, and customer outreach.`,
+        Icon: TrendingDown,
+      };
+    }
+    return {
+      tone: "success" as const,
+      title: "Congratulations, keep pushing!",
+      body: `You have made a profit of ${formatMoney(net, sym)} this period. Great work — keep the momentum going.`,
+      Icon: Trophy,
+    };
+  })();
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
