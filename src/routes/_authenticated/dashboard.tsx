@@ -275,6 +275,38 @@ function Dashboard() {
         ))}
       </div>
 
+      {/* Profit & loss */}
+      <Card className="p-5 shadow-soft border-0">
+        <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
+          <div>
+            <h3 className="font-semibold">Profit &amp; loss</h3>
+            <p className="text-xs text-muted-foreground">{periodLabel} — sales less cost of goods and expenses</p>
+          </div>
+          <Button asChild variant="outline" size="sm"><Link to="/reports">Full report</Link></Button>
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+          {[
+            { label: "Revenue", value: stats?.pl.revenue ?? 0, tone: "plain" },
+            { label: "Cost of goods", value: -(stats?.pl.cogs ?? 0), tone: "cost" },
+            { label: "Gross profit", value: stats?.pl.grossProfit ?? 0, tone: "plain" },
+            { label: "Expenses", value: -(stats?.pl.expenses ?? 0), tone: "cost" },
+            { label: "Net profit", value: stats?.pl.netProfit ?? 0, tone: "net" },
+          ].map((k) => (
+            <div key={k.label} className={`rounded-lg border p-3 ${k.tone === "net" ? "bg-primary/5 border-primary/20" : "bg-card"}`}>
+              <div className="text-[11px] uppercase tracking-wide text-muted-foreground leading-tight">{k.label}</div>
+              <div className={`mt-1.5 text-base sm:text-lg xl:text-xl font-bold tabular-nums break-words [overflow-wrap:anywhere] ${
+                k.tone === "cost" ? "text-destructive" : k.tone === "net" ? (k.value < 0 ? "text-destructive" : "text-primary") : ""
+              }`}>
+                {formatMoney(k.value, sym)}
+              </div>
+              {k.label === "Net profit" && (
+                <div className="text-[11px] text-muted-foreground mt-0.5">Margin {(stats?.pl.margin ?? 0).toFixed(1)}%</div>
+              )}
+            </div>
+          ))}
+        </div>
+      </Card>
+
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
