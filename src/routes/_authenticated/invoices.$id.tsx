@@ -16,6 +16,8 @@ import { formatMoney, formatDate, useCompanySettings } from "@/lib/company";
 import { useActiveTenantId } from "@/lib/tenant";
 import { generateInvoicePdf, loadCompanyLogo, savePdf } from "@/lib/pdf";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
+import { sendPaymentReceiptEmail } from "@/lib/emails.functions";
 
 export const Route = createFileRoute("/_authenticated/invoices/$id")({
   head: () => ({ meta: [{ title: "Invoice" }] }),
@@ -28,6 +30,7 @@ function InvoiceDetail() {
   const qc = useQueryClient();
   const tenantId = useActiveTenantId();
   const { data: company } = useCompanySettings();
+  const sendReceiptEmail = useServerFn(sendPaymentReceiptEmail);
   const sym = company?.currency_symbol || "USh ";
   const [payOpen, setPayOpen] = useState(false);
 
