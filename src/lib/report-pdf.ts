@@ -11,7 +11,9 @@ export type ReportTable = {
   columns: ReportColumn[];
   rows: (string | number)[][];
   totalsRow?: (string | number)[];
+  orientation?: "portrait" | "landscape";
 };
+
 
 export function toCsv(columns: ReportColumn[], rows: (string | number)[][]) {
   const esc = (v: string | number) => {
