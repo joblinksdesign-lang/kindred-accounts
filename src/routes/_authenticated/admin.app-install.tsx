@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { PageHeader } from "@/components/page-helpers";
 import {
-  DISPLAY_MODES, ICON_SIZE_OPTIONS, fileToDataUrl, useInstallPrompt, usePwaSettings,
+  DISPLAY_MODES, ICON_SIZE_OPTIONS, fileToDataUrl, refreshInstallAssets, useInstallPrompt, usePwaSettings,
   type PwaSettings,
 } from "@/lib/pwa";
 
