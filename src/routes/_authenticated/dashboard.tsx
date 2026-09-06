@@ -225,10 +225,19 @@ function Dashboard() {
     const changePct = previous > 0 ? ((current - previous) / previous) * 100 : 0;
     const salesDown = previous > 0 && current < previous && changePct <= -10;
     if (net < 0) {
+      const cogs = stats?.pl.cogs ?? 0;
+      const gross = stats?.pl.grossProfit ?? 0;
+      const expenses = stats?.pl.expenses ?? 0;
+      let cause = "Review your costs, prices, and sales to turn things around.";
+      if (gross < 0) {
+        cause = `The goods you sold cost ${formatMoney(cogs, sym)} to buy, but you sold them for only ${formatMoney(current, sym)}. Your selling prices are too low — raise prices or find cheaper suppliers.`;
+      } else if (expenses > gross) {
+        cause = `Your other expenses (rent, transport, salaries…) of ${formatMoney(expenses, sym)} were bigger than the ${formatMoney(gross, sym)} left after paying for stock. Cut unnecessary expenses or sell more.`;
+      }
       return {
         tone: "danger" as const,
         title: "You are running at a loss",
-        body: `Your business recorded a loss of ${formatMoney(Math.abs(net), sym)} this period. Review your costs, pricing, and sales strategy to turn things around.`,
+        body: `Your business lost ${formatMoney(Math.abs(net), sym)} this period. ${cause}`,
         Icon: AlertTriangle,
       };
     }

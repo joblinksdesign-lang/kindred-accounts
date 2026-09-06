@@ -349,10 +349,17 @@ function ReportsPage() {
     const changePct = previous > 0 ? ((current - previous) / previous) * 100 : 0;
     const salesDown = previous > 0 && current < previous && changePct <= -10;
     if (net < 0) {
+      const topExpense = pl.expenseCategories[0];
+      let cause = "Review your costs, prices, and sales to turn things around.";
+      if (pl.grossProfit < 0) {
+        cause = `The goods you sold cost ${formatMoney(pl.cogs, sym)} to buy, but you sold them for only ${formatMoney(pl.revenue, sym)}. Your selling prices are too low — raise prices or find cheaper suppliers.`;
+      } else if (pl.expenseTotal > pl.grossProfit) {
+        cause = `Your expenses (${formatMoney(pl.expenseTotal, sym)}) ate all the ${formatMoney(pl.grossProfit, sym)} left after buying stock.${topExpense ? ` Biggest expense: ${topExpense.category} at ${formatMoney(topExpense.amount, sym)}.` : ""} Cut expenses or sell more.`;
+      }
       return {
         tone: "danger" as const,
         title: "You are running at a loss",
-        body: `Your business recorded a loss of ${formatMoney(Math.abs(net), sym)} this period. Review your costs, pricing, and sales strategy to turn things around.`,
+        body: `Your business lost ${formatMoney(Math.abs(net), sym)} in this period. ${cause}`,
         Icon: AlertTriangle,
       };
     }
