@@ -311,6 +311,20 @@ function Storefront() {
                         </p>
                       </Card>
                     )}
+                    <div className="space-y-1.5">
+                      <Label htmlFor="wa-msg" className="text-xs">Message to the shop owner</Label>
+                      <Textarea
+                        id="wa-msg"
+                        value={waMsg}
+                        onChange={(e) => setWaMsg(e.target.value)}
+                        rows={10}
+                        className="text-xs leading-relaxed"
+                        placeholder="Your order details appear here — edit if you like, then send."
+                      />
+                      <p className="text-[11px] text-muted-foreground">
+                        This message is filled in from your quotation. Tapping send opens the shop owner's WhatsApp with it ready to go.
+                      </p>
+                    </div>
                     <Button className="w-full gap-2 text-white" style={{ background: "#25D366" }} onClick={() => sendWhatsApp(result)}>
                       <Send className="h-4 w-4" />Send order to shop owner
                     </Button>
