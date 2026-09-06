@@ -86,7 +86,7 @@ export function generateReportPdf(
     theme: "striped",
     headStyles: { fillColor: accent, textColor: 255, fontStyle: "bold" },
     footStyles: { fillColor: [241, 245, 249], textColor: [15, 23, 42], fontStyle: "bold" },
-    styles: { font: "helvetica", fontSize: 9.5, cellPadding: 2.6, overflow: "linebreak", valign: "middle", lineColor: [226, 232, 240] },
+    styles: { font: "helvetica", fontSize: report.columns.length > 8 ? 7.5 : 9.5, cellPadding: report.columns.length > 8 ? 1.8 : 2.6, overflow: "linebreak", valign: "middle", lineColor: [226, 232, 240] },
     columnStyles,
     margin: { left: M, right: M, bottom: 18 },
     didParseCell: (d) => {
