@@ -725,7 +725,142 @@ function ReportsPage() {
             ))}
           </Card>
         </TabsContent>
+
+        <TabsContent value="profit" className="space-y-4">
+          <Card className="p-5 shadow-soft border-0 space-y-4">
+            <div className="flex flex-wrap items-end gap-3">
+              <div>
+                <h3 className="font-semibold">Profit &amp; loss</h3>
+                <p className="text-xs text-muted-foreground">Sales less cost of goods sold and expenses.</p>
+              </div>
+              <div>
+                <Label className="text-xs">From</Label>
+                <Input type="date" value={from} max={to} onChange={(e) => setFrom(e.target.value)} className="h-9 w-[9.5rem]" />
+              </div>
+              <div>
+                <Label className="text-xs">To</Label>
+                <Input type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} className="h-9 w-[9.5rem]" />
+              </div>
+              <div className="ml-auto flex gap-2">
+                <Button size="sm" variant="outline" className="h-9"
+                  onClick={() => downloadCsv(`profit-and-loss-${from}-to-${to}.csv`, toCsv(plColumns, [...plReportRows, plTotalsRow]))}>
+                  <FileSpreadsheet className="h-4 w-4 mr-1.5" />CSV
+                </Button>
+                <Button size="sm" className="h-9 gradient-emerald text-white" disabled={!company} onClick={exportPlPdf}>
+                  <Download className="h-4 w-4 mr-1.5" />PDF
+                </Button>
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-4">
+              {[
+                { label: "Revenue", value: formatMoney(pl.revenue, sym) },
+                { label: "Cost of goods", value: formatMoney(pl.cogs, sym) },
+                { label: "Gross profit", value: formatMoney(pl.grossProfit, sym) },
+                { label: "Net profit", value: formatMoney(pl.netProfit, sym) },
+              ].map((k) => (
+                <div key={k.label} className="rounded-lg border bg-card p-3">
+                  <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{k.label}</div>
+                  <div className="mt-1 text-base sm:text-lg xl:text-xl font-bold tabular-nums break-words [overflow-wrap:anywhere]">{k.value}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow><TableHead>Line</TableHead><TableHead className="text-right">Amount</TableHead></TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow><TableCell>Revenue (invoiced sales)</TableCell><TableCell className="text-right tabular-nums whitespace-nowrap">{formatMoney(pl.revenue, sym)}</TableCell></TableRow>
+                  <TableRow><TableCell>Cost of goods sold</TableCell><TableCell className="text-right tabular-nums whitespace-nowrap text-destructive">- {formatMoney(pl.cogs, sym)}</TableCell></TableRow>
+                  <TableRow className="bg-muted/40 font-semibold"><TableCell>Gross profit ({pl.grossMargin.toFixed(1)}%)</TableCell><TableCell className="text-right tabular-nums whitespace-nowrap">{formatMoney(pl.grossProfit, sym)}</TableCell></TableRow>
+                  {pl.expenseCategories.map((c) => (
+                    <TableRow key={c.category}>
+                      <TableCell className="pl-6 capitalize">{c.category}</TableCell>
+                      <TableCell className="text-right tabular-nums whitespace-nowrap text-destructive">- {formatMoney(c.amount, sym)}</TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow><TableCell>Total expenses</TableCell><TableCell className="text-right tabular-nums whitespace-nowrap text-destructive">- {formatMoney(pl.expenseTotal, sym)}</TableCell></TableRow>
+                  <TableRow className="bg-primary/5 font-bold">
+                    <TableCell>Net profit / (loss) — {pl.netMargin.toFixed(1)}% margin</TableCell>
+                    <TableCell className={`text-right tabular-nums whitespace-nowrap ${pl.netProfit < 0 ? "text-destructive" : "text-primary"}`}>{formatMoney(pl.netProfit, sym)}</TableCell>
+                  </TableRow>
+                  <TableRow><TableCell className="text-muted-foreground">Cash collected in period</TableCell><TableCell className="text-right tabular-nums whitespace-nowrap">{formatMoney(pl.collected, sym)}</TableCell></TableRow>
+                </TableBody>
+              </Table>
+            </div>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="audit" className="space-y-4">
+          <Card className="p-5 shadow-soft border-0 space-y-4">
+            <div className="flex flex-wrap items-end gap-3">
+              <div>
+                <h3 className="font-semibold">Audit trail</h3>
+                <p className="text-xs text-muted-foreground">Every invoice, payment, expense and stock change with the user who made it.</p>
+              </div>
+              <div>
+                <Label className="text-xs">From</Label>
+                <Input type="date" value={from} max={to} onChange={(e) => setFrom(e.target.value)} className="h-9 w-[9.5rem]" />
+              </div>
+              <div>
+                <Label className="text-xs">To</Label>
+                <Input type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} className="h-9 w-[9.5rem]" />
+              </div>
+              <div className="flex gap-1 flex-wrap">
+                {["all", "Invoice created", "Payment received", "Expense recorded", "Stock movement"].map((t) => (
+                  <Button key={t} size="sm" variant={auditType === t ? "default" : "outline"} className={`h-9 ${auditType === t ? "gradient-emerald text-white" : ""}`} onClick={() => setAuditType(t)}>
+                    {t === "all" ? "All" : t.split(" ")[0]}
+                  </Button>
+                ))}
+              </div>
+              <div className="ml-auto flex gap-2">
+                <Button size="sm" variant="outline" className="h-9" disabled={!auditReportRows.length}
+                  onClick={() => downloadCsv(`audit-trail-${from}-to-${to}.csv`, toCsv(auditColumns, auditReportRows))}>
+                  <FileSpreadsheet className="h-4 w-4 mr-1.5" />CSV
+                </Button>
+                <Button size="sm" className="h-9 gradient-emerald text-white" disabled={!auditReportRows.length || !company} onClick={exportAuditPdf}>
+                  <Download className="h-4 w-4 mr-1.5" />PDF (A4 landscape)
+                </Button>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="whitespace-nowrap">Date &amp; time</TableHead>
+                    <TableHead>Activity</TableHead>
+                    <TableHead>Details</TableHead>
+                    <TableHead>Reference</TableHead>
+                    <TableHead className="text-right">Amount / qty</TableHead>
+                    <TableHead>User</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredAudit.length === 0 ? (
+                    <TableRow><TableCell colSpan={6} className="py-10 text-center text-sm text-muted-foreground">No recorded activity in this period.</TableCell></TableRow>
+                  ) : filteredAudit.slice(0, 300).map((a, i) => (
+                    <TableRow key={`${a.at}-${i}`}>
+                      <TableCell className="whitespace-nowrap text-xs">{new Date(a.at).toLocaleString()}</TableCell>
+                      <TableCell className="whitespace-nowrap font-medium">{a.type}</TableCell>
+                      <TableCell className="capitalize">{a.detail || "—"}</TableCell>
+                      <TableCell className="whitespace-nowrap">{a.reference || "—"}</TableCell>
+                      <TableCell className="text-right tabular-nums whitespace-nowrap">{a.amount}</TableCell>
+                      <TableCell className="whitespace-nowrap">{a.user}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              {filteredAudit.length > 300 && (
+                <p className="text-xs text-muted-foreground mt-2">Showing the latest 300 of {filteredAudit.length} records — download the PDF or CSV for the full list.</p>
+              )}
+            </div>
+          </Card>
+        </TabsContent>
       </Tabs>
+
     </div>
   );
 }
