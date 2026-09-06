@@ -9,6 +9,27 @@ type Props = {
   onDetected: (code: string) => void;
 };
 
+/** Short confirmation tone so the user hears a successful scan. */
+function beep() {
+  try {
+    const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    const ctx = new Ctx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "square";
+    osc.frequency.value = 1250;
+    gain.gain.setValueAtTime(0.12, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.14);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.15);
+    osc.onended = () => void ctx.close();
+    navigator.vibrate?.(60);
+  } catch {
+    /* audio is a nicety — ignore failures */
+  }
+}
+
 /** Camera barcode scanner. ZXing is loaded lazily so it never runs during SSR. */
 export function BarcodeScannerDialog({ open, onOpenChange, onDetected }: Props) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
