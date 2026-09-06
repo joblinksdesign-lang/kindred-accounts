@@ -77,6 +77,7 @@ function Storefront() {
   const [category, setCategory] = useState<string>("all");
   const [open, setOpen] = useState(false);
   const [result, setResult] = useState<StoreOrderResult | null>(null);
+  const [waMsg, setWaMsg] = useState("");
 
   const categories = useMemo(
     () => Array.from(new Set(products.map((p) => p.category).filter(Boolean))) as string[],
@@ -163,7 +164,15 @@ function Storefront() {
     onSuccess: (res) => {
       setResult(res);
       setCart([]);
+      setWaMsg(buildWhatsAppMessage(res, false));
       toast.success(`Order ${res.quoteNumber} created`);
+      // Make sending effortless: try to open the shop owner's WhatsApp straight away.
+      // If the browser blocks the popup, the green button below does the same thing.
+      const digits = (res.whatsappNumber || "").replace(/\D/g, "");
+      if (digits) {
+        const w = window.open(`https://wa.me/${digits}?text=${encodeURIComponent(buildWhatsAppMessage(res, false))}`, "_blank");
+        if (!w) toast.info("Tap the green WhatsApp button to send your order");
+      }
     },
     onError: (e: Error) => toast.error(e.message || "Could not submit your order"),
   });
@@ -221,30 +230,43 @@ function Storefront() {
     }
   };
 
-  const sendWhatsApp = async (res: StoreOrderResult) => {
-    await downloadPdf(res);
-    const digits = (res.whatsappNumber || "").replace(/\D/g, "");
-    if (!digits) {
-      toast.error("This shop hasn't added a WhatsApp number yet.");
-      return;
-    }
-    const lines = [
+  // Builds the WhatsApp notice from the quotation itself — customer, items and totals.
+  const buildWhatsAppMessage = (res: StoreOrderResult, pdfReady: boolean) =>
+    [
       `*New order — ${company.company_name}*`,
       `Quotation: ${res.quoteNumber}`,
+      `Date: ${res.date}`,
       res.customerCode ? `My shop code: ${res.customerCode}` : null,
       `Name: ${res.customerName}`,
       `Phone: ${res.customerPhone}`,
       res.customerAddress ? `Address: ${res.customerAddress}` : null,
       "",
+      "*Items*",
       ...res.items.map((i) => `• ${i.description} x${i.quantity} — ${formatMoney(i.line_total, symbol)}`),
       "",
       `Subtotal: ${formatMoney(res.subtotal, symbol)}`,
       res.taxAmount ? `Tax: ${formatMoney(res.taxAmount, symbol)}` : null,
       `*Total: ${formatMoney(res.total, symbol)}*`,
       "",
-      "The quotation PDF has been downloaded to my device — attaching it here.",
-    ].filter(Boolean);
-    window.open(`https://wa.me/${digits}?text=${encodeURIComponent(lines.join("\n"))}`, "_blank");
+      "Please confirm this quotation and let me know when it will be ready.",
+      pdfReady
+        ? "The quotation PDF has been downloaded to my device — attaching it here."
+        : "I can also share the quotation PDF here if you need it.",
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+  const sendWhatsApp = async (res: StoreOrderResult) => {
+    const digits = (res.whatsappNumber || "").replace(/\D/g, "");
+    if (!digits) {
+      toast.error("This shop hasn't added a WhatsApp number yet.");
+      return;
+    }
+    await downloadPdf(res);
+    // Use whatever is in the message box (the customer may have edited it),
+    // refreshed to mention the PDF now that it has been downloaded.
+    const text = waMsg.trim() || buildWhatsAppMessage(res, true);
+    window.open(`https://wa.me/${digits}?text=${encodeURIComponent(text)}`, "_blank");
   };
 
 
@@ -289,6 +311,20 @@ function Storefront() {
                         </p>
                       </Card>
                     )}
+                    <div className="space-y-1.5">
+                      <Label htmlFor="wa-msg" className="text-xs">Message to the shop owner</Label>
+                      <Textarea
+                        id="wa-msg"
+                        value={waMsg}
+                        onChange={(e) => setWaMsg(e.target.value)}
+                        rows={10}
+                        className="text-xs leading-relaxed"
+                        placeholder="Your order details appear here — edit if you like, then send."
+                      />
+                      <p className="text-[11px] text-muted-foreground">
+                        This message is filled in from your quotation. Tapping send opens the shop owner's WhatsApp with it ready to go.
+                      </p>
+                    </div>
                     <Button className="w-full gap-2 text-white" style={{ background: "#25D366" }} onClick={() => sendWhatsApp(result)}>
                       <Send className="h-4 w-4" />Send order to shop owner
                     </Button>
