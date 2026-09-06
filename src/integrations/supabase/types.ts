@@ -1309,6 +1309,10 @@ export type Database = {
         }
         Returns: string
       }
+      schedule_plan_expiry_reminders: {
+        Args: { _key: string; _url: string }
+        Returns: string
+      }
     }
     Enums: {
       app_role: "admin" | "accountant" | "sales_agent" | "super_admin"
