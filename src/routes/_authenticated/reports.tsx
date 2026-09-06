@@ -66,18 +66,35 @@ function ReportsPage() {
   const { data } = useQuery({
     queryKey: ["reports"],
     queryFn: async () => {
-      const [inv, pay, cust, prod, exp] = await Promise.all([
-        supabase.from("invoices").select("invoice_date, total, balance, amount_paid, status, customer_id"),
-        supabase.from("payments").select("amount, payment_date, method"),
+      const [inv, pay, cust, prod, exp, itm, stk, prf] = await Promise.all([
+        supabase.from("invoices").select("id, invoice_number, invoice_date, total, balance, amount_paid, status, customer_id, created_at, created_by"),
+        supabase.from("payments").select("amount, payment_date, method, reference, created_at, created_by, invoice_id"),
         supabase.from("customers").select("id, name, company_name, email, phone, city, store_code"),
         supabase.from("products").select("name, quantity, reorder_level, unit_price, cost_price"),
-        supabase.from("expenses").select("expense_date, amount, category"),
+        supabase.from("expenses").select("expense_date, amount, category, description, vendor, created_at, created_by"),
+        supabase.from("invoice_items").select("quantity, description, invoices(invoice_date, status), products(name, cost_price)"),
+        supabase.from("stock_movements").select("change_qty, reason, reference, created_at, created_by, products(name)").order("created_at", { ascending: false }).limit(1000),
+        supabase.from("profiles").select("id, full_name, email"),
       ]);
       const invoices = inv.data ?? [];
       const payments = pay.data ?? [];
       const customers = cust.data ?? [];
       const products = prod.data ?? [];
-      const expenses = (exp.data ?? []) as { expense_date: string; amount: number; category: string | null }[];
+      const expenses = (exp.data ?? []) as {
+        expense_date: string; amount: number; category: string | null; description: string;
+        vendor: string | null; created_at: string; created_by: string | null;
+      }[];
+      const items = (itm.data ?? []) as unknown as {
+        quantity: number; description: string;
+        invoices: { invoice_date: string | null; status: string } | null;
+        products: { name: string; cost_price: number } | null;
+      }[];
+      const movements = (stk.data ?? []) as unknown as {
+        change_qty: number; reason: string; reference: string | null; created_at: string;
+        created_by: string | null; products: { name: string } | null;
+      }[];
+      const profiles = (prf.data ?? []) as { id: string; full_name: string | null; email: string | null }[];
+
 
       const monthly: { label: string; sales: number; collected: number }[] = [];
       for (let i = 11; i >= 0; i--) {
@@ -103,7 +120,7 @@ function ReportsPage() {
       const valuation = products.reduce((s, p) => s + Number(p.quantity) * Number(p.cost_price), 0);
       const retailValue = products.reduce((s, p) => s + Number(p.quantity) * Number(p.unit_price), 0);
 
-      return { monthly, customerBalances, methods, valuation, retailValue, products, invoices, payments, expenses, customers };
+      return { monthly, customerBalances, methods, valuation, retailValue, products, invoices, payments, expenses, customers, items, movements, profiles };
     },
   });
 
@@ -286,6 +303,148 @@ function ReportsPage() {
     setFrom(iso(d)); setTo(iso(new Date()));
   };
 
+  // ---- Profit & loss ----
+  const pl = useMemo(() => {
+    const inRange = (d?: string | null) => !!d && d >= from && d <= to;
+    const counted = (status?: string) => status !== "cancelled" && status !== "draft";
+    const invoices = (data?.invoices ?? []).filter((i) => inRange(i.invoice_date) && counted(i.status));
+    const items = (data?.items ?? []).filter((it) => it.invoices && inRange(it.invoices.invoice_date) && counted(it.invoices.status));
+    const expenses = (data?.expenses ?? []).filter((e) => inRange(e.expense_date));
+
+    const revenue = invoices.reduce((s, i) => s + Number(i.total), 0);
+    const cogs = items.reduce((s, it) => s + Number(it.quantity) * Number(it.products?.cost_price ?? 0), 0);
+    const grossProfit = revenue - cogs;
+    const expenseTotal = expenses.reduce((s, e) => s + Number(e.amount), 0);
+    const netProfit = grossProfit - expenseTotal;
+    const collected = (data?.payments ?? []).filter((p) => inRange(p.payment_date)).reduce((s, p) => s + Number(p.amount), 0);
+
+    const byCategory = new Map<string, number>();
+    expenses.forEach((e) => {
+      const key = e.category?.trim() || "Uncategorised";
+      byCategory.set(key, (byCategory.get(key) || 0) + Number(e.amount));
+    });
+    const expenseCategories = Array.from(byCategory.entries())
+      .map(([category, amount]) => ({ category, amount }))
+      .sort((a, b) => b.amount - a.amount);
+
+    return {
+      revenue, cogs, grossProfit, expenseTotal, netProfit, collected, expenseCategories,
+      grossMargin: revenue > 0 ? (grossProfit / revenue) * 100 : 0,
+      netMargin: revenue > 0 ? (netProfit / revenue) * 100 : 0,
+    };
+  }, [data, from, to]);
+
+  const plColumns: ReportColumn[] = [
+    { header: "Line", align: "left" },
+    { header: "Amount", align: "right", width: 40 },
+  ];
+  const plReportRows: (string | number)[][] = [
+    ["Revenue (invoiced sales)", formatMoney(pl.revenue, sym)],
+    ["Cost of goods sold", `- ${formatMoney(pl.cogs, sym)}`],
+    ["Gross profit", formatMoney(pl.grossProfit, sym)],
+    [`Gross margin`, `${pl.grossMargin.toFixed(1)}%`],
+    ...pl.expenseCategories.map((c) => [`Expense — ${c.category}`, `- ${formatMoney(c.amount, sym)}`]),
+    ["Total expenses", `- ${formatMoney(pl.expenseTotal, sym)}`],
+    ["Cash collected", formatMoney(pl.collected, sym)],
+    ["Net margin", `${pl.netMargin.toFixed(1)}%`],
+  ];
+  const plTotalsRow = ["Net profit / (loss)", formatMoney(pl.netProfit, sym)];
+
+  const exportPlPdf = async () => {
+    if (!company) return;
+    try {
+      await downloadReportPdf(
+        { title: "Profit & loss statement", subtitle: `${new Date(from + "T00:00:00").toLocaleDateString()} – ${new Date(to + "T00:00:00").toLocaleDateString()}`, columns: plColumns, rows: plReportRows, totalsRow: plTotalsRow },
+        company,
+        `profit-and-loss-${from}-to-${to}.pdf`,
+      );
+    } catch (err) {
+      toast.error("Could not create PDF", { description: (err as Error).message });
+    }
+  };
+
+  // ---- Audit trail ----
+  type AuditEntry = { at: string; type: string; detail: string; reference: string; amount: string; user: string };
+  const auditRows: AuditEntry[] = useMemo(() => {
+    const nameOf = (id?: string | null) => {
+      if (!id) return "System";
+      const p = (data?.profiles ?? []).find((x) => x.id === id);
+      return p?.full_name || p?.email || "Unknown user";
+    };
+    const inRange = (ts?: string | null) => !!ts && ts.slice(0, 10) >= from && ts.slice(0, 10) <= to;
+    const entries: AuditEntry[] = [];
+
+    (data?.invoices ?? []).forEach((i) => {
+      if (!inRange(i.created_at)) return;
+      entries.push({
+        at: i.created_at!, type: "Invoice created",
+        detail: `Invoice ${i.invoice_number} · ${i.status}`,
+        reference: i.invoice_number ?? "", amount: formatMoney(Number(i.total), sym), user: nameOf(i.created_by),
+      });
+    });
+    (data?.payments ?? []).forEach((p) => {
+      if (!inRange(p.created_at)) return;
+      entries.push({
+        at: p.created_at, type: "Payment received",
+        detail: String(p.method).replace("_", " "),
+        reference: p.reference || "", amount: formatMoney(Number(p.amount), sym), user: nameOf(p.created_by),
+      });
+    });
+    (data?.expenses ?? []).forEach((e) => {
+      if (!inRange(e.created_at)) return;
+      entries.push({
+        at: e.created_at, type: "Expense recorded",
+        detail: `${e.description}${e.vendor ? ` · ${e.vendor}` : ""}`,
+        reference: e.category || "", amount: `- ${formatMoney(Number(e.amount), sym)}`, user: nameOf(e.created_by),
+      });
+    });
+    (data?.movements ?? []).forEach((m) => {
+      if (!inRange(m.created_at)) return;
+      entries.push({
+        at: m.created_at, type: "Stock movement",
+        detail: `${m.products?.name ?? "Product"} · ${String(m.reason).replace("_", " ")}`,
+        reference: m.reference || "",
+        amount: `${Number(m.change_qty) > 0 ? "+" : ""}${Number(m.change_qty)}`,
+        user: nameOf(m.created_by),
+      });
+    });
+
+    return entries.sort((a, b) => (a.at < b.at ? 1 : -1));
+  }, [data, from, to, sym]);
+
+  const [auditType, setAuditType] = useState<string>("all");
+  const filteredAudit = auditType === "all" ? auditRows : auditRows.filter((a) => a.type === auditType);
+  const auditColumns: ReportColumn[] = [
+    { header: "#", align: "right", width: 8 },
+    { header: "Date & time", align: "left", width: 38 },
+    { header: "Activity", align: "left", width: 34 },
+    { header: "Details", align: "left", width: 78 },
+    { header: "Reference", align: "left", width: 38 },
+    { header: "Amount / qty", align: "right", width: 30 },
+    { header: "User", align: "left", width: 42 },
+  ];
+  const auditReportRows = filteredAudit.map((a, i) => [
+    i + 1, new Date(a.at).toLocaleString(), a.type, a.detail || "—", a.reference || "—", a.amount, a.user,
+  ]);
+
+  const exportAuditPdf = async () => {
+    if (!company) return;
+    try {
+      await downloadReportPdf(
+        {
+          title: "Audit trail",
+          subtitle: `${new Date(from + "T00:00:00").toLocaleDateString()} – ${new Date(to + "T00:00:00").toLocaleDateString()} · ${filteredAudit.length} records`,
+          columns: auditColumns, rows: auditReportRows, orientation: "landscape",
+        },
+        company,
+        `audit-trail-${from}-to-${to}.pdf`,
+      );
+    } catch (err) {
+      toast.error("Could not create PDF", { description: (err as Error).message });
+    }
+  };
+
+
   return (
     <div>
       {company && (
@@ -299,12 +458,15 @@ function ReportsPage() {
       )}
       <PageHeader title="Reports" subtitle="Sales, payments, expenses, inventory and customer reports." />
       <Tabs defaultValue="sales" className="space-y-4">
-        <TabsList>
+        <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="sales">Sales</TabsTrigger>
+          <TabsTrigger value="profit">Profit &amp; loss</TabsTrigger>
           <TabsTrigger value="customers">Customers</TabsTrigger>
           <TabsTrigger value="inventory">Inventory</TabsTrigger>
           <TabsTrigger value="financial">Financial</TabsTrigger>
+          <TabsTrigger value="audit">Audit</TabsTrigger>
         </TabsList>
+
 
         <TabsContent value="sales" className="space-y-4">
           <Card className="p-5 shadow-soft border-0 space-y-4">
@@ -563,7 +725,142 @@ function ReportsPage() {
             ))}
           </Card>
         </TabsContent>
+
+        <TabsContent value="profit" className="space-y-4">
+          <Card className="p-5 shadow-soft border-0 space-y-4">
+            <div className="flex flex-wrap items-end gap-3">
+              <div>
+                <h3 className="font-semibold">Profit &amp; loss</h3>
+                <p className="text-xs text-muted-foreground">Sales less cost of goods sold and expenses.</p>
+              </div>
+              <div>
+                <Label className="text-xs">From</Label>
+                <Input type="date" value={from} max={to} onChange={(e) => setFrom(e.target.value)} className="h-9 w-[9.5rem]" />
+              </div>
+              <div>
+                <Label className="text-xs">To</Label>
+                <Input type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} className="h-9 w-[9.5rem]" />
+              </div>
+              <div className="ml-auto flex gap-2">
+                <Button size="sm" variant="outline" className="h-9"
+                  onClick={() => downloadCsv(`profit-and-loss-${from}-to-${to}.csv`, toCsv(plColumns, [...plReportRows, plTotalsRow]))}>
+                  <FileSpreadsheet className="h-4 w-4 mr-1.5" />CSV
+                </Button>
+                <Button size="sm" className="h-9 gradient-emerald text-white" disabled={!company} onClick={exportPlPdf}>
+                  <Download className="h-4 w-4 mr-1.5" />PDF
+                </Button>
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-4">
+              {[
+                { label: "Revenue", value: formatMoney(pl.revenue, sym) },
+                { label: "Cost of goods", value: formatMoney(pl.cogs, sym) },
+                { label: "Gross profit", value: formatMoney(pl.grossProfit, sym) },
+                { label: "Net profit", value: formatMoney(pl.netProfit, sym) },
+              ].map((k) => (
+                <div key={k.label} className="rounded-lg border bg-card p-3">
+                  <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{k.label}</div>
+                  <div className="mt-1 text-base sm:text-lg xl:text-xl font-bold tabular-nums break-words [overflow-wrap:anywhere]">{k.value}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow><TableHead>Line</TableHead><TableHead className="text-right">Amount</TableHead></TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow><TableCell>Revenue (invoiced sales)</TableCell><TableCell className="text-right tabular-nums whitespace-nowrap">{formatMoney(pl.revenue, sym)}</TableCell></TableRow>
+                  <TableRow><TableCell>Cost of goods sold</TableCell><TableCell className="text-right tabular-nums whitespace-nowrap text-destructive">- {formatMoney(pl.cogs, sym)}</TableCell></TableRow>
+                  <TableRow className="bg-muted/40 font-semibold"><TableCell>Gross profit ({pl.grossMargin.toFixed(1)}%)</TableCell><TableCell className="text-right tabular-nums whitespace-nowrap">{formatMoney(pl.grossProfit, sym)}</TableCell></TableRow>
+                  {pl.expenseCategories.map((c) => (
+                    <TableRow key={c.category}>
+                      <TableCell className="pl-6 capitalize">{c.category}</TableCell>
+                      <TableCell className="text-right tabular-nums whitespace-nowrap text-destructive">- {formatMoney(c.amount, sym)}</TableCell>
+                    </TableRow>
+                  ))}
+                  <TableRow><TableCell>Total expenses</TableCell><TableCell className="text-right tabular-nums whitespace-nowrap text-destructive">- {formatMoney(pl.expenseTotal, sym)}</TableCell></TableRow>
+                  <TableRow className="bg-primary/5 font-bold">
+                    <TableCell>Net profit / (loss) — {pl.netMargin.toFixed(1)}% margin</TableCell>
+                    <TableCell className={`text-right tabular-nums whitespace-nowrap ${pl.netProfit < 0 ? "text-destructive" : "text-primary"}`}>{formatMoney(pl.netProfit, sym)}</TableCell>
+                  </TableRow>
+                  <TableRow><TableCell className="text-muted-foreground">Cash collected in period</TableCell><TableCell className="text-right tabular-nums whitespace-nowrap">{formatMoney(pl.collected, sym)}</TableCell></TableRow>
+                </TableBody>
+              </Table>
+            </div>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="audit" className="space-y-4">
+          <Card className="p-5 shadow-soft border-0 space-y-4">
+            <div className="flex flex-wrap items-end gap-3">
+              <div>
+                <h3 className="font-semibold">Audit trail</h3>
+                <p className="text-xs text-muted-foreground">Every invoice, payment, expense and stock change with the user who made it.</p>
+              </div>
+              <div>
+                <Label className="text-xs">From</Label>
+                <Input type="date" value={from} max={to} onChange={(e) => setFrom(e.target.value)} className="h-9 w-[9.5rem]" />
+              </div>
+              <div>
+                <Label className="text-xs">To</Label>
+                <Input type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} className="h-9 w-[9.5rem]" />
+              </div>
+              <div className="flex gap-1 flex-wrap">
+                {["all", "Invoice created", "Payment received", "Expense recorded", "Stock movement"].map((t) => (
+                  <Button key={t} size="sm" variant={auditType === t ? "default" : "outline"} className={`h-9 ${auditType === t ? "gradient-emerald text-white" : ""}`} onClick={() => setAuditType(t)}>
+                    {t === "all" ? "All" : t.split(" ")[0]}
+                  </Button>
+                ))}
+              </div>
+              <div className="ml-auto flex gap-2">
+                <Button size="sm" variant="outline" className="h-9" disabled={!auditReportRows.length}
+                  onClick={() => downloadCsv(`audit-trail-${from}-to-${to}.csv`, toCsv(auditColumns, auditReportRows))}>
+                  <FileSpreadsheet className="h-4 w-4 mr-1.5" />CSV
+                </Button>
+                <Button size="sm" className="h-9 gradient-emerald text-white" disabled={!auditReportRows.length || !company} onClick={exportAuditPdf}>
+                  <Download className="h-4 w-4 mr-1.5" />PDF (A4 landscape)
+                </Button>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="whitespace-nowrap">Date &amp; time</TableHead>
+                    <TableHead>Activity</TableHead>
+                    <TableHead>Details</TableHead>
+                    <TableHead>Reference</TableHead>
+                    <TableHead className="text-right">Amount / qty</TableHead>
+                    <TableHead>User</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredAudit.length === 0 ? (
+                    <TableRow><TableCell colSpan={6} className="py-10 text-center text-sm text-muted-foreground">No recorded activity in this period.</TableCell></TableRow>
+                  ) : filteredAudit.slice(0, 300).map((a, i) => (
+                    <TableRow key={`${a.at}-${i}`}>
+                      <TableCell className="whitespace-nowrap text-xs">{new Date(a.at).toLocaleString()}</TableCell>
+                      <TableCell className="whitespace-nowrap font-medium">{a.type}</TableCell>
+                      <TableCell className="capitalize">{a.detail || "—"}</TableCell>
+                      <TableCell className="whitespace-nowrap">{a.reference || "—"}</TableCell>
+                      <TableCell className="text-right tabular-nums whitespace-nowrap">{a.amount}</TableCell>
+                      <TableCell className="whitespace-nowrap">{a.user}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              {filteredAudit.length > 300 && (
+                <p className="text-xs text-muted-foreground mt-2">Showing the latest 300 of {filteredAudit.length} records — download the PDF or CSV for the full list.</p>
+              )}
+            </div>
+          </Card>
+        </TabsContent>
       </Tabs>
+
     </div>
   );
 }

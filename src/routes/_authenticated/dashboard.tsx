@@ -50,14 +50,23 @@ function Dashboard() {
   const { data: stats } = useQuery({
     queryKey: ["dashboard_stats", period, rangeKey],
     queryFn: async () => {
-      const [invoices, customers, products, payments] = await Promise.all([
+      const [invoices, customers, products, payments, expensesRes, itemsRes] = await Promise.all([
         supabase.from("invoices").select("id,total,balance,status,invoice_date,invoice_number,customer_id,created_at").order("created_at", { ascending: false }),
         supabase.from("customers").select("id", { count: "exact", head: true }),
         supabase.from("products").select("id,name,quantity,reorder_level"),
         supabase.from("payments").select("amount,payment_date,created_at").order("created_at", { ascending: false }).limit(500),
+        supabase.from("expenses").select("amount,expense_date"),
+        supabase.from("invoice_items").select("quantity,invoices(invoice_date,status),products(cost_price)"),
       ]);
       const invs = invoices.data ?? [];
       const pays = payments.data ?? [];
+      const expenseRows = (expensesRes.data ?? []) as { amount: number; expense_date: string }[];
+      const itemRows = (itemsRes.data ?? []) as unknown as {
+        quantity: number;
+        invoices: { invoice_date: string | null; status: string } | null;
+        products: { cost_price: number } | null;
+      }[];
+
       const totalRevenue = invs.reduce((s, i) => s + Number(i.total) - Number(i.balance), 0);
       const outstanding = invs.reduce((s, i) => s + Number(i.balance), 0);
       const lowStock = (products.data ?? []).filter((p) => Number(p.quantity) <= Number(p.reorder_level));
@@ -82,6 +91,18 @@ function Dashboard() {
       const periodSales = pays.filter((p) => inPeriod(p.payment_date)).reduce((s, p) => s + Number(p.amount), 0);
       const periodInvoiced = invs.filter((i) => inPeriod(i.invoice_date)).reduce((s, i) => s + Number(i.total), 0);
       const periodInvoiceCount = invs.filter((i) => inPeriod(i.invoice_date)).length;
+
+      // Profit & loss for the selected period
+      const soldInvoices = invs.filter((i) => inPeriod(i.invoice_date) && i.status !== "cancelled" && i.status !== "draft");
+      const plRevenue = soldInvoices.reduce((s, i) => s + Number(i.total), 0);
+      const plCogs = itemRows
+        .filter((it) => it.invoices && inPeriod(it.invoices.invoice_date) && it.invoices.status !== "cancelled" && it.invoices.status !== "draft")
+        .reduce((s, it) => s + Number(it.quantity) * Number(it.products?.cost_price ?? 0), 0);
+      const plExpenses = expenseRows.filter((e) => inPeriod(e.expense_date)).reduce((s, e) => s + Number(e.amount), 0);
+      const grossProfit = plRevenue - plCogs;
+      const netProfit = grossProfit - plExpenses;
+      const margin = plRevenue > 0 ? (netProfit / plRevenue) * 100 : 0;
+
 
       // Trend series based on period
       const series: { label: string; revenue: number }[] = [];
@@ -146,7 +167,9 @@ function Dashboard() {
         totalProducts: (products.data ?? []).length,
         periodSales, periodInvoiced, periodInvoiceCount,
         series, statusBreakdown,
+        pl: { revenue: plRevenue, cogs: plCogs, grossProfit, expenses: plExpenses, netProfit, margin },
         recentInvoices: invs.slice(0, 6),
+
       };
     },
   });
@@ -251,6 +274,38 @@ function Dashboard() {
           </motion.div>
         ))}
       </div>
+
+      {/* Profit & loss */}
+      <Card className="p-5 shadow-soft border-0">
+        <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
+          <div>
+            <h3 className="font-semibold">Profit &amp; loss</h3>
+            <p className="text-xs text-muted-foreground">{periodLabel} — sales less cost of goods and expenses</p>
+          </div>
+          <Button asChild variant="outline" size="sm"><Link to="/reports">Full report</Link></Button>
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+          {[
+            { label: "Revenue", value: stats?.pl.revenue ?? 0, tone: "plain" },
+            { label: "Cost of goods", value: -(stats?.pl.cogs ?? 0), tone: "cost" },
+            { label: "Gross profit", value: stats?.pl.grossProfit ?? 0, tone: "plain" },
+            { label: "Expenses", value: -(stats?.pl.expenses ?? 0), tone: "cost" },
+            { label: "Net profit", value: stats?.pl.netProfit ?? 0, tone: "net" },
+          ].map((k) => (
+            <div key={k.label} className={`rounded-lg border p-3 ${k.tone === "net" ? "bg-primary/5 border-primary/20" : "bg-card"}`}>
+              <div className="text-[11px] uppercase tracking-wide text-muted-foreground leading-tight">{k.label}</div>
+              <div className={`mt-1.5 text-base sm:text-lg xl:text-xl font-bold tabular-nums break-words [overflow-wrap:anywhere] ${
+                k.tone === "cost" ? "text-destructive" : k.tone === "net" ? (k.value < 0 ? "text-destructive" : "text-primary") : ""
+              }`}>
+                {formatMoney(k.value, sym)}
+              </div>
+              {k.label === "Net profit" && (
+                <div className="text-[11px] text-muted-foreground mt-0.5">Margin {(stats?.pl.margin ?? 0).toFixed(1)}%</div>
+              )}
+            </div>
+          ))}
+        </div>
+      </Card>
 
 
       {/* Charts */}
