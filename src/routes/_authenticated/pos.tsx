@@ -304,7 +304,7 @@ function PosPage() {
                   className="h-9 pl-8"
                 />
               </div>
-              <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0" onClick={() => setScanOpen(true)} aria-label="Scan barcode with camera">
+              <Button type="button" variant="outline" size="icon" className="h-9 w-9 shrink-0" onClick={() => { unlockAudio(); setScanOpen(true); }} aria-label="Scan barcode with camera">
                 <ScanLine className="h-4 w-4" />
               </Button>
             </div>

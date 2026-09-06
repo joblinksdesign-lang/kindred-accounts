@@ -26,8 +26,8 @@ function getCtx(): AudioContext | null {
   }
 }
 
-/** Called from a user gesture so mobile browsers allow sound later. */
-function unlockAudio() {
+/** Called from a user gesture so mobile browsers allow sound later. Exported so scan buttons can unlock audio on tap. */
+export function unlockAudio() {
   const ctx = getCtx();
   if (!ctx) return;
   void ctx.resume().catch(() => {});

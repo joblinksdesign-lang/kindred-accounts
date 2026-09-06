@@ -328,7 +328,7 @@ function ProductsPage() {
               <Label>Barcode</Label>
               <div className="flex gap-2">
                 <Input name="barcode" value={barcode} onChange={(e) => setBarcode(e.target.value)} placeholder="Scan or type" />
-                <Button type="button" variant="outline" size="icon" className="shrink-0" onClick={() => setScanOpen(true)} aria-label="Scan barcode">
+                <Button type="button" variant="outline" size="icon" className="shrink-0" onClick={() => { unlockAudio(); setScanOpen(true); }} aria-label="Scan barcode">
                   <ScanLine className="h-4 w-4" />
                 </Button>
               </div>
