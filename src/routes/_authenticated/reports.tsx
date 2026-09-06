@@ -69,7 +69,7 @@ function ReportsPage() {
       const [inv, pay, cust, prod, exp] = await Promise.all([
         supabase.from("invoices").select("invoice_date, total, balance, amount_paid, status, customer_id"),
         supabase.from("payments").select("amount, payment_date, method"),
-        supabase.from("customers").select("id, name, company_name"),
+        supabase.from("customers").select("id, name, company_name, email, phone, city, store_code"),
         supabase.from("products").select("name, quantity, reorder_level, unit_price, cost_price"),
         supabase.from("expenses").select("expense_date, amount, category"),
       ]);
@@ -103,7 +103,7 @@ function ReportsPage() {
       const valuation = products.reduce((s, p) => s + Number(p.quantity) * Number(p.cost_price), 0);
       const retailValue = products.reduce((s, p) => s + Number(p.quantity) * Number(p.unit_price), 0);
 
-      return { monthly, customerBalances, methods, valuation, retailValue, products, invoices, payments, expenses };
+      return { monthly, customerBalances, methods, valuation, retailValue, products, invoices, payments, expenses, customers };
     },
   });
 
@@ -167,6 +167,106 @@ function ReportsPage() {
   ];
 
   const rangeText = `${new Date(from + "T00:00:00").toLocaleDateString()} – ${new Date(to + "T00:00:00").toLocaleDateString()} · grouped by ${grouping}`;
+
+  // ---- Per-customer report ----
+  type CustomerRow = {
+    name: string; contact: string; email: string; phone: string; city: string; code: string;
+    invoices: number; sales: number; paid: number; balance: number; last: string; overdue: number;
+  };
+  const customerRows: CustomerRow[] = useMemo(() => {
+    const customers = (data?.customers ?? []) as {
+      id: string; name: string; company_name: string | null; email: string | null;
+      phone: string | null; city: string | null; store_code: string | null;
+    }[];
+    const invoices = data?.invoices ?? [];
+    const inRange = (d?: string | null) => !!d && d >= from && d <= to;
+    const scoped = invoices.filter((i) => inRange(i.invoice_date));
+
+    return customers
+      .map((c) => {
+        const mine = scoped.filter((i) => i.customer_id === c.id);
+        const sales = mine.reduce((s, i) => s + Number(i.total), 0);
+        const paid = mine.reduce((s, i) => s + Number(i.amount_paid), 0);
+        const balance = mine.reduce((s, i) => s + Number(i.balance), 0);
+        const overdue = mine.filter((i) => i.status === "overdue").reduce((s, i) => s + Number(i.balance), 0);
+        const last = mine.map((i) => i.invoice_date!).sort().slice(-1)[0] ?? "";
+        return {
+          name: c.company_name || c.name,
+          contact: c.company_name ? c.name : "",
+          email: c.email || "",
+          phone: c.phone || "",
+          city: c.city || "",
+          code: c.store_code || "",
+          invoices: mine.length,
+          sales, paid, balance, overdue,
+          last,
+        };
+      })
+      .filter((r) => r.invoices > 0 || r.balance !== 0)
+      .sort((a, b) => b.sales - a.sales);
+  }, [data, from, to]);
+
+  const customerTotals = customerRows.reduce(
+    (a, r) => ({ invoices: a.invoices + r.invoices, sales: a.sales + r.sales, paid: a.paid + r.paid, balance: a.balance + r.balance, overdue: a.overdue + r.overdue }),
+    { invoices: 0, sales: 0, paid: 0, balance: 0, overdue: 0 },
+  );
+
+  const customerColumns: ReportColumn[] = [
+    { header: "#", align: "right", width: 7 },
+    { header: "Customer", align: "left", width: 36 },
+    { header: "Contact person", align: "left", width: 24 },
+    { header: "Code", align: "left", width: 13 },
+    { header: "Phone", align: "left", width: 22 },
+    { header: "Email", align: "left", width: 34 },
+    { header: "City", align: "left", width: 16 },
+    { header: "Invoices", align: "right", width: 13 },
+    { header: "Sales", align: "right", width: 21 },
+    { header: "Paid", align: "right", width: 21 },
+    { header: "Balance", align: "right", width: 21 },
+    { header: "Overdue", align: "right", width: 21 },
+    { header: "Last invoice", align: "left", width: 19 },
+  ];
+
+  const customerReportRows = customerRows.map((r, i) => [
+    i + 1, r.name, r.contact || "—", r.code || "—", r.phone || "—", r.email || "—", r.city || "—",
+    r.invoices,
+    formatMoney(r.sales, sym),
+    formatMoney(r.paid, sym),
+    formatMoney(r.balance, sym),
+    formatMoney(r.overdue, sym),
+    r.last ? new Date(r.last + "T00:00:00").toLocaleDateString() : "—",
+  ]);
+  const customerTotalsRow = [
+    "", "Total", "", "", "", "", "",
+    customerTotals.invoices,
+    formatMoney(customerTotals.sales, sym),
+    formatMoney(customerTotals.paid, sym),
+    formatMoney(customerTotals.balance, sym),
+    formatMoney(customerTotals.overdue, sym),
+    "",
+  ];
+  const customerRangeText = `${new Date(from + "T00:00:00").toLocaleDateString()} – ${new Date(to + "T00:00:00").toLocaleDateString()} · ${customerRows.length} customers`;
+
+  const exportCustomerPdf = async () => {
+    if (!company) return;
+    try {
+      await downloadReportPdf(
+        {
+          title: "Customer report",
+          subtitle: customerRangeText,
+          columns: customerColumns,
+          rows: customerReportRows,
+          totalsRow: customerTotalsRow,
+          orientation: "landscape",
+        },
+        company,
+        `customer-report-${from}-to-${to}.pdf`,
+      );
+    } catch (err) {
+      toast.error("Could not create PDF", { description: (err as Error).message });
+    }
+  };
+
 
   const exportPdf = async () => {
     if (!company) return;
@@ -311,7 +411,103 @@ function ReportsPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="customers">
+        <TabsContent value="customers" className="space-y-4">
+          <Card className="p-5 shadow-soft border-0 space-y-4">
+            <div className="flex flex-wrap items-end gap-3">
+              <div>
+                <h3 className="font-semibold">Report per customer</h3>
+                <p className="text-xs text-muted-foreground">Full record of every customer's invoices, payments and balances.</p>
+              </div>
+              <div>
+                <Label className="text-xs">From</Label>
+                <Input type="date" value={from} max={to} onChange={(e) => setFrom(e.target.value)} className="h-9 w-[9.5rem]" />
+              </div>
+              <div>
+                <Label className="text-xs">To</Label>
+                <Input type="date" value={to} min={from} onChange={(e) => setTo(e.target.value)} className="h-9 w-[9.5rem]" />
+              </div>
+              <div className="flex gap-1">
+                {[["30 days", 30], ["90 days", 90], ["365 days", 365]].map(([label, d]) => (
+                  <Button key={String(label)} size="sm" variant="outline" className="h-9" onClick={() => quick(Number(d))}>{label}</Button>
+                ))}
+              </div>
+              <div className="ml-auto flex gap-2">
+                <Button size="sm" variant="outline" className="h-9" disabled={!customerReportRows.length}
+                  onClick={() => downloadCsv(`customer-report-${from}-to-${to}.csv`, toCsv(customerColumns, customerReportRows))}>
+                  <FileSpreadsheet className="h-4 w-4 mr-1.5" />CSV
+                </Button>
+                <Button size="sm" className="h-9 gradient-emerald text-white" disabled={!customerReportRows.length || !company} onClick={exportCustomerPdf}>
+                  <Download className="h-4 w-4 mr-1.5" />PDF (A4 landscape)
+                </Button>
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-4">
+              {[
+                { label: "Customers", value: String(customerRows.length) },
+                { label: "Sales", value: formatMoney(customerTotals.sales, sym) },
+                { label: "Paid", value: formatMoney(customerTotals.paid, sym) },
+                { label: "Outstanding", value: formatMoney(customerTotals.balance, sym) },
+              ].map((k) => (
+                <div key={k.label} className="rounded-lg border bg-card p-3">
+                  <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{k.label}</div>
+                  <div className="mt-1 text-base sm:text-lg xl:text-xl font-bold tabular-nums break-words [overflow-wrap:anywhere]">{k.value}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Customer</TableHead>
+                    <TableHead className="whitespace-nowrap">Code</TableHead>
+                    <TableHead className="whitespace-nowrap">Phone</TableHead>
+                    <TableHead className="whitespace-nowrap">Email</TableHead>
+                    <TableHead className="text-right">Invoices</TableHead>
+                    <TableHead className="text-right">Sales</TableHead>
+                    <TableHead className="text-right">Paid</TableHead>
+                    <TableHead className="text-right">Balance</TableHead>
+                    <TableHead className="text-right">Overdue</TableHead>
+                    <TableHead className="whitespace-nowrap">Last invoice</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {customerRows.length === 0 ? (
+                    <TableRow><TableCell colSpan={10} className="py-10 text-center text-sm text-muted-foreground">No customer activity in this period.</TableCell></TableRow>
+                  ) : customerRows.map((r, i) => (
+                    <TableRow key={`${r.name}-${i}`}>
+                      <TableCell className="font-medium">
+                        {r.name}
+                        {r.contact && <div className="text-xs text-muted-foreground">{r.contact}</div>}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">{r.code || "—"}</TableCell>
+                      <TableCell className="whitespace-nowrap">{r.phone || "—"}</TableCell>
+                      <TableCell className="whitespace-nowrap">{r.email || "—"}</TableCell>
+                      <TableCell className="text-right tabular-nums">{r.invoices}</TableCell>
+                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatMoney(r.sales, sym)}</TableCell>
+                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatMoney(r.paid, sym)}</TableCell>
+                      <TableCell className="text-right tabular-nums whitespace-nowrap font-semibold">{formatMoney(r.balance, sym)}</TableCell>
+                      <TableCell className="text-right tabular-nums whitespace-nowrap text-destructive">{formatMoney(r.overdue, sym)}</TableCell>
+                      <TableCell className="whitespace-nowrap">{r.last ? new Date(r.last + "T00:00:00").toLocaleDateString() : "—"}</TableCell>
+                    </TableRow>
+                  ))}
+                  {customerRows.length > 0 && (
+                    <TableRow className="bg-muted/50 font-semibold">
+                      <TableCell colSpan={4}>Total</TableCell>
+                      <TableCell className="text-right tabular-nums">{customerTotals.invoices}</TableCell>
+                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatMoney(customerTotals.sales, sym)}</TableCell>
+                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatMoney(customerTotals.paid, sym)}</TableCell>
+                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatMoney(customerTotals.balance, sym)}</TableCell>
+                      <TableCell className="text-right tabular-nums whitespace-nowrap">{formatMoney(customerTotals.overdue, sym)}</TableCell>
+                      <TableCell />
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </Card>
+
           <Card className="p-5 shadow-soft border-0">
             <h3 className="font-semibold mb-3">Top outstanding balances</h3>
             {(data?.customerBalances ?? []).length === 0 ? (
@@ -328,6 +524,7 @@ function ReportsPage() {
             )}
           </Card>
         </TabsContent>
+
 
         <TabsContent value="inventory" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
