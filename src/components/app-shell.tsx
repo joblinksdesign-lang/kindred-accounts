@@ -130,6 +130,13 @@ function AppSidebar() {
                   </SidebarMenuItem>
                 ))}
                 <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isActive("/manual")} tooltip="User manual">
+                    <MobileNavLink to="/manual" className="flex items-center gap-2">
+                      <BookOpen className="h-4 w-4" /><span>User manual</span>
+                    </MobileNavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
                   <SidebarMenuButton asChild isActive={isActive("/profile")} tooltip="My profile">
                     <MobileNavLink to="/profile" className="flex items-center gap-2">
                       <UserRound className="h-4 w-4" /><span>My profile</span>
