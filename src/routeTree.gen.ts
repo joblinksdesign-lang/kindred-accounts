@@ -30,6 +30,7 @@ import { Route as AuthenticatedPosRouteImport } from './routes/_authenticated/po
 import { Route as AuthenticatedPaymentsRouteImport } from './routes/_authenticated/payments'
 import { Route as AuthenticatedOnlineStoreRouteImport } from './routes/_authenticated/online-store'
 import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
+import { Route as AuthenticatedManualRouteImport } from './routes/_authenticated/manual'
 import { Route as AuthenticatedExpensesRouteImport } from './routes/_authenticated/expenses'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
@@ -154,6 +155,11 @@ const AuthenticatedNotificationsRoute =
     path: '/notifications',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedManualRoute = AuthenticatedManualRouteImport.update({
+  id: '/manual',
+  path: '/manual',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedExpensesRoute = AuthenticatedExpensesRouteImport.update({
   id: '/expenses',
   path: '/expenses',
@@ -261,6 +267,7 @@ export interface FileRoutesByFullPath {
   '/customers': typeof AuthenticatedCustomersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/expenses': typeof AuthenticatedExpensesRoute
+  '/manual': typeof AuthenticatedManualRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/online-store': typeof AuthenticatedOnlineStoreRoute
   '/payments': typeof AuthenticatedPaymentsRoute
@@ -299,6 +306,7 @@ export interface FileRoutesByTo {
   '/customers': typeof AuthenticatedCustomersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/expenses': typeof AuthenticatedExpensesRoute
+  '/manual': typeof AuthenticatedManualRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/online-store': typeof AuthenticatedOnlineStoreRoute
   '/payments': typeof AuthenticatedPaymentsRoute
@@ -340,6 +348,7 @@ export interface FileRoutesById {
   '/_authenticated/customers': typeof AuthenticatedCustomersRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/expenses': typeof AuthenticatedExpensesRoute
+  '/_authenticated/manual': typeof AuthenticatedManualRoute
   '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
   '/_authenticated/online-store': typeof AuthenticatedOnlineStoreRoute
   '/_authenticated/payments': typeof AuthenticatedPaymentsRoute
@@ -381,6 +390,7 @@ export interface FileRouteTypes {
     | '/customers'
     | '/dashboard'
     | '/expenses'
+    | '/manual'
     | '/notifications'
     | '/online-store'
     | '/payments'
@@ -419,6 +429,7 @@ export interface FileRouteTypes {
     | '/customers'
     | '/dashboard'
     | '/expenses'
+    | '/manual'
     | '/notifications'
     | '/online-store'
     | '/payments'
@@ -459,6 +470,7 @@ export interface FileRouteTypes {
     | '/_authenticated/customers'
     | '/_authenticated/dashboard'
     | '/_authenticated/expenses'
+    | '/_authenticated/manual'
     | '/_authenticated/notifications'
     | '/_authenticated/online-store'
     | '/_authenticated/payments'
@@ -651,6 +663,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedNotificationsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/manual': {
+      id: '/_authenticated/manual'
+      path: '/manual'
+      fullPath: '/manual'
+      preLoaderRoute: typeof AuthenticatedManualRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/expenses': {
       id: '/_authenticated/expenses'
       path: '/expenses'
@@ -796,6 +815,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedExpensesRoute: typeof AuthenticatedExpensesRoute
+  AuthenticatedManualRoute: typeof AuthenticatedManualRoute
   AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
   AuthenticatedOnlineStoreRoute: typeof AuthenticatedOnlineStoreRoute
   AuthenticatedPaymentsRoute: typeof AuthenticatedPaymentsRoute
@@ -819,6 +839,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCustomersRoute: AuthenticatedCustomersRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedExpensesRoute: AuthenticatedExpensesRoute,
+  AuthenticatedManualRoute: AuthenticatedManualRoute,
   AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
   AuthenticatedOnlineStoreRoute: AuthenticatedOnlineStoreRoute,
   AuthenticatedPaymentsRoute: AuthenticatedPaymentsRoute,

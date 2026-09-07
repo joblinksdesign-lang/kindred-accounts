@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, Users, Package, FileText, Receipt, CreditCard, FileSignature,
-  BarChart3, Settings, LogOut, Search, Building2, ShieldCheck, LayoutGrid, Tag, Sparkles, Bell, Wallet, Store, ScanBarcode, UsersRound, UserRound, Smartphone, Download,
+  BarChart3, Settings, LogOut, Search, Building2, ShieldCheck, LayoutGrid, Tag, Sparkles, Bell, Wallet, Store, ScanBarcode, UsersRound, UserRound, Smartphone, Download, BookOpen,
 } from "lucide-react";
 
 import {
@@ -129,6 +129,13 @@ function AppSidebar() {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isActive("/manual")} tooltip="User manual">
+                    <MobileNavLink to="/manual" className="flex items-center gap-2">
+                      <BookOpen className="h-4 w-4" /><span>User manual</span>
+                    </MobileNavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild isActive={isActive("/profile")} tooltip="My profile">
                     <MobileNavLink to="/profile" className="flex items-center gap-2">
