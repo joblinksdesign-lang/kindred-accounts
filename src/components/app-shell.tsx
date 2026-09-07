@@ -276,9 +276,9 @@ function Topbar() {
 export function AppShell({ children }: { children: ReactNode }) {
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-background">
+      <div className="flex min-h-screen w-full bg-background md:h-screen md:overflow-hidden">
         <AppSidebar />
-        <div className="flex flex-1 flex-col min-w-0">
+        <div className="flex flex-1 flex-col min-w-0 md:overflow-y-auto">
           <Topbar />
           <main className="flex-1 px-4 py-6 md:px-8 md:py-8">{children}</main>
         </div>
