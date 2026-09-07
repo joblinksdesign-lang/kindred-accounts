@@ -41,7 +41,12 @@ export function useTenantMemberships() {
 
 export function useActiveTenant() {
   const { data: memberships = [], isLoading } = useTenantMemberships();
-  const stored = typeof window !== "undefined" ? localStorage.getItem(ACTIVE_KEY) : null;
+  // Read stored selection only after hydration so server and first client
+  // render produce identical markup.
+  const [stored, setStored] = useState<string | null>(null);
+  useEffect(() => {
+    setStored(localStorage.getItem(ACTIVE_KEY));
+  }, []);
   const active =
     memberships.find((m) => m.tenant_id === stored) ?? memberships[0] ?? null;
   return {
