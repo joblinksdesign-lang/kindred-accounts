@@ -168,7 +168,7 @@ function ManualPage() {
             <BookOpen className="h-5 w-5" />
           </div>
           <div>
-            <div className="font-semibold">Welcome to {useCompanyName()}</div>
+            <div className="font-semibold">Welcome to {company?.company_name || "your business"}</div>
             <p className="text-sm text-muted-foreground mt-1">
               Read this guide in order the first time you set up. Afterwards use it as a reference, or download the PDF
               and give a copy to your staff.
@@ -257,9 +257,4 @@ function ManualPage() {
       </div>
     </div>
   );
-}
-
-function useCompanyName() {
-  const { data: company } = useCompanySettings();
-  return company?.company_name || "your business";
 }
