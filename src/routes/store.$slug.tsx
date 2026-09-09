@@ -470,7 +470,7 @@ function Storefront() {
                           {stockProblem.name} doesn't have enough stock. Reduce the quantity to continue.
                         </p>
                       )}
-                      {(known || mode === "form") && (
+                      {(walkIn || known || mode === "form") && (
                         <Button type="submit" disabled={submit.isPending || !!stockProblem} className="w-full text-white" style={{ background: accent }}>
                           {submit.isPending ? "Submitting…" : "Checkout"}
                         </Button>
