@@ -12,6 +12,7 @@ import { PageHeader } from "@/components/page-helpers";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { usePlanLimits, planBlockReason } from "@/lib/plan-limits";
+import { planBlockError, handlePlanBlockError } from "@/components/plan-block-dialog";
 import { formatMoney, useCompanySettings } from "@/lib/company";
 import { useActiveTenantId } from "@/lib/tenant";
 
@@ -74,7 +75,7 @@ function NewInvoicePage() {
   const save = useMutation({
     mutationFn: async () => {
       const blocked = planBlockReason(planLimits, "invoices");
-      if (blocked) throw new Error(blocked);
+      if (blocked) throw planBlockError(blocked);
       if (!customerId) throw new Error("Select a customer");
       if (lines.length === 0 || lines.some((l) => !l.description)) throw new Error("Add at least one line item with a description");
       const { data: u } = await supabase.auth.getUser();
@@ -104,7 +105,7 @@ function NewInvoicePage() {
       return inserted.id;
     },
     onSuccess: (id) => { toast.success("Invoice created"); navigate({ to: "/invoices/$id", params: { id } }); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => { if (handlePlanBlockError(e)) return; toast.error(e.message); },
   });
 
   return (

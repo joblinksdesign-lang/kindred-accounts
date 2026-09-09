@@ -58,8 +58,8 @@ export function InstallAppPrompt({
   if (installed || !show || (!canInstall && !isIos)) return null;
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-50 p-3 sm:left-auto sm:right-4 sm:bottom-4 sm:w-96 sm:p-0">
-      <div className="relative rounded-2xl border bg-card p-4 shadow-elevated">
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4 backdrop-blur-[2px] sm:inset-auto sm:right-4 sm:bottom-4 sm:block sm:w-96 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
+      <div className="relative w-full max-w-sm rounded-2xl border bg-card p-4 shadow-elevated sm:max-w-none">
         <button
           type="button"
           onClick={dismiss}

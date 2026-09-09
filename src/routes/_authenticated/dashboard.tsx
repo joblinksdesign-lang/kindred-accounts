@@ -11,6 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { formatMoney, useCompanySettings, formatDate } from "@/lib/company";
 import { PlanLimitBanner } from "@/components/plan-limit-banner";
+import { RenewalStatusCard } from "@/components/renewal-status-card";
 import { useActiveTenant } from "@/lib/tenant";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -305,6 +306,7 @@ function Dashboard() {
       </div>
 
       <PlanLimitBanner />
+      <RenewalStatusCard />
 
       {/* KPI grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

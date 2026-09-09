@@ -570,6 +570,69 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_payment_methods: {
+        Row: {
+          account_name: string | null
+          account_number: string | null
+          created_at: string
+          id: string
+          instructions: string | null
+          is_active: boolean
+          label: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          account_name?: string | null
+          account_number?: string | null
+          created_at?: string
+          id?: string
+          instructions?: string | null
+          is_active?: boolean
+          label: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          account_name?: string | null
+          account_number?: string | null
+          created_at?: string
+          id?: string
+          instructions?: string | null
+          is_active?: boolean
+          label?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      platform_settings: {
+        Row: {
+          admin_whatsapp: string | null
+          created_at: string
+          id: string
+          payment_note: string | null
+          singleton: boolean
+          updated_at: string
+        }
+        Insert: {
+          admin_whatsapp?: string | null
+          created_at?: string
+          id?: string
+          payment_note?: string | null
+          singleton?: boolean
+          updated_at?: string
+        }
+        Update: {
+          admin_whatsapp?: string | null
+          created_at?: string
+          id?: string
+          payment_note?: string | null
+          singleton?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       product_attributes: {
         Row: {
           created_at: string

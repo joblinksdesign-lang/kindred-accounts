@@ -1,3 +1,4 @@
+import { PlanBlockDialogHost } from "@/components/plan-block-dialog";
 import { createFileRoute, Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, Users, Package, FileText, Receipt, CreditCard, FileSignature,
@@ -40,6 +41,7 @@ const adminNav = [
   { title: "Businesses", to: "/admin/tenants", icon: Building2 },
   { title: "Plans", to: "/admin/plans", icon: Tag },
   { title: "App install", to: "/admin/app-install", icon: Smartphone },
+  { title: "Payment details", to: "/admin/payment-methods", icon: Wallet },
   { title: "Notifications", to: "/notifications", icon: Bell },
 ] as const;
 
@@ -284,6 +286,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </div>
       <Toaster richColors position="top-right" />
+      <PlanBlockDialogHost />
     </SidebarProvider>
   );
 }

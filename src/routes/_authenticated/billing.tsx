@@ -7,8 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/page-helpers";
 import { useActiveTenant } from "@/lib/tenant";
-import { Check, Sparkles, ArrowRight } from "lucide-react";
+import { Check, Sparkles, ArrowRight, MessageCircle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { usePlanLimits } from "@/lib/plan-limits";
+import { RenewalStatusCard } from "@/components/renewal-status-card";
+import { usePlatformSettings, whatsappLink } from "@/lib/platform-payment";
 
 export const Route = createFileRoute("/_authenticated/billing")({
   head: () => ({ meta: [{ title: "Billing & Plan" }] }),
@@ -48,6 +51,9 @@ function BillingPage() {
   const { tenantId, role } = useActiveTenant();
   const [annual, setAnnual] = useState(false);
   const isOwner = role === "owner";
+  const { data: planLimits } = usePlanLimits();
+  const { data: platform } = usePlatformSettings();
+  const expired = !!planLimits?.expired;
 
   const { data: plans = [] } = useQuery({
     queryKey: ["billing_plans"],
@@ -102,7 +108,7 @@ function BillingPage() {
       const cycle = annual ? "annual" : "monthly";
       if (sub) {
         // Same plan + cycle already active → nothing to do
-        if (sub.plan_id === planId && sub.billing_cycle === cycle && !sub.pending_plan_id) {
+        if (!expired && sub.plan_id === planId && sub.billing_cycle === cycle && !sub.pending_plan_id) {
           throw new Error("You are already on this plan");
         }
         const { error } = await supabase
@@ -158,12 +164,20 @@ function BillingPage() {
 
   const currentPlan = plans.find((p) => p.id === sub?.plan_id);
 
+  const notifyLink = (planName: string) =>
+    whatsappLink(
+      platform?.admin_whatsapp,
+      `Hello Admin, we have requested the ${planName} plan (${annual ? "annual" : "monthly"}) and made the payment. Please review and activate our plan. Thank you.`,
+    );
+
   return (
     <div className="p-6 space-y-6">
       <PageHeader
         title="Billing & Plan"
         subtitle="Upgrade or change your subscription at any time."
       />
+
+      <RenewalStatusCard />
 
       {sub && currentPlan && (
         <Card className={`p-5 flex flex-wrap items-center justify-between gap-3 ${subscriptionParam === sub.id ? "border-primary/40 bg-primary/5 ring-1 ring-primary/30" : ""}`}>
@@ -219,6 +233,8 @@ function BillingPage() {
           const price = annual ? p.price_annual / 12 : p.price_monthly;
           const isCurrent = sub?.plan_id === p.id && (sub?.billing_cycle === (annual ? "annual" : "monthly"));
           const isPending = sub?.pending_plan_id === p.id;
+          const canRenew = isCurrent && expired && !isPending;
+          const isCurrentActive = isCurrent && !expired;
           const highlight = p.slug === "professional";
           return (
             <Card key={p.id} className={`p-6 flex flex-col border ${highlight ? "border-primary ring-1 ring-primary/30" : ""}`}>
@@ -242,16 +258,36 @@ function BillingPage() {
                   </li>
                 ))}
               </ul>
-              <Button
-                className={`mt-5 w-full ${highlight && !isCurrent && !isPending ? "gradient-emerald text-white" : ""}`}
-                variant={isCurrent ? "secondary" : isPending ? "outline" : highlight ? "default" : "outline"}
-                disabled={!isOwner || isCurrent || isPending || requestPlan.isPending}
-                onClick={() => requestPlan.mutate(p.id)}
-              >
-                {isCurrent ? "Current plan" : isPending ? "Pending approval" : (
-                  <>Request {p.name} <ArrowRight className="ml-1.5 h-4 w-4" /></>
-                )}
-              </Button>
+              {isPending ? (
+                <div className="mt-5 space-y-2">
+                  <div className="rounded-lg bg-amber-500/10 px-3 py-2 text-center text-xs font-medium text-amber-700">
+                    Request sent to admin — awaiting approval
+                  </div>
+                  {(() => {
+                    const href = notifyLink(p.name);
+                    return href ? (
+                      <Button asChild className="w-full bg-[#25D366] text-white hover:bg-[#1fb457]">
+                        <a href={href} target="_blank" rel="noreferrer">
+                          <MessageCircle className="mr-1.5 h-4 w-4" /> Notify admin
+                        </a>
+                      </Button>
+                    ) : null;
+                  })()}
+                </div>
+              ) : (
+                <Button
+                  className={`mt-5 w-full ${(highlight || canRenew) && !isCurrentActive ? "gradient-emerald text-white" : ""}`}
+                  variant={isCurrentActive ? "secondary" : highlight || canRenew ? "default" : "outline"}
+                  disabled={!isOwner || isCurrentActive || requestPlan.isPending}
+                  onClick={() => requestPlan.mutate(p.id)}
+                >
+                  {isCurrentActive ? "Current plan" : canRenew ? (
+                    <><RefreshCw className="mr-1.5 h-4 w-4" /> Renew plan</>
+                  ) : (
+                    <>Request {p.name} <ArrowRight className="ml-1.5 h-4 w-4" /></>
+                  )}
+                </Button>
+              )}
             </Card>
           );
         })}

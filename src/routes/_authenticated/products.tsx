@@ -16,6 +16,7 @@ import { PageHeader, ListToolbar, EmptyState } from "@/components/page-helpers";
 import { Plus, Pencil, Trash2, ArrowUpRight, ArrowDownRight, Sliders, ImagePlus, X, PackageSearch, ScanLine } from "lucide-react";
 import { toast } from "sonner";
 import { usePlanLimits, planBlockReason } from "@/lib/plan-limits";
+import { planBlockError, handlePlanBlockError } from "@/components/plan-block-dialog";
 import { formatMoney, useCompanySettings } from "@/lib/company";
 import { useActiveTenantId } from "@/lib/tenant";
 import { MAX_PRODUCT_IMAGES, uploadProductImages, useProductImageUrls } from "@/lib/product-images";
@@ -151,7 +152,7 @@ function ProductsPage() {
     mutationFn: async (form: Record<string, unknown>) => {
       if (!editing) {
         const blocked = planBlockReason(planLimits, "products");
-        if (blocked) throw new Error(blocked);
+        if (blocked) throw planBlockError(blocked);
       }
       const payload = {
         ...form,
@@ -176,7 +177,7 @@ function ProductsPage() {
       qc.invalidateQueries({ queryKey: ["products"] });
       setOpen(false); setEditing(null); setImages([]);
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => { if (handlePlanBlockError(e)) return; toast.error(e.message); },
   });
 
   const del = useMutation({
