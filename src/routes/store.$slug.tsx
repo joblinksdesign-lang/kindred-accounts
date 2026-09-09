@@ -563,6 +563,7 @@ function Storefront() {
 /** Swipeable image gallery: horizontal snap scroll with dots + arrows. */
 function ProductGallery({ images, name, out }: { images: string[]; name: string; out: boolean }) {
   const [index, setIndex] = useState(0);
+  const [zoom, setZoom] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   const go = (i: number) => {
