@@ -359,7 +359,16 @@ function Storefront() {
                           <div className="flex items-center gap-2">
                             <div className="min-w-0 flex-1">
                               <div className="truncate text-sm font-medium">{l.name}</div>
-                              <div className="text-xs text-muted-foreground">{formatMoney(l.unit_price, symbol)}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {l.unit_discount > 0 ? (
+                                  <>
+                                    <span className="line-through">{formatMoney(l.unit_price, symbol)}</span>{" "}
+                                    <span className="font-semibold text-emerald-600">{formatMoney(l.unit_price - l.unit_discount, symbol)}</span>
+                                  </>
+                                ) : (
+                                  formatMoney(l.unit_price, symbol)
+                                )}
+                              </div>
                             </div>
                             <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => setQty(l.product_id, l.quantity - 1)}><Minus className="h-3 w-3" /></Button>
                             <span className="w-6 text-center text-sm tabular-nums">{l.quantity}</span>
