@@ -253,7 +253,7 @@ export const submitStoreOrder = createServerFn({ method: "POST" })
     const ids = data.items.map((i) => i.product_id);
     const { data: products } = await supabaseAdmin
       .from("products")
-      .select("id, name, unit_price, is_active, quantity")
+      .select("id, name, unit_price, is_active, quantity, discount_type, discount_value")
       .eq("tenant_id", tenant.id)
       .in("id", ids);
 
@@ -265,19 +265,24 @@ export const submitStoreOrder = createServerFn({ method: "POST" })
       if (i.quantity > stock) throw new Error(`Only ${stock} of ${p.name} left in stock.`);
 
       const unit = Number(p.unit_price);
+      // Offers are always priced on the server so the saving cannot be faked.
+      const off = unitDiscount(p);
       return {
         product_id: p.id,
         description: p.name,
         quantity: i.quantity,
         unit_price: unit,
+        unit_discount: off,
         line_total: Number((unit * i.quantity).toFixed(2)),
       };
     });
 
     const subtotal = Number(priced.reduce((s, i) => s + i.line_total, 0).toFixed(2));
+    const discountTotal = Number(priced.reduce((s, i) => s + i.unit_discount * i.quantity, 0).toFixed(2));
     const taxRate = Number(company.default_tax_rate ?? 0);
-    const taxAmount = Number(((subtotal * taxRate) / 100).toFixed(2));
-    const total = Number((subtotal + taxAmount).toFixed(2));
+    const taxable = Math.max(subtotal - discountTotal, 0);
+    const taxAmount = Number(((taxable * taxRate) / 100).toFixed(2));
+    const total = Number((taxable + taxAmount).toFixed(2));
 
     // Returning shoppers are identified by their shop code; new ones fill the form.
     let customerId: string | null = null;
