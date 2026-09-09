@@ -177,6 +177,8 @@ function BillingPage() {
         subtitle="Upgrade or change your subscription at any time."
       />
 
+      <RenewalStatusCard />
+
       {sub && currentPlan && (
         <Card className={`p-5 flex flex-wrap items-center justify-between gap-3 ${subscriptionParam === sub.id ? "border-primary/40 bg-primary/5 ring-1 ring-primary/30" : ""}`}>
           <div>
@@ -261,13 +263,16 @@ function BillingPage() {
                   <div className="rounded-lg bg-amber-500/10 px-3 py-2 text-center text-xs font-medium text-amber-700">
                     Request sent to admin — awaiting approval
                   </div>
-                  {notifyLink ? (
-                    <Button asChild className="w-full bg-[#25D366] text-white hover:bg-[#1fb457]">
-                      <a href={notifyLink(p.name)} target="_blank" rel="noreferrer">
-                        <MessageCircle className="mr-1.5 h-4 w-4" /> Notify admin
-                      </a>
-                    </Button>
-                  ) : null}
+                  {(() => {
+                    const href = notifyLink(p.name);
+                    return href ? (
+                      <Button asChild className="w-full bg-[#25D366] text-white hover:bg-[#1fb457]">
+                        <a href={href} target="_blank" rel="noreferrer">
+                          <MessageCircle className="mr-1.5 h-4 w-4" /> Notify admin
+                        </a>
+                      </Button>
+                    ) : null;
+                  })()}
                 </div>
               ) : (
                 <Button
