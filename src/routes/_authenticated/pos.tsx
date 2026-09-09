@@ -404,9 +404,18 @@ function PosPage() {
                 <div className="flex items-start gap-2">
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-medium">{l.name}</div>
-                    <div className="text-xs text-muted-foreground tabular-nums">{formatMoney(l.unit_price, sym)}</div>
+                    <div className="text-xs text-muted-foreground tabular-nums">
+                      {l.unit_discount > 0 ? (
+                        <>
+                          <span className="line-through">{formatMoney(l.unit_price, sym)}</span>{" "}
+                          <span className="font-semibold text-success">{formatMoney(l.unit_price - l.unit_discount, sym)}</span>
+                        </>
+                      ) : (
+                        formatMoney(l.unit_price, sym)
+                      )}
+                    </div>
                   </div>
-                  <div className="text-sm font-semibold tabular-nums">{formatMoney(l.unit_price * l.quantity, sym)}</div>
+                  <div className="text-sm font-semibold tabular-nums">{formatMoney((l.unit_price - l.unit_discount) * l.quantity, sym)}</div>
                 </div>
                 <div className="mt-2 flex items-center gap-1.5">
                   <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => setQty(l.product_id, l.quantity - 1)}><Minus className="h-3 w-3" /></Button>
