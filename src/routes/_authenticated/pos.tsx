@@ -364,7 +364,15 @@ function PosPage() {
                       </div>
                       <div className="p-2.5">
                         <div className="line-clamp-2 text-xs font-semibold leading-snug">{p.name}</div>
-                        <div className="mt-1 text-sm font-bold tabular-nums text-primary [overflow-wrap:anywhere]">{formatMoney(p.unit_price, sym)}</div>
+                        {unitDiscount(p) > 0 ? (
+                          <div className="mt-1">
+                            <div className="text-[10px] text-muted-foreground line-through">{formatMoney(p.unit_price, sym)}</div>
+                            <div className="text-sm font-bold tabular-nums text-primary [overflow-wrap:anywhere]">{formatMoney(netUnitPrice(p), sym)}</div>
+                            <span className="mt-0.5 inline-block rounded-full bg-success/15 px-1.5 py-0.5 text-[9px] font-bold text-success">{discountBadge(p, sym)}</span>
+                          </div>
+                        ) : (
+                          <div className="mt-1 text-sm font-bold tabular-nums text-primary [overflow-wrap:anywhere]">{formatMoney(p.unit_price, sym)}</div>
+                        )}
                         <div className={`text-[10px] ${out ? "text-destructive" : low ? "text-amber-600" : "text-muted-foreground"}`}>
                           {out ? "Out of stock" : maxed ? `All ${stock} in cart` : `${stock} in stock`}
                         </div>
