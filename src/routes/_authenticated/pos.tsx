@@ -207,7 +207,7 @@ function PosPage() {
         .insert({
           tenant_id: tenantId, customer_id: cid, invoice_number: "",
           invoice_date: today, due_date: today, status: "sent",
-          subtotal, tax_rate: taxRate, tax_amount: taxAmount, discount, total,
+          subtotal, tax_rate: taxRate, tax_amount: taxAmount, discount: totalDiscount, total,
           balance: total, notes: "POS sale", created_by: u.user?.id,
         } as never)
         .select("id, invoice_number").single();
@@ -239,7 +239,7 @@ function PosPage() {
         date: formatDate(receipt?.payment_date || today),
         customer: { name: cust?.name || "Walk-in Customer", company_name: cust?.company_name ?? null, email: null },
         items: cart.map((l) => ({ description: l.name, quantity: l.quantity, unit_price: l.unit_price, line_total: l.unit_price * l.quantity })),
-        subtotal, discount, taxAmount, total, method,
+        subtotal, discount: totalDiscount, taxAmount, total, method,
       };
     },
     onSuccess: (res) => {
