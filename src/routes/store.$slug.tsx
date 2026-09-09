@@ -640,6 +640,55 @@ function ProductGallery({ images, name, out }: { images: string[]; name: string;
           Sold out
         </span>
       )}
+
+      {zoom && (
+        <div
+          role="dialog"
+          aria-label={`${name} photos`}
+          className="fixed inset-0 z-[60] grid place-items-center bg-black/85 p-4"
+          onClick={() => setZoom(false)}
+        >
+          <div className="relative w-full max-w-3xl" onClick={(e) => e.stopPropagation()}>
+            <img
+              src={images[Math.min(index, images.length - 1)]}
+              alt={`${name} large view`}
+              className="mx-auto max-h-[80vh] w-auto max-w-full rounded-xl object-contain"
+            />
+            <div className="mt-3 text-center text-sm font-medium text-white">{name}</div>
+            <button
+              type="button"
+              aria-label="Close"
+              onClick={() => setZoom(false)}
+              className="absolute -top-3 right-0 grid h-9 w-9 place-items-center rounded-full bg-white/90 text-black shadow"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            {images.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  aria-label="Previous photo"
+                  onClick={() => setIndex((i) => (i - 1 + images.length) % images.length)}
+                  className="absolute left-1 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-black shadow"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Next photo"
+                  onClick={() => setIndex((i) => (i + 1) % images.length)}
+                  className="absolute right-1 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-black shadow"
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </button>
+                <div className="mt-2 text-center text-xs text-white/70">
+                  {Math.min(index, images.length - 1) + 1} / {images.length}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
