@@ -136,6 +136,10 @@ export const getStorefront = createServerFn({ method: "GET" })
         category: p.category,
         description: p.description,
         unit_price: Number(p.unit_price),
+        net_price: netUnitPrice(p),
+        unit_discount: unitDiscount(p),
+        discount_type: p.discount_type ?? "none",
+        discount_value: Number(p.discount_value ?? 0),
         image_url: p.image_url,
         images: (((p.image_paths ?? []) as string[]).map((path) => signedMap[path]).filter(Boolean) as string[]).concat(
           p.image_url && ((p.image_paths ?? []) as string[]).length === 0 ? [p.image_url] : [],
