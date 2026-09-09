@@ -437,6 +437,18 @@ function Storefront() {
                           <Button type="button" variant="outline" className="w-full" onClick={() => setMode("form")}>
                             I'm a new customer
                           </Button>
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            className="w-full"
+                            onClick={() => {
+                              setWalkIn(true);
+                              setKnown(null);
+                              toast.success("Walk-in customer selected");
+                            }}
+                          >
+                            I'm a walk-in customer
+                          </Button>
                         </div>
                       ) : (
                         <div className="space-y-3">
