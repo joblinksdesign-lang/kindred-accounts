@@ -72,7 +72,7 @@ function CenterMessage({ title, text }: { title: string; text: string }) {
   );
 }
 
-type CartLine = { product_id: string; name: string; unit_price: number; quantity: number };
+type CartLine = { product_id: string; name: string; unit_price: number; quantity: number; unit_discount: number };
 
 function Storefront() {
   const store = Route.useLoaderData() as StorefrontData;
@@ -101,7 +101,7 @@ function Storefront() {
 
   const stockOf = (id: string) => Number(products.find((p) => p.id === id)?.quantity ?? 0);
 
-  const add = (id: string, name: string, price: number) => {
+  const add = (id: string, name: string, price: number, off = 0) => {
     const stock = stockOf(id);
     const inCart = cart.find((l) => l.product_id === id)?.quantity ?? 0;
     if (stock <= 0) {
@@ -115,7 +115,7 @@ function Storefront() {
     setCart((c) => {
       const found = c.find((l) => l.product_id === id);
       if (found) return c.map((l) => (l.product_id === id ? { ...l, quantity: l.quantity + 1 } : l));
-      return [...c, { product_id: id, name, unit_price: price, quantity: 1 }];
+      return [...c, { product_id: id, name, unit_price: price, quantity: 1, unit_discount: off }];
     });
     toast.success(`${name} added to cart`);
   };
@@ -134,8 +134,10 @@ function Storefront() {
 
 
   const subtotal = cart.reduce((s, l) => s + l.unit_price * l.quantity, 0);
-  const taxAmount = (subtotal * (company.default_tax_rate || 0)) / 100;
-  const total = subtotal + taxAmount;
+  // Savings from products the shop has put on offer.
+  const savings = cart.reduce((s, l) => s + l.unit_discount * l.quantity, 0);
+  const taxAmount = (Math.max(subtotal - savings, 0) * (company.default_tax_rate || 0)) / 100;
+  const total = Math.max(subtotal - savings, 0) + taxAmount;
   const count = cart.reduce((s, l) => s + l.quantity, 0);
 
   const [mode, setMode] = useState<"code" | "form">("code");
