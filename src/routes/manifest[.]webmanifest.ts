@@ -11,7 +11,7 @@ export const Route = createFileRoute("/manifest.webmanifest")({
         const chosen = s?.icon_sizes?.length ? s.icon_sizes : [192, 512];
         const sizes = Array.from(new Set([...chosen, 192, 512])).sort((a, b) => a - b);
         const version = s?.updated_at ? Date.parse(s.updated_at) : Date.now();
-        const iconSrc = s?.icon_url ? `/app-icon.png?v=${version}` : "/favicon.ico";
+        const iconSrc = s?.icon_url ? `/app-icon.png?v=${version}` : "/default-app-icon.png";
         const manifest = {
           name: s?.app_name || "Softtrack Pos",
           short_name: s?.short_name || "Softtrack Pos",

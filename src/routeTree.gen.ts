@@ -38,6 +38,7 @@ import { Route as AuthenticatedBillingRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedInvoicesIndexRouteImport } from './routes/_authenticated/invoices.index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
+import { Route as StoreSlugManifestDotwebmanifestRouteImport } from './routes/store.$slug.manifest[.]webmanifest'
 import { Route as ApiPublicPlanExpiryRemindersRouteImport } from './routes/api/public/plan-expiry-reminders'
 import { Route as AuthenticatedInvoicesNewRouteImport } from './routes/_authenticated/invoices.new'
 import { Route as AuthenticatedInvoicesIdRouteImport } from './routes/_authenticated/invoices.$id'
@@ -196,6 +197,12 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
+const StoreSlugManifestDotwebmanifestRoute =
+  StoreSlugManifestDotwebmanifestRouteImport.update({
+    id: '/manifest.webmanifest',
+    path: '/manifest.webmanifest',
+    getParentRoute: () => StoreSlugRoute,
+  } as any)
 const ApiPublicPlanExpiryRemindersRoute =
   ApiPublicPlanExpiryRemindersRouteImport.update({
     id: '/api/public/plan-expiry-reminders',
@@ -279,13 +286,14 @@ export interface FileRoutesByFullPath {
   '/reports': typeof AuthenticatedReportsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/team': typeof AuthenticatedTeamRoute
-  '/store/$slug': typeof StoreSlugRoute
+  '/store/$slug': typeof StoreSlugRouteWithChildren
   '/admin/app-install': typeof AuthenticatedAdminAppInstallRoute
   '/admin/plans': typeof AuthenticatedAdminPlansRoute
   '/admin/tenants': typeof AuthenticatedAdminTenantsRoute
   '/invoices/$id': typeof AuthenticatedInvoicesIdRoute
   '/invoices/new': typeof AuthenticatedInvoicesNewRoute
   '/api/public/plan-expiry-reminders': typeof ApiPublicPlanExpiryRemindersRoute
+  '/store/$slug/manifest.webmanifest': typeof StoreSlugManifestDotwebmanifestRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/invoices/': typeof AuthenticatedInvoicesIndexRoute
   '/invoices/edit/$id': typeof AuthenticatedInvoicesEditIdRoute
@@ -318,13 +326,14 @@ export interface FileRoutesByTo {
   '/reports': typeof AuthenticatedReportsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/team': typeof AuthenticatedTeamRoute
-  '/store/$slug': typeof StoreSlugRoute
+  '/store/$slug': typeof StoreSlugRouteWithChildren
   '/admin/app-install': typeof AuthenticatedAdminAppInstallRoute
   '/admin/plans': typeof AuthenticatedAdminPlansRoute
   '/admin/tenants': typeof AuthenticatedAdminTenantsRoute
   '/invoices/$id': typeof AuthenticatedInvoicesIdRoute
   '/invoices/new': typeof AuthenticatedInvoicesNewRoute
   '/api/public/plan-expiry-reminders': typeof ApiPublicPlanExpiryRemindersRoute
+  '/store/$slug/manifest.webmanifest': typeof StoreSlugManifestDotwebmanifestRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/invoices': typeof AuthenticatedInvoicesIndexRoute
   '/invoices/edit/$id': typeof AuthenticatedInvoicesEditIdRoute
@@ -360,13 +369,14 @@ export interface FileRoutesById {
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/team': typeof AuthenticatedTeamRoute
-  '/store/$slug': typeof StoreSlugRoute
+  '/store/$slug': typeof StoreSlugRouteWithChildren
   '/_authenticated/admin/app-install': typeof AuthenticatedAdminAppInstallRoute
   '/_authenticated/admin/plans': typeof AuthenticatedAdminPlansRoute
   '/_authenticated/admin/tenants': typeof AuthenticatedAdminTenantsRoute
   '/_authenticated/invoices/$id': typeof AuthenticatedInvoicesIdRoute
   '/_authenticated/invoices/new': typeof AuthenticatedInvoicesNewRoute
   '/api/public/plan-expiry-reminders': typeof ApiPublicPlanExpiryRemindersRoute
+  '/store/$slug/manifest.webmanifest': typeof StoreSlugManifestDotwebmanifestRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/invoices/': typeof AuthenticatedInvoicesIndexRoute
   '/_authenticated/invoices/edit/$id': typeof AuthenticatedInvoicesEditIdRoute
@@ -409,6 +419,7 @@ export interface FileRouteTypes {
     | '/invoices/$id'
     | '/invoices/new'
     | '/api/public/plan-expiry-reminders'
+    | '/store/$slug/manifest.webmanifest'
     | '/admin/'
     | '/invoices/'
     | '/invoices/edit/$id'
@@ -448,6 +459,7 @@ export interface FileRouteTypes {
     | '/invoices/$id'
     | '/invoices/new'
     | '/api/public/plan-expiry-reminders'
+    | '/store/$slug/manifest.webmanifest'
     | '/admin'
     | '/invoices'
     | '/invoices/edit/$id'
@@ -489,6 +501,7 @@ export interface FileRouteTypes {
     | '/_authenticated/invoices/$id'
     | '/_authenticated/invoices/new'
     | '/api/public/plan-expiry-reminders'
+    | '/store/$slug/manifest.webmanifest'
     | '/_authenticated/admin/'
     | '/_authenticated/invoices/'
     | '/_authenticated/invoices/edit/$id'
@@ -507,7 +520,7 @@ export interface RootRouteChildren {
   OnboardingRoute: typeof OnboardingRoute
   PricingRoute: typeof PricingRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
-  StoreSlugRoute: typeof StoreSlugRoute
+  StoreSlugRoute: typeof StoreSlugRouteWithChildren
   ApiPublicPlanExpiryRemindersRoute: typeof ApiPublicPlanExpiryRemindersRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
@@ -719,6 +732,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/store/$slug/manifest.webmanifest': {
+      id: '/store/$slug/manifest.webmanifest'
+      path: '/manifest.webmanifest'
+      fullPath: '/store/$slug/manifest.webmanifest'
+      preLoaderRoute: typeof StoreSlugManifestDotwebmanifestRouteImport
+      parentRoute: typeof StoreSlugRoute
+    }
     '/api/public/plan-expiry-reminders': {
       id: '/api/public/plan-expiry-reminders'
       path: '/api/public/plan-expiry-reminders'
@@ -860,6 +880,18 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
+interface StoreSlugRouteChildren {
+  StoreSlugManifestDotwebmanifestRoute: typeof StoreSlugManifestDotwebmanifestRoute
+}
+
+const StoreSlugRouteChildren: StoreSlugRouteChildren = {
+  StoreSlugManifestDotwebmanifestRoute: StoreSlugManifestDotwebmanifestRoute,
+}
+
+const StoreSlugRouteWithChildren = StoreSlugRoute._addFileChildren(
+  StoreSlugRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
@@ -870,7 +902,7 @@ const rootRouteChildren: RootRouteChildren = {
   OnboardingRoute: OnboardingRoute,
   PricingRoute: PricingRoute,
   ResetPasswordRoute: ResetPasswordRoute,
-  StoreSlugRoute: StoreSlugRoute,
+  StoreSlugRoute: StoreSlugRouteWithChildren,
   ApiPublicPlanExpiryRemindersRoute: ApiPublicPlanExpiryRemindersRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,

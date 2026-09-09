@@ -7,7 +7,13 @@ export const Route = createFileRoute("/app-splash.png")({
       GET: async () => {
         const s = await loadPwaSettings();
         const decoded = s?.splash_url ? decodeDataUrl(s.splash_url) : null;
-        if (!decoded) return new Response("No splash image set", { status: 404 });
+        // Fall back to the built-in default splash when nothing is uploaded.
+        if (!decoded) {
+          return new Response(null, {
+            status: 302,
+            headers: { Location: "/default-app-splash.png", "Cache-Control": "no-store" },
+          });
+        }
         return new Response(decoded.bytes.buffer as ArrayBuffer, {
           headers: {
             "Content-Type": decoded.contentType,
