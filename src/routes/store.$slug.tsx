@@ -165,8 +165,8 @@ function Storefront() {
       submitStoreOrder({
         data: {
           slug: tenant.slug,
-          ...(known ? { code: known.code } : { customer }),
-          notes: known ? orderNotes : customer.notes,
+          ...(walkIn ? { walkIn: true } : known ? { code: known.code } : { customer }),
+          notes: walkIn || known ? orderNotes : customer.notes,
           items: cart.map((l) => ({ product_id: l.product_id, quantity: l.quantity })),
         },
       }),
