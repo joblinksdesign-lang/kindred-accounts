@@ -11,11 +11,11 @@ export const Route = createFileRoute("/store/$slug/manifest.webmanifest")({
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const { data: tenant } = await supabaseAdmin
           .from("tenants")
-          .select("id, name, slug, status, store_enabled")
+          .select("id, business_name, slug")
           .eq("slug", slug)
           .maybeSingle();
 
-        const name = (tenant as { name?: string } | null)?.name || "Online store";
+        const name = (tenant as { business_name?: string } | null)?.business_name || "Online store";
         const version = settings?.updated_at ? Date.parse(settings.updated_at) : Date.now();
         const iconSrc = settings?.icon_url ? `/app-icon.png?v=${version}` : "/default-app-icon.png";
         const start = `/store/${slug}`;

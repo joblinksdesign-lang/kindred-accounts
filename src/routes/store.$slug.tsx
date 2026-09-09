@@ -21,6 +21,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
 import { ShoppingCart, Plus, Minus, Trash2, Send, Download, PackageSearch, ChevronLeft, ChevronRight } from "lucide-react";
 import { formatMoney } from "@/lib/company";
+import { InstallAppPrompt } from "@/components/install-app-prompt";
 
 export const Route = createFileRoute("/store/$slug")({
   loader: async ({ params }) => {
@@ -523,6 +524,11 @@ function Storefront() {
         <div>{company.company_name}{company.phone ? ` • ${company.phone}` : ""}{company.email ? ` • ${company.email}` : ""}</div>
         <div className="mt-1">Powered by Softtrack Pos</div>
       </footer>
+      <InstallAppPrompt
+        storeName={company.company_name}
+        accent={accent}
+        storageKey={`softtrack.install-dismissed.${tenant.slug}`}
+      />
       <Toaster richColors position="top-right" />
     </div>
   );
