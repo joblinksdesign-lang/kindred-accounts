@@ -71,16 +71,16 @@ export function InstallAppPrompt({
           </div>
         </div>
 
-        {showIosSteps ? (
+        {showSteps ? (
           <ol className="mt-3 space-y-1.5 text-xs text-muted-foreground">
             <li className="flex items-center gap-2">
-              <Share className="h-4 w-4" /> 1. Tap the Share button in Safari
+              <Share className="h-4 w-4" /> 1. Tap {isIos ? "the Share button in Safari" : "the browser menu"}
             </li>
             <li className="flex items-center gap-2">
-              <Plus className="h-4 w-4" /> 2. Choose “Add to Home Screen”
+              <Plus className="h-4 w-4" /> 2. Choose “{isIos ? "Add to Home Screen" : "Install app / Add to Home screen"}”
             </li>
             <li className="flex items-center gap-2">
-              <Download className="h-4 w-4" /> 3. Tap “Add” — the shop icon appears on your screen
+              <Download className="h-4 w-4" /> 3. Confirm — the shop icon appears on your screen
             </li>
           </ol>
         ) : null}
@@ -96,7 +96,7 @@ export function InstallAppPrompt({
                 if (ok) dismiss();
                 return;
               }
-              setShowIosSteps(true);
+              setShowSteps(true);
             }}
           >
             <Download className="mr-1.5 h-4 w-4" />
