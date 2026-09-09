@@ -285,6 +285,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </div>
       <Toaster richColors position="top-right" />
+      <PlanBlockDialogHost />
     </SidebarProvider>
   );
 }

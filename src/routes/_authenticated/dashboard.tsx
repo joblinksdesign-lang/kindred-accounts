@@ -305,6 +305,7 @@ function Dashboard() {
       </div>
 
       <PlanLimitBanner />
+      <RenewalStatusCard />
 
       {/* KPI grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
