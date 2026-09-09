@@ -140,6 +140,7 @@ function Storefront() {
 
   const [mode, setMode] = useState<"code" | "form">("code");
   const [code, setCode] = useState("");
+  const [walkIn, setWalkIn] = useState(false);
   const [known, setKnown] = useState<StoreCustomerLookup | null>(null);
   const [orderNotes, setOrderNotes] = useState("");
   const [customer, setCustomer] = useState({ name: "", phone: "", email: "", address: "", notes: "" });
