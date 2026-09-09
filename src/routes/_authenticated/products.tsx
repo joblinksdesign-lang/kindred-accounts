@@ -177,7 +177,7 @@ function ProductsPage() {
       qc.invalidateQueries({ queryKey: ["products"] });
       setOpen(false); setEditing(null); setImages([]);
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => { if (handlePlanBlockError(e)) return; toast.error(e.message); },
   });
 
   const del = useMutation({

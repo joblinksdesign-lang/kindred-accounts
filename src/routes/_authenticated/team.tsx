@@ -75,7 +75,7 @@ function TeamPage() {
       setForm({ email: "", fullName: "", password: "", role: "sales_agent" });
       invalidate();
     },
-    onError: (e: Error) => toast.error("Could not add user", { description: e.message }),
+    onError: (e: Error) => { if (handlePlanBlockError(e)) return; toast.error("Could not add user", { description: e.message }); },
   });
 
   const update = useMutation({

@@ -246,7 +246,7 @@ function PosPage() {
       qc.invalidateQueries({ queryKey: ["receipts"] });
       qc.invalidateQueries({ queryKey: ["invoices"] });
     },
-    onError: (e: Error) => toast.error(e.message || "Could not complete the sale"),
+    onError: (e: Error) => { if (handlePlanBlockError(e)) return; toast.error(e.message || "Could not complete the sale"); },
   });
 
   const receiptPayload = (res: SaleResult) => ({

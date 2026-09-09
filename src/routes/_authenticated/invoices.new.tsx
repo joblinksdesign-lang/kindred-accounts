@@ -105,7 +105,7 @@ function NewInvoicePage() {
       return inserted.id;
     },
     onSuccess: (id) => { toast.success("Invoice created"); navigate({ to: "/invoices/$id", params: { id } }); },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => { if (handlePlanBlockError(e)) return; toast.error(e.message); },
   });
 
   return (

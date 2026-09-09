@@ -75,7 +75,7 @@ function CustomersPage() {
       qc.invalidateQueries({ queryKey: ["customers"] });
       setOpen(false); setEditing(null);
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => { if (handlePlanBlockError(e)) return; toast.error(e.message); },
   });
 
   const del = useMutation({
