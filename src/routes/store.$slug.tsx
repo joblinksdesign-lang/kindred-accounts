@@ -19,7 +19,7 @@ import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
-import { ShoppingCart, Plus, Minus, Trash2, Send, Download, PackageSearch, ChevronLeft, ChevronRight } from "lucide-react";
+import { ShoppingCart, Plus, Minus, Trash2, Send, Download, PackageSearch, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { formatMoney } from "@/lib/company";
 import { InstallAppPrompt } from "@/components/install-app-prompt";
 
