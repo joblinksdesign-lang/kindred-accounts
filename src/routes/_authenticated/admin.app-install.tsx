@@ -173,12 +173,21 @@ function AppInstallAdmin() {
                 <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden"
                   onChange={(e) => upload("icon_url", e.target.files?.[0])} />
               </Label>
+              <Button variant="outline" size="sm" onClick={() => set("icon_url", null)}>
+                Use default icon
+              </Button>
               {form.icon_url && (
                 <Button variant="ghost" size="sm" onClick={() => set("icon_url", null)}>
                   <Trash2 className="h-4 w-4 mr-1.5" />Remove
                 </Button>
               )}
             </div>
+            {!form.icon_url && (
+              <div className="flex items-center gap-3 rounded-md border p-3">
+                <img src="/default-app-icon.png" alt="Default app icon" className="h-12 w-12 rounded-lg" />
+                <span className="text-xs text-muted-foreground">Using the built-in Softtrack icon.</span>
+              </div>
+            )}
             <div className="space-y-2">
               <Label className="text-xs uppercase tracking-wide text-muted-foreground">Generated sizes</Label>
               <div className="flex flex-wrap gap-2">
@@ -201,12 +210,21 @@ function AppInstallAdmin() {
                 <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden"
                   onChange={(e) => upload("splash_url", e.target.files?.[0])} />
               </Label>
+              <Button variant="outline" size="sm" onClick={() => set("splash_url", null)}>
+                Use default splash
+              </Button>
               {form.splash_url && (
                 <Button variant="ghost" size="sm" onClick={() => set("splash_url", null)}>
                   <Trash2 className="h-4 w-4 mr-1.5" />Remove
                 </Button>
               )}
             </div>
+            {!form.splash_url && (
+              <div className="flex items-center gap-3 rounded-md border p-3">
+                <img src="/default-app-splash.png" alt="Default splash screen" className="h-20 w-12 object-cover" />
+                <span className="text-xs text-muted-foreground">Using the built-in full-screen splash.</span>
+              </div>
+            )}
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label>Splash width (px)</Label>
