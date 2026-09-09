@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { netUnitPrice, unitDiscount } from "@/lib/discounts";
 
 
 export type StorefrontProduct = {
@@ -9,6 +10,12 @@ export type StorefrontProduct = {
   category: string | null;
   description: string | null;
   unit_price: number;
+  /** Price after the shop's product offer. */
+  net_price: number;
+  /** Money saved per unit (0 when there is no offer). */
+  unit_discount: number;
+  discount_type: string | null;
+  discount_value: number;
   image_url: string | null;
   images: string[];
   quantity: number;
