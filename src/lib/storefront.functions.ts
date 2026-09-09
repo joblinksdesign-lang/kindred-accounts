@@ -220,8 +220,9 @@ export type StoreOrderResult = {
   customerName: string;
   customerPhone: string;
   customerAddress: string;
-  items: { description: string; quantity: number; unit_price: number; line_total: number }[];
+  items: { description: string; quantity: number; unit_price: number; line_total: number; unit_discount: number }[];
   subtotal: number;
+  discount: number;
   taxRate: number;
   taxAmount: number;
   total: number;
