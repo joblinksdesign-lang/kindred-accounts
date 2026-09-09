@@ -72,7 +72,7 @@ function CenterMessage({ title, text }: { title: string; text: string }) {
   );
 }
 
-type CartLine = { product_id: string; name: string; unit_price: number; quantity: number };
+type CartLine = { product_id: string; name: string; unit_price: number; quantity: number; unit_discount: number };
 
 function Storefront() {
   const store = Route.useLoaderData() as StorefrontData;
@@ -101,7 +101,7 @@ function Storefront() {
 
   const stockOf = (id: string) => Number(products.find((p) => p.id === id)?.quantity ?? 0);
 
-  const add = (id: string, name: string, price: number) => {
+  const add = (id: string, name: string, price: number, off = 0) => {
     const stock = stockOf(id);
     const inCart = cart.find((l) => l.product_id === id)?.quantity ?? 0;
     if (stock <= 0) {
@@ -115,7 +115,7 @@ function Storefront() {
     setCart((c) => {
       const found = c.find((l) => l.product_id === id);
       if (found) return c.map((l) => (l.product_id === id ? { ...l, quantity: l.quantity + 1 } : l));
-      return [...c, { product_id: id, name, unit_price: price, quantity: 1 }];
+      return [...c, { product_id: id, name, unit_price: price, quantity: 1, unit_discount: off }];
     });
     toast.success(`${name} added to cart`);
   };
@@ -134,8 +134,10 @@ function Storefront() {
 
 
   const subtotal = cart.reduce((s, l) => s + l.unit_price * l.quantity, 0);
-  const taxAmount = (subtotal * (company.default_tax_rate || 0)) / 100;
-  const total = subtotal + taxAmount;
+  // Savings from products the shop has put on offer.
+  const savings = cart.reduce((s, l) => s + l.unit_discount * l.quantity, 0);
+  const taxAmount = (Math.max(subtotal - savings, 0) * (company.default_tax_rate || 0)) / 100;
+  const total = Math.max(subtotal - savings, 0) + taxAmount;
   const count = cart.reduce((s, l) => s + l.quantity, 0);
 
   const [mode, setMode] = useState<"code" | "form">("code");
@@ -218,7 +220,7 @@ function Storefront() {
         subtotal: res.subtotal,
         taxRate: res.taxRate,
         taxAmount: res.taxAmount,
-        discount: 0,
+        discount: res.discount,
         total: res.total,
         amountPaid: 0,
         balance: res.total,
@@ -254,6 +256,7 @@ function Storefront() {
       ...res.items.map((i) => `• ${i.description} x${i.quantity} — ${formatMoney(i.line_total, symbol)}`),
       "",
       `Subtotal: ${formatMoney(res.subtotal, symbol)}`,
+      res.discount ? `Discount: -${formatMoney(res.discount, symbol)}` : null,
       res.taxAmount ? `Tax: ${formatMoney(res.taxAmount, symbol)}` : null,
       `*Total: ${formatMoney(res.total, symbol)}*`,
       "",
@@ -357,7 +360,16 @@ function Storefront() {
                           <div className="flex items-center gap-2">
                             <div className="min-w-0 flex-1">
                               <div className="truncate text-sm font-medium">{l.name}</div>
-                              <div className="text-xs text-muted-foreground">{formatMoney(l.unit_price, symbol)}</div>
+                              <div className="text-xs text-muted-foreground">
+                                {l.unit_discount > 0 ? (
+                                  <>
+                                    <span className="line-through">{formatMoney(l.unit_price, symbol)}</span>{" "}
+                                    <span className="font-semibold text-emerald-600">{formatMoney(l.unit_price - l.unit_discount, symbol)}</span>
+                                  </>
+                                ) : (
+                                  formatMoney(l.unit_price, symbol)
+                                )}
+                              </div>
                             </div>
                             <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => setQty(l.product_id, l.quantity - 1)}><Minus className="h-3 w-3" /></Button>
                             <span className="w-6 text-center text-sm tabular-nums">{l.quantity}</span>
@@ -373,6 +385,12 @@ function Storefront() {
                     <Separator className="my-4" />
                     <div className="space-y-1 text-sm">
                       <Row label="Subtotal" value={formatMoney(subtotal, symbol)} />
+                      {savings > 0 && (
+                        <div className="flex justify-between font-medium text-emerald-600">
+                          <span>Discount</span>
+                          <span>- {formatMoney(savings, symbol)}</span>
+                        </div>
+                      )}
                       {company.default_tax_rate > 0 && <Row label={`Tax (${company.default_tax_rate}%)`} value={formatMoney(taxAmount, symbol)} />}
                       <div className="flex justify-between pt-1 text-base font-bold"><span>Total</span><span>{formatMoney(total, symbol)}</span></div>
                     </div>
@@ -524,8 +542,18 @@ function Storefront() {
                   <div className={`text-[11px] font-medium ${out ? "text-destructive" : low ? "text-amber-600" : "text-muted-foreground"}`}>
                     {out ? "Out of stock" : low ? `Only ${stock} left` : `${stock} in stock`}
                   </div>
-                  <div className="mt-auto pt-2 text-base font-bold tabular-nums [overflow-wrap:anywhere]">
-                    {formatMoney(p.unit_price, symbol)}
+                  <div className="mt-auto pt-2 [overflow-wrap:anywhere]">
+                    {p.unit_discount > 0 ? (
+                      <div className="flex flex-wrap items-baseline gap-x-2">
+                        <span className="text-base font-bold tabular-nums text-emerald-600">{formatMoney(p.net_price, symbol)}</span>
+                        <span className="text-xs text-muted-foreground line-through tabular-nums">{formatMoney(p.unit_price, symbol)}</span>
+                        <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700">
+                          {p.discount_type === "percent" ? `${p.discount_value}% off` : `Save ${formatMoney(p.unit_discount, symbol)}`}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-base font-bold tabular-nums">{formatMoney(p.unit_price, symbol)}</span>
+                    )}
                   </div>
                   <Button
                     size="sm"
@@ -533,7 +561,7 @@ function Storefront() {
                     style={{ background: out || inCart >= stock ? undefined : accent }}
                     variant={out || inCart >= stock ? "secondary" : "default"}
                     disabled={out || inCart >= stock}
-                    onClick={() => add(p.id, p.name, p.unit_price)}
+                    onClick={() => add(p.id, p.name, p.unit_price, p.unit_discount)}
                   >
                     {out ? "Out of stock" : inCart >= stock ? "Max in cart" : "Add to cart"}
                   </Button>

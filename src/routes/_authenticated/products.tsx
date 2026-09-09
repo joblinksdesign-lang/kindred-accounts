@@ -21,6 +21,7 @@ import { formatMoney, useCompanySettings } from "@/lib/company";
 import { useActiveTenantId } from "@/lib/tenant";
 import { MAX_PRODUCT_IMAGES, uploadProductImages, useProductImageUrls } from "@/lib/product-images";
 import { BarcodeScannerDialog, unlockAudio } from "@/components/barcode-scanner";
+import { discountBadge, netUnitPrice, unitDiscount } from "@/lib/discounts";
 
 
 export const Route = createFileRoute("/_authenticated/products")({
@@ -32,6 +33,7 @@ type Product = {
   id: string; name: string; sku: string | null; barcode: string | null; category: string | null;
   unit_price: number; cost_price: number; quantity: number; reorder_level: number;
   supplier: string | null; image_url: string | null; image_paths: string[] | null;
+  discount_type: string | null; discount_value: number | null;
 };
 
 
@@ -160,6 +162,9 @@ function ProductsPage() {
         cost_price: Number(form.cost_price || 0),
         quantity: Number(form.quantity || 0),
         reorder_level: Number(form.reorder_level || 0),
+        discount_type: String(form.discount_type || "none"),
+        discount_value:
+          String(form.discount_type || "none") === "none" ? 0 : Number(form.discount_value || 0),
         image_paths: images,
       };
 
@@ -304,7 +309,17 @@ function ProductsPage() {
                       </TableCell>
 
                       <TableCell className="text-xs text-muted-foreground">{p.sku || "—"}</TableCell>
-                      <TableCell className="text-right tabular-nums">{formatMoney(p.unit_price, sym)}</TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {unitDiscount(p) > 0 ? (
+                          <div className="flex flex-col items-end">
+                            <span className="text-xs text-muted-foreground line-through">{formatMoney(p.unit_price, sym)}</span>
+                            <span className="font-semibold">{formatMoney(netUnitPrice(p), sym)}</span>
+                            <span className="text-[10px] font-semibold text-success">{discountBadge(p, sym)}</span>
+                          </div>
+                        ) : (
+                          formatMoney(p.unit_price, sym)
+                        )}
+                      </TableCell>
                       <TableCell className="text-right tabular-nums font-medium">{Number(p.quantity)}</TableCell>
                       <TableCell>
                         {out ? <Badge variant="destructive">Out of stock</Badge>
@@ -365,6 +380,24 @@ function ProductsPage() {
             <div><Label>Cost price ({sym})</Label><Input name="cost_price" type="number" step="0.01" defaultValue={editing?.cost_price ?? 0} /></div>
             <div><Label>Quantity</Label><Input name="quantity" type="number" step="1" defaultValue={editing?.quantity ?? 0} /></div>
             <div><Label>Reorder level</Label><Input name="reorder_level" type="number" step="1" defaultValue={editing?.reorder_level ?? 0} /></div>
+            <div>
+              <Label>Discount</Label>
+              <Select name="discount_type" defaultValue={editing?.discount_type ?? "none"}>
+                <SelectTrigger><SelectValue placeholder="No discount" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No discount</SelectItem>
+                  <SelectItem value="percent">Percent off (%)</SelectItem>
+                  <SelectItem value="amount">Fixed amount off ({sym.trim()})</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Discount value</Label>
+              <Input name="discount_value" type="number" min="0" step="0.01" defaultValue={editing?.discount_value ?? 0} />
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Shoppers see the old price crossed out and the saving is taken off the total automatically.
+              </p>
+            </div>
             <div className="col-span-2">
               <Label>Product images (up to {MAX_PRODUCT_IMAGES})</Label>
               <div className="mt-1.5 flex flex-wrap gap-2">

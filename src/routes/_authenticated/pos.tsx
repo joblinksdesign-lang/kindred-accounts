@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { usePlanLimits, planBlockReason } from "@/lib/plan-limits";
 import { planBlockError, handlePlanBlockError } from "@/components/plan-block-dialog";
 import { BarcodeScannerDialog, unlockAudio } from "@/components/barcode-scanner";
+import { discountBadge, netUnitPrice, unitDiscount } from "@/lib/discounts";
 import {
   ShoppingCart, Minus, Plus, Trash2, PackageSearch, Search, ScanLine, CheckCircle2, Printer, Download, Receipt as ReceiptIcon,
 } from "lucide-react";
@@ -41,9 +42,10 @@ export const Route = createFileRoute("/_authenticated/pos")({
 type PosProduct = {
   id: string; name: string; sku: string | null; barcode: string | null; category: string | null;
   unit_price: number; quantity: number; image_url: string | null; image_paths: string[] | null;
+  discount_type: string | null; discount_value: number | null;
 };
 
-type Line = { product_id: string; name: string; unit_price: number; quantity: number };
+type Line = { product_id: string; name: string; unit_price: number; quantity: number; unit_discount: number };
 
 type SaleResult = {
   invoiceId: string;
@@ -76,7 +78,7 @@ function PosPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("id, name, sku, barcode, category, unit_price, quantity, image_url, image_paths")
+        .select("id, name, sku, barcode, category, unit_price, quantity, image_url, image_paths, discount_type, discount_value")
         .eq("is_active", true)
         .order("name");
       if (error) throw error;
@@ -109,7 +111,10 @@ function PosPage() {
 
   const taxRate = Number(company?.default_tax_rate ?? 0);
   const subtotal = cart.reduce((s, l) => s + l.unit_price * l.quantity, 0);
-  const taxable = Math.max(subtotal - discount, 0);
+  // Money taken off because products are on offer.
+  const itemDiscount = cart.reduce((s, l) => s + l.unit_discount * l.quantity, 0);
+  const totalDiscount = itemDiscount + discount;
+  const taxable = Math.max(subtotal - totalDiscount, 0);
   const taxAmount = (taxable * taxRate) / 100;
   const total = Math.max(taxable + taxAmount, 0);
   const count = cart.reduce((s, l) => s + l.quantity, 0);
@@ -124,7 +129,7 @@ function PosPage() {
     setCart((c) => {
       const found = c.find((l) => l.product_id === p.id);
       if (found) return c.map((l) => (l.product_id === p.id ? { ...l, quantity: l.quantity + 1 } : l));
-      return [...c, { product_id: p.id, name: p.name, unit_price: Number(p.unit_price), quantity: 1 }];
+      return [...c, { product_id: p.id, name: p.name, unit_price: Number(p.unit_price), quantity: 1, unit_discount: unitDiscount(p) }];
     });
   };
 
@@ -202,7 +207,7 @@ function PosPage() {
         .insert({
           tenant_id: tenantId, customer_id: cid, invoice_number: "",
           invoice_date: today, due_date: today, status: "sent",
-          subtotal, tax_rate: taxRate, tax_amount: taxAmount, discount, total,
+          subtotal, tax_rate: taxRate, tax_amount: taxAmount, discount: totalDiscount, total,
           balance: total, notes: "POS sale", created_by: u.user?.id,
         } as never)
         .select("id, invoice_number").single();
@@ -234,7 +239,7 @@ function PosPage() {
         date: formatDate(receipt?.payment_date || today),
         customer: { name: cust?.name || "Walk-in Customer", company_name: cust?.company_name ?? null, email: null },
         items: cart.map((l) => ({ description: l.name, quantity: l.quantity, unit_price: l.unit_price, line_total: l.unit_price * l.quantity })),
-        subtotal, discount, taxAmount, total, method,
+        subtotal, discount: totalDiscount, taxAmount, total, method,
       };
     },
     onSuccess: (res) => {
@@ -359,7 +364,15 @@ function PosPage() {
                       </div>
                       <div className="p-2.5">
                         <div className="line-clamp-2 text-xs font-semibold leading-snug">{p.name}</div>
-                        <div className="mt-1 text-sm font-bold tabular-nums text-primary [overflow-wrap:anywhere]">{formatMoney(p.unit_price, sym)}</div>
+                        {unitDiscount(p) > 0 ? (
+                          <div className="mt-1">
+                            <div className="text-[10px] text-muted-foreground line-through">{formatMoney(p.unit_price, sym)}</div>
+                            <div className="text-sm font-bold tabular-nums text-primary [overflow-wrap:anywhere]">{formatMoney(netUnitPrice(p), sym)}</div>
+                            <span className="mt-0.5 inline-block rounded-full bg-success/15 px-1.5 py-0.5 text-[9px] font-bold text-success">{discountBadge(p, sym)}</span>
+                          </div>
+                        ) : (
+                          <div className="mt-1 text-sm font-bold tabular-nums text-primary [overflow-wrap:anywhere]">{formatMoney(p.unit_price, sym)}</div>
+                        )}
                         <div className={`text-[10px] ${out ? "text-destructive" : low ? "text-amber-600" : "text-muted-foreground"}`}>
                           {out ? "Out of stock" : maxed ? `All ${stock} in cart` : `${stock} in stock`}
                         </div>
@@ -391,9 +404,18 @@ function PosPage() {
                 <div className="flex items-start gap-2">
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-medium">{l.name}</div>
-                    <div className="text-xs text-muted-foreground tabular-nums">{formatMoney(l.unit_price, sym)}</div>
+                    <div className="text-xs text-muted-foreground tabular-nums">
+                      {l.unit_discount > 0 ? (
+                        <>
+                          <span className="line-through">{formatMoney(l.unit_price, sym)}</span>{" "}
+                          <span className="font-semibold text-success">{formatMoney(l.unit_price - l.unit_discount, sym)}</span>
+                        </>
+                      ) : (
+                        formatMoney(l.unit_price, sym)
+                      )}
+                    </div>
                   </div>
-                  <div className="text-sm font-semibold tabular-nums">{formatMoney(l.unit_price * l.quantity, sym)}</div>
+                  <div className="text-sm font-semibold tabular-nums">{formatMoney((l.unit_price - l.unit_discount) * l.quantity, sym)}</div>
                 </div>
                 <div className="mt-2 flex items-center gap-1.5">
                   <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => setQty(l.product_id, l.quantity - 1)}><Minus className="h-3 w-3" /></Button>
@@ -438,8 +460,14 @@ function PosPage() {
 
             <Separator />
             <Row label="Subtotal" value={formatMoney(subtotal, sym)} />
+            {itemDiscount > 0 && (
+              <div className="flex justify-between text-sm font-medium text-success">
+                <span>Product offers</span>
+                <span className="tabular-nums">- {formatMoney(itemDiscount, sym)}</span>
+              </div>
+            )}
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Discount</span>
+              <span className="text-muted-foreground">Extra discount</span>
               <Input className="h-7 w-28 text-right" type="number" step="0.01" value={discount} onChange={(e) => setDiscount(Number(e.target.value) || 0)} />
             </div>
             {taxRate > 0 && <Row label={`Tax (${taxRate}%)`} value={formatMoney(taxAmount, sym)} />}

@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { netUnitPrice, unitDiscount } from "@/lib/discounts";
 
 
 export type StorefrontProduct = {
@@ -9,6 +10,12 @@ export type StorefrontProduct = {
   category: string | null;
   description: string | null;
   unit_price: number;
+  /** Price after the shop's product offer. */
+  net_price: number;
+  /** Money saved per unit (0 when there is no offer). */
+  unit_discount: number;
+  discount_type: string | null;
+  discount_value: number;
   image_url: string | null;
   images: string[];
   quantity: number;
@@ -63,7 +70,9 @@ export const getStorefront = createServerFn({ method: "GET" })
         .maybeSingle(),
       sb
         .from("products")
-        .select("id, name, sku, category, description, unit_price, image_url, image_paths, quantity, reorder_level")
+        .select(
+          "id, name, sku, category, description, unit_price, image_url, image_paths, quantity, reorder_level, discount_type, discount_value",
+        )
         .eq("tenant_id", tenant.id)
         .eq("is_active", true)
         .order("name"),
@@ -127,6 +136,10 @@ export const getStorefront = createServerFn({ method: "GET" })
         category: p.category,
         description: p.description,
         unit_price: Number(p.unit_price),
+        net_price: netUnitPrice(p),
+        unit_discount: unitDiscount(p),
+        discount_type: p.discount_type ?? "none",
+        discount_value: Number(p.discount_value ?? 0),
         image_url: p.image_url,
         images: (((p.image_paths ?? []) as string[]).map((path) => signedMap[path]).filter(Boolean) as string[]).concat(
           p.image_url && ((p.image_paths ?? []) as string[]).length === 0 ? [p.image_url] : [],
@@ -207,8 +220,9 @@ export type StoreOrderResult = {
   customerName: string;
   customerPhone: string;
   customerAddress: string;
-  items: { description: string; quantity: number; unit_price: number; line_total: number }[];
+  items: { description: string; quantity: number; unit_price: number; line_total: number; unit_discount: number }[];
   subtotal: number;
+  discount: number;
   taxRate: number;
   taxAmount: number;
   total: number;
@@ -239,7 +253,7 @@ export const submitStoreOrder = createServerFn({ method: "POST" })
     const ids = data.items.map((i) => i.product_id);
     const { data: products } = await supabaseAdmin
       .from("products")
-      .select("id, name, unit_price, is_active, quantity")
+      .select("id, name, unit_price, is_active, quantity, discount_type, discount_value")
       .eq("tenant_id", tenant.id)
       .in("id", ids);
 
@@ -251,19 +265,24 @@ export const submitStoreOrder = createServerFn({ method: "POST" })
       if (i.quantity > stock) throw new Error(`Only ${stock} of ${p.name} left in stock.`);
 
       const unit = Number(p.unit_price);
+      // Offers are always priced on the server so the saving cannot be faked.
+      const off = unitDiscount(p);
       return {
         product_id: p.id,
         description: p.name,
         quantity: i.quantity,
         unit_price: unit,
+        unit_discount: off,
         line_total: Number((unit * i.quantity).toFixed(2)),
       };
     });
 
     const subtotal = Number(priced.reduce((s, i) => s + i.line_total, 0).toFixed(2));
+    const discountTotal = Number(priced.reduce((s, i) => s + i.unit_discount * i.quantity, 0).toFixed(2));
     const taxRate = Number(company.default_tax_rate ?? 0);
-    const taxAmount = Number(((subtotal * taxRate) / 100).toFixed(2));
-    const total = Number((subtotal + taxAmount).toFixed(2));
+    const taxable = Math.max(subtotal - discountTotal, 0);
+    const taxAmount = Number(((taxable * taxRate) / 100).toFixed(2));
+    const total = Number((taxable + taxAmount).toFixed(2));
 
     // Returning shoppers are identified by their shop code; new ones fill the form.
     let customerId: string | null = null;
@@ -356,7 +375,7 @@ export const submitStoreOrder = createServerFn({ method: "POST" })
         subtotal,
         tax_rate: taxRate,
         tax_amount: taxAmount,
-        discount: 0,
+        discount: discountTotal,
         total,
         notes: ["Online store order", orderNotes].filter(Boolean).join(" — ") || null,
       })
@@ -393,13 +412,15 @@ export const submitStoreOrder = createServerFn({ method: "POST" })
       customerName: record?.name ?? "",
       customerPhone: record?.phone ?? "",
       customerAddress: record?.address ?? "",
-      items: priced.map(({ description, quantity, unit_price, line_total }) => ({
+      items: priced.map(({ description, quantity, unit_price, line_total, unit_discount: off }) => ({
         description,
         quantity,
         unit_price,
         line_total,
+        unit_discount: off,
       })),
       subtotal,
+      discount: discountTotal,
       taxRate,
       taxAmount,
       total,
