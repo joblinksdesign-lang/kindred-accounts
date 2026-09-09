@@ -1,41 +1,38 @@
+# Renewal flow, centred popups, and admin payment details
 
-## 1. Custom date range picker on dashboard
+## 1. Centre the "add to home screen" popup on mobile
+The shop install popup currently sits at the bottom edge on phones. It becomes a centred card with a soft dark backdrop on mobile, and keeps its small bottom-right position on desktop. Same buttons and dismiss-for-a-week behaviour.
 
-In `src/routes/_authenticated/dashboard.tsx`:
+## 2. Plan-blocked message becomes a centred dialog
+Today, when an expired or over-limit business tries to sell or create an invoice, they get a small toast. Instead they see a centred dialog with:
+- A clear headline (plan expired, or limit reached) and a plain-language explanation.
+- A **Renew plan** button that opens the plans page.
+- A "Not now" close button.
 
-- Extend the `Period` type to `"day" | "week" | "month" | "custom"`.
-- Add state `range: { from?: Date; to?: Date }`.
-- Add a 4th `ToggleGroupItem` "Custom" next to Day/Week/Month. When active, show a `Popover` with the shadcn `Calendar` in `mode="range"` (uses `date-fns` + `react-day-picker`, already in the project via shadcn) — trigger is a Button with `CalendarIcon` showing `from – to` labels.
-- Include `range.from` and `range.to` in the react-query `queryKey` so stats refetch on change.
-- In the queryFn, when `period === "custom"`, compute `startISO`/`endISO` from the range and filter `pays` by `payment_date` and `invs` by `invoice_date` within `[from, to]`.
-- Trend series for custom: bucket by day when the span ≤ 31 days, otherwise by month; label with `formatDate`.
-- Update `periodLabel` ("Custom range") and `trendLabel` (e.g., "Apr 3 – May 12") accordingly.
+Used on: POS sale, new invoice, edit invoice save, new customer, new product, new team member.
 
-Guard: if custom is selected but no range yet, fall back to month behavior and disable the popover close until both dates picked.
+## 3. Plans page renewal behaviour
+On the plans page, when the business plan is expired:
+- The plan they are on shows **Renew plan** instead of the greyed-out "Current plan".
+- Tapping it sends the renewal request to the admin, shows "Request sent to admin", and the button changes to **Notify admin**.
+- **Notify admin** opens WhatsApp to the platform admin number with a ready-written message: business name, plan, cycle, amount and that a renewal was requested.
 
-## 2. Forgot password flow
+## 4. "Request received" card with payment details
+A card appears on both the dashboard and the plans page whenever a renewal/plan request is pending:
+- "Your renewal request has been received and is under review by the admin."
+- Reminder to make sure payment has been made, and how: the payment methods the admin has published (e.g. Mobile Money — name and number, Bank — account name and number).
+- A **Notify admin on WhatsApp** button.
 
-Two additions:
+## 5. Admin: payment methods section
+New admin page **Payments & details** (`/admin/payment-methods`) where the super admin can:
+- Add, edit, reorder, enable/disable payment methods: label (e.g. MTN Mobile Money), account name, account number/details, extra note.
+- Set the admin WhatsApp number used by the "Notify admin" buttons and a short payment instruction note.
 
-**a. Link + dialog on `src/routes/auth.tsx`**
-- Under the password field in sign-in mode, add a "Forgot password?" text button.
-- Opens a small dialog with an email input and a "Send reset link" button that calls:
-  ```ts
-  supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${window.location.origin}/reset-password`,
-  })
-  ```
-- Toast success/error; close on success.
+These are shown to any business with an expired plan or a pending request.
 
-**b. New public route `src/routes/reset-password.tsx`**
-- `createFileRoute("/reset-password")` with `ssr: false`, not under `_authenticated`.
-- On mount, Supabase auto-consumes the recovery token in the URL hash and fires `PASSWORD_RECOVERY` via `onAuthStateChange`; render a form with new password + confirm.
-- Submit calls `supabase.auth.updateUser({ password })`, toasts success, then navigates to `/auth`.
-- Handles the case where the user lands here without a recovery session (show "Link expired, request a new one" with a link back to `/auth`).
-
-No database or server-function changes required — Supabase handles the recovery email and session.
-
-## Files touched
-- `src/routes/_authenticated/dashboard.tsx` (edit)
-- `src/routes/auth.tsx` (edit — add forgot-password dialog)
-- `src/routes/reset-password.tsx` (new)
+## Technical notes
+- New table `public.platform_payment_methods` (label, account_name, account_number, instructions, sort_order, is_active) with GRANTs; SELECT for `authenticated`, full write only for super admins via `is_super_admin(auth.uid())`.
+- New singleton table `public.platform_settings` (admin_whatsapp, payment_note) with the same policy shape.
+- New shared components: `PlanBlockDialog` (centred plan-block modal) and `RenewalStatusCard` (pending request + payment details), plus a `usePlatformPayment()` hook.
+- `planBlockReason` stays as-is; call sites switch from `throw new Error(...)` toasts to opening the dialog with the reason.
+- Install popup: mobile styles become `fixed inset-0 grid place-items-center` with a backdrop, `sm:` styles unchanged.
