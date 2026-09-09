@@ -248,16 +248,33 @@ function BillingPage() {
                   </li>
                 ))}
               </ul>
-              <Button
-                className={`mt-5 w-full ${highlight && !isCurrent && !isPending ? "gradient-emerald text-white" : ""}`}
-                variant={isCurrent ? "secondary" : isPending ? "outline" : highlight ? "default" : "outline"}
-                disabled={!isOwner || isCurrent || isPending || requestPlan.isPending}
-                onClick={() => requestPlan.mutate(p.id)}
-              >
-                {isCurrent ? "Current plan" : isPending ? "Pending approval" : (
-                  <>Request {p.name} <ArrowRight className="ml-1.5 h-4 w-4" /></>
-                )}
-              </Button>
+              {isPending ? (
+                <div className="mt-5 space-y-2">
+                  <div className="rounded-lg bg-amber-500/10 px-3 py-2 text-center text-xs font-medium text-amber-700">
+                    Request sent to admin — awaiting approval
+                  </div>
+                  {notifyLink ? (
+                    <Button asChild className="w-full bg-[#25D366] text-white hover:bg-[#1fb457]">
+                      <a href={notifyLink(p.name)} target="_blank" rel="noreferrer">
+                        <MessageCircle className="mr-1.5 h-4 w-4" /> Notify admin
+                      </a>
+                    </Button>
+                  ) : null}
+                </div>
+              ) : (
+                <Button
+                  className={`mt-5 w-full ${(highlight || canRenew) && !isCurrentActive ? "gradient-emerald text-white" : ""}`}
+                  variant={isCurrentActive ? "secondary" : highlight || canRenew ? "default" : "outline"}
+                  disabled={!isOwner || isCurrentActive || requestPlan.isPending}
+                  onClick={() => requestPlan.mutate(p.id)}
+                >
+                  {isCurrentActive ? "Current plan" : canRenew ? (
+                    <><RefreshCw className="mr-1.5 h-4 w-4" /> Renew plan</>
+                  ) : (
+                    <>Request {p.name} <ArrowRight className="ml-1.5 h-4 w-4" /></>
+                  )}
+                </Button>
+              )}
             </Card>
           );
         })}
