@@ -70,7 +70,9 @@ export const getStorefront = createServerFn({ method: "GET" })
         .maybeSingle(),
       sb
         .from("products")
-        .select("id, name, sku, category, description, unit_price, image_url, image_paths, quantity, reorder_level")
+        .select(
+          "id, name, sku, category, description, unit_price, image_url, image_paths, quantity, reorder_level, discount_type, discount_value",
+        )
         .eq("tenant_id", tenant.id)
         .eq("is_active", true)
         .order("name"),
