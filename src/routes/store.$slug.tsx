@@ -19,7 +19,7 @@ import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Toaster } from "@/components/ui/sonner";
 import { toast } from "sonner";
-import { ShoppingCart, Plus, Minus, Trash2, Send, Download, PackageSearch, ChevronLeft, ChevronRight } from "lucide-react";
+import { ShoppingCart, Plus, Minus, Trash2, Send, Download, PackageSearch, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { formatMoney } from "@/lib/company";
 import { InstallAppPrompt } from "@/components/install-app-prompt";
 
@@ -140,6 +140,7 @@ function Storefront() {
 
   const [mode, setMode] = useState<"code" | "form">("code");
   const [code, setCode] = useState("");
+  const [walkIn, setWalkIn] = useState(false);
   const [known, setKnown] = useState<StoreCustomerLookup | null>(null);
   const [orderNotes, setOrderNotes] = useState("");
   const [customer, setCustomer] = useState({ name: "", phone: "", email: "", address: "", notes: "" });
@@ -164,8 +165,8 @@ function Storefront() {
       submitStoreOrder({
         data: {
           slug: tenant.slug,
-          ...(known ? { code: known.code } : { customer }),
-          notes: known ? orderNotes : customer.notes,
+          ...(walkIn ? { walkIn: true } : known ? { code: known.code } : { customer }),
+          notes: walkIn || known ? orderNotes : customer.notes,
           items: cart.map((l) => ({ product_id: l.product_id, quantity: l.quantity })),
         },
       }),
@@ -380,7 +381,20 @@ function Storefront() {
                       className="space-y-3"
                       onSubmit={(e) => { e.preventDefault(); submit.mutate(); }}
                     >
-                      {known ? (
+                      {walkIn ? (
+                        <div className="space-y-3">
+                          <div className="rounded-lg border p-3 text-sm" style={{ borderColor: accent }}>
+                            <div className="font-semibold">Walk-in customer</div>
+                            <div className="text-xs text-muted-foreground">
+                              No details needed — your order goes straight to the shop.
+                            </div>
+                            <button type="button" className="mt-2 text-xs underline" onClick={() => setWalkIn(false)}>
+                              Not a walk-in? Go back
+                            </button>
+                          </div>
+                          <div><Label>Notes for this order</Label><Textarea rows={2} maxLength={600} value={orderNotes} onChange={(e) => setOrderNotes(e.target.value)} /></div>
+                        </div>
+                      ) : known ? (
                         <div className="space-y-3">
                           <div className="rounded-lg border p-3 text-sm" style={{ borderColor: accent }}>
                             <div className="font-semibold">Welcome back, {known.name}</div>
@@ -423,6 +437,18 @@ function Storefront() {
                           <Button type="button" variant="outline" className="w-full" onClick={() => setMode("form")}>
                             I'm a new customer
                           </Button>
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            className="w-full"
+                            onClick={() => {
+                              setWalkIn(true);
+                              setKnown(null);
+                              toast.success("Walk-in customer selected");
+                            }}
+                          >
+                            I'm a walk-in customer
+                          </Button>
                         </div>
                       ) : (
                         <div className="space-y-3">
@@ -444,7 +470,7 @@ function Storefront() {
                           {stockProblem.name} doesn't have enough stock. Reduce the quantity to continue.
                         </p>
                       )}
-                      {(known || mode === "form") && (
+                      {(walkIn || known || mode === "form") && (
                         <Button type="submit" disabled={submit.isPending || !!stockProblem} className="w-full text-white" style={{ background: accent }}>
                           {submit.isPending ? "Submitting…" : "Checkout"}
                         </Button>
@@ -537,6 +563,7 @@ function Storefront() {
 /** Swipeable image gallery: horizontal snap scroll with dots + arrows. */
 function ProductGallery({ images, name, out }: { images: string[]; name: string; out: boolean }) {
   const [index, setIndex] = useState(0);
+  const [zoom, setZoom] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   const go = (i: number) => {
@@ -571,7 +598,8 @@ function ProductGallery({ images, name, out }: { images: string[]; name: string;
             src={src}
             alt={`${name} image ${i + 1}`}
             loading="lazy"
-            className={`h-full w-full shrink-0 snap-center object-cover ${out ? "opacity-60 grayscale" : ""}`}
+            onClick={() => { setIndex(i); setZoom(true); }}
+            className={`h-full w-full shrink-0 cursor-zoom-in snap-center object-cover ${out ? "opacity-60 grayscale" : ""}`}
           />
         ))}
       </div>
@@ -611,6 +639,55 @@ function ProductGallery({ images, name, out }: { images: string[]; name: string;
         <span className="absolute left-2 top-2 rounded-full bg-destructive px-2 py-0.5 text-[10px] font-semibold text-destructive-foreground">
           Sold out
         </span>
+      )}
+
+      {zoom && (
+        <div
+          role="dialog"
+          aria-label={`${name} photos`}
+          className="fixed inset-0 z-[60] grid place-items-center bg-black/85 p-4"
+          onClick={() => setZoom(false)}
+        >
+          <div className="relative w-full max-w-3xl" onClick={(e) => e.stopPropagation()}>
+            <img
+              src={images[Math.min(index, images.length - 1)]}
+              alt={`${name} large view`}
+              className="mx-auto max-h-[80vh] w-auto max-w-full rounded-xl object-contain"
+            />
+            <div className="mt-3 text-center text-sm font-medium text-white">{name}</div>
+            <button
+              type="button"
+              aria-label="Close"
+              onClick={() => setZoom(false)}
+              className="absolute -top-3 right-0 grid h-9 w-9 place-items-center rounded-full bg-white/90 text-black shadow"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            {images.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  aria-label="Previous photo"
+                  onClick={() => setIndex((i) => (i - 1 + images.length) % images.length)}
+                  className="absolute left-1 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-black shadow"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Next photo"
+                  onClick={() => setIndex((i) => (i + 1) % images.length)}
+                  className="absolute right-1 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-black shadow"
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </button>
+                <div className="mt-2 text-center text-xs text-white/70">
+                  {Math.min(index, images.length - 1) + 1} / {images.length}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

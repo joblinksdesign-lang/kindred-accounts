@@ -140,6 +140,7 @@ export const getStorefront = createServerFn({ method: "GET" })
 
 const checkoutSchema = z.object({
   slug: z.string().min(1).max(120),
+  walkIn: z.boolean().optional(),
   code: z.string().trim().min(3).max(16).optional().or(z.literal("")),
   customer: z
     .object({
@@ -269,7 +270,32 @@ export const submitStoreOrder = createServerFn({ method: "POST" })
     let record: { id: string; name: string; phone: string | null; address: string | null; store_code: string | null } | null =
       null;
 
-    if (data.code) {
+    if (data.walkIn) {
+      // Shoppers buying at the counter share one "Walk-in customer" record per business.
+      const { data: existingWalkIn } = await supabaseAdmin
+        .from("customers")
+        .select("id, name, phone, address, store_code")
+        .eq("tenant_id", tenant.id)
+        .eq("name", "Walk-in customer")
+        .limit(1);
+      if (existingWalkIn && existingWalkIn.length > 0) {
+        record = existingWalkIn[0];
+        customerId = existingWalkIn[0].id;
+      } else {
+        const { data: created, error: walkErr } = await supabaseAdmin
+          .from("customers")
+          .insert({
+            tenant_id: tenant.id,
+            name: "Walk-in customer",
+            notes: "Shared walk-in customer for online store orders",
+          })
+          .select("id, name, phone, address, store_code")
+          .single();
+        if (walkErr) throw walkErr;
+        record = created;
+        customerId = created.id;
+      }
+    } else if (data.code) {
       const { data: byCode } = await supabaseAdmin
         .from("customers")
         .select("id, name, phone, address, store_code")
