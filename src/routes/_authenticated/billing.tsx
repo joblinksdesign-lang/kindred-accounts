@@ -7,8 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/page-helpers";
 import { useActiveTenant } from "@/lib/tenant";
-import { Check, Sparkles, ArrowRight } from "lucide-react";
+import { Check, Sparkles, ArrowRight, MessageCircle, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { usePlanLimits } from "@/lib/plan-limits";
+import { RenewalStatusCard } from "@/components/renewal-status-card";
+import { usePlatformSettings, whatsappLink } from "@/lib/platform-payment";
 
 export const Route = createFileRoute("/_authenticated/billing")({
   head: () => ({ meta: [{ title: "Billing & Plan" }] }),

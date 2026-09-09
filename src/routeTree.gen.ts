@@ -44,6 +44,7 @@ import { Route as AuthenticatedInvoicesNewRouteImport } from './routes/_authenti
 import { Route as AuthenticatedInvoicesIdRouteImport } from './routes/_authenticated/invoices.$id'
 import { Route as AuthenticatedAdminTenantsRouteImport } from './routes/_authenticated/admin.tenants'
 import { Route as AuthenticatedAdminPlansRouteImport } from './routes/_authenticated/admin.plans'
+import { Route as AuthenticatedAdminPaymentMethodsRouteImport } from './routes/_authenticated/admin.payment-methods'
 import { Route as AuthenticatedAdminAppInstallRouteImport } from './routes/_authenticated/admin.app-install'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
@@ -231,6 +232,12 @@ const AuthenticatedAdminPlansRoute = AuthenticatedAdminPlansRouteImport.update({
   path: '/plans',
   getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
+const AuthenticatedAdminPaymentMethodsRoute =
+  AuthenticatedAdminPaymentMethodsRouteImport.update({
+    id: '/payment-methods',
+    path: '/payment-methods',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminAppInstallRoute =
   AuthenticatedAdminAppInstallRouteImport.update({
     id: '/app-install',
@@ -288,6 +295,7 @@ export interface FileRoutesByFullPath {
   '/team': typeof AuthenticatedTeamRoute
   '/store/$slug': typeof StoreSlugRouteWithChildren
   '/admin/app-install': typeof AuthenticatedAdminAppInstallRoute
+  '/admin/payment-methods': typeof AuthenticatedAdminPaymentMethodsRoute
   '/admin/plans': typeof AuthenticatedAdminPlansRoute
   '/admin/tenants': typeof AuthenticatedAdminTenantsRoute
   '/invoices/$id': typeof AuthenticatedInvoicesIdRoute
@@ -328,6 +336,7 @@ export interface FileRoutesByTo {
   '/team': typeof AuthenticatedTeamRoute
   '/store/$slug': typeof StoreSlugRouteWithChildren
   '/admin/app-install': typeof AuthenticatedAdminAppInstallRoute
+  '/admin/payment-methods': typeof AuthenticatedAdminPaymentMethodsRoute
   '/admin/plans': typeof AuthenticatedAdminPlansRoute
   '/admin/tenants': typeof AuthenticatedAdminTenantsRoute
   '/invoices/$id': typeof AuthenticatedInvoicesIdRoute
@@ -371,6 +380,7 @@ export interface FileRoutesById {
   '/_authenticated/team': typeof AuthenticatedTeamRoute
   '/store/$slug': typeof StoreSlugRouteWithChildren
   '/_authenticated/admin/app-install': typeof AuthenticatedAdminAppInstallRoute
+  '/_authenticated/admin/payment-methods': typeof AuthenticatedAdminPaymentMethodsRoute
   '/_authenticated/admin/plans': typeof AuthenticatedAdminPlansRoute
   '/_authenticated/admin/tenants': typeof AuthenticatedAdminTenantsRoute
   '/_authenticated/invoices/$id': typeof AuthenticatedInvoicesIdRoute
@@ -414,6 +424,7 @@ export interface FileRouteTypes {
     | '/team'
     | '/store/$slug'
     | '/admin/app-install'
+    | '/admin/payment-methods'
     | '/admin/plans'
     | '/admin/tenants'
     | '/invoices/$id'
@@ -454,6 +465,7 @@ export interface FileRouteTypes {
     | '/team'
     | '/store/$slug'
     | '/admin/app-install'
+    | '/admin/payment-methods'
     | '/admin/plans'
     | '/admin/tenants'
     | '/invoices/$id'
@@ -496,6 +508,7 @@ export interface FileRouteTypes {
     | '/_authenticated/team'
     | '/store/$slug'
     | '/_authenticated/admin/app-install'
+    | '/_authenticated/admin/payment-methods'
     | '/_authenticated/admin/plans'
     | '/_authenticated/admin/tenants'
     | '/_authenticated/invoices/$id'
@@ -774,6 +787,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminPlansRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/payment-methods': {
+      id: '/_authenticated/admin/payment-methods'
+      path: '/payment-methods'
+      fullPath: '/admin/payment-methods'
+      preLoaderRoute: typeof AuthenticatedAdminPaymentMethodsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/app-install': {
       id: '/_authenticated/admin/app-install'
       path: '/app-install'
@@ -814,6 +834,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminAppInstallRoute: typeof AuthenticatedAdminAppInstallRoute
+  AuthenticatedAdminPaymentMethodsRoute: typeof AuthenticatedAdminPaymentMethodsRoute
   AuthenticatedAdminPlansRoute: typeof AuthenticatedAdminPlansRoute
   AuthenticatedAdminTenantsRoute: typeof AuthenticatedAdminTenantsRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
@@ -821,6 +842,7 @@ interface AuthenticatedAdminRouteChildren {
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminAppInstallRoute: AuthenticatedAdminAppInstallRoute,
+  AuthenticatedAdminPaymentMethodsRoute: AuthenticatedAdminPaymentMethodsRoute,
   AuthenticatedAdminPlansRoute: AuthenticatedAdminPlansRoute,
   AuthenticatedAdminTenantsRoute: AuthenticatedAdminTenantsRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
