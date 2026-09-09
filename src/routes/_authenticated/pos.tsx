@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { usePlanLimits, planBlockReason } from "@/lib/plan-limits";
 import { planBlockError, handlePlanBlockError } from "@/components/plan-block-dialog";
 import { BarcodeScannerDialog, unlockAudio } from "@/components/barcode-scanner";
+import { discountBadge, netUnitPrice, unitDiscount } from "@/lib/discounts";
 import {
   ShoppingCart, Minus, Plus, Trash2, PackageSearch, Search, ScanLine, CheckCircle2, Printer, Download, Receipt as ReceiptIcon,
 } from "lucide-react";
@@ -41,9 +42,10 @@ export const Route = createFileRoute("/_authenticated/pos")({
 type PosProduct = {
   id: string; name: string; sku: string | null; barcode: string | null; category: string | null;
   unit_price: number; quantity: number; image_url: string | null; image_paths: string[] | null;
+  discount_type: string | null; discount_value: number | null;
 };
 
-type Line = { product_id: string; name: string; unit_price: number; quantity: number };
+type Line = { product_id: string; name: string; unit_price: number; quantity: number; unit_discount: number };
 
 type SaleResult = {
   invoiceId: string;
