@@ -384,6 +384,12 @@ function Storefront() {
                     <Separator className="my-4" />
                     <div className="space-y-1 text-sm">
                       <Row label="Subtotal" value={formatMoney(subtotal, symbol)} />
+                      {savings > 0 && (
+                        <div className="flex justify-between font-medium text-emerald-600">
+                          <span>Discount</span>
+                          <span>- {formatMoney(savings, symbol)}</span>
+                        </div>
+                      )}
                       {company.default_tax_rate > 0 && <Row label={`Tax (${company.default_tax_rate}%)`} value={formatMoney(taxAmount, symbol)} />}
                       <div className="flex justify-between pt-1 text-base font-bold"><span>Total</span><span>{formatMoney(total, symbol)}</span></div>
                     </div>
