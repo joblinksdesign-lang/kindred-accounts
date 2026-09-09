@@ -1,3 +1,4 @@
+import { PlanBlockDialogHost } from "@/components/plan-block-dialog";
 import { createFileRoute, Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, Users, Package, FileText, Receipt, CreditCard, FileSignature,
