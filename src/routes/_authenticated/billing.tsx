@@ -164,6 +164,12 @@ function BillingPage() {
 
   const currentPlan = plans.find((p) => p.id === sub?.plan_id);
 
+  const notifyLink = (planName: string) =>
+    whatsappLink(
+      platform?.admin_whatsapp,
+      `Hello Admin, we have requested the ${planName} plan (${annual ? "annual" : "monthly"}) and made the payment. Please review and activate our plan. Thank you.`,
+    );
+
   return (
     <div className="p-6 space-y-6">
       <PageHeader
@@ -225,6 +231,8 @@ function BillingPage() {
           const price = annual ? p.price_annual / 12 : p.price_monthly;
           const isCurrent = sub?.plan_id === p.id && (sub?.billing_cycle === (annual ? "annual" : "monthly"));
           const isPending = sub?.pending_plan_id === p.id;
+          const canRenew = isCurrent && expired && !isPending;
+          const isCurrentActive = isCurrent && !expired;
           const highlight = p.slug === "professional";
           return (
             <Card key={p.id} className={`p-6 flex flex-col border ${highlight ? "border-primary ring-1 ring-primary/30" : ""}`}>
