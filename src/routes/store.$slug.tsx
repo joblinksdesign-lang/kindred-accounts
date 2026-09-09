@@ -381,7 +381,20 @@ function Storefront() {
                       className="space-y-3"
                       onSubmit={(e) => { e.preventDefault(); submit.mutate(); }}
                     >
-                      {known ? (
+                      {walkIn ? (
+                        <div className="space-y-3">
+                          <div className="rounded-lg border p-3 text-sm" style={{ borderColor: accent }}>
+                            <div className="font-semibold">Walk-in customer</div>
+                            <div className="text-xs text-muted-foreground">
+                              No details needed — your order goes straight to the shop.
+                            </div>
+                            <button type="button" className="mt-2 text-xs underline" onClick={() => setWalkIn(false)}>
+                              Not a walk-in? Go back
+                            </button>
+                          </div>
+                          <div><Label>Notes for this order</Label><Textarea rows={2} maxLength={600} value={orderNotes} onChange={(e) => setOrderNotes(e.target.value)} /></div>
+                        </div>
+                      ) : known ? (
                         <div className="space-y-3">
                           <div className="rounded-lg border p-3 text-sm" style={{ borderColor: accent }}>
                             <div className="font-semibold">Welcome back, {known.name}</div>
