@@ -460,8 +460,14 @@ function PosPage() {
 
             <Separator />
             <Row label="Subtotal" value={formatMoney(subtotal, sym)} />
+            {itemDiscount > 0 && (
+              <div className="flex justify-between text-sm font-medium text-success">
+                <span>Product offers</span>
+                <span className="tabular-nums">- {formatMoney(itemDiscount, sym)}</span>
+              </div>
+            )}
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Discount</span>
+              <span className="text-muted-foreground">Extra discount</span>
               <Input className="h-7 w-28 text-right" type="number" step="0.01" value={discount} onChange={(e) => setDiscount(Number(e.target.value) || 0)} />
             </div>
             {taxRate > 0 && <Row label={`Tax (${taxRate}%)`} value={formatMoney(taxAmount, sym)} />}
