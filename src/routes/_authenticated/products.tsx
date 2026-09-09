@@ -309,7 +309,17 @@ function ProductsPage() {
                       </TableCell>
 
                       <TableCell className="text-xs text-muted-foreground">{p.sku || "—"}</TableCell>
-                      <TableCell className="text-right tabular-nums">{formatMoney(p.unit_price, sym)}</TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {unitDiscount(p) > 0 ? (
+                          <div className="flex flex-col items-end">
+                            <span className="text-xs text-muted-foreground line-through">{formatMoney(p.unit_price, sym)}</span>
+                            <span className="font-semibold">{formatMoney(netUnitPrice(p), sym)}</span>
+                            <span className="text-[10px] font-semibold text-success">{discountBadge(p, sym)}</span>
+                          </div>
+                        ) : (
+                          formatMoney(p.unit_price, sym)
+                        )}
+                      </TableCell>
                       <TableCell className="text-right tabular-nums font-medium">{Number(p.quantity)}</TableCell>
                       <TableCell>
                         {out ? <Badge variant="destructive">Out of stock</Badge>
