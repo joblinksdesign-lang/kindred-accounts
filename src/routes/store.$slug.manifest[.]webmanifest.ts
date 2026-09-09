@@ -24,10 +24,20 @@ export const Route = createFileRoute("/store/$slug/manifest.webmanifest")({
           name: `${name} — Online store`,
           short_name: name.slice(0, 12),
           description: `Shop from ${name} and send your order straight to us.`,
-          start_url: start,
+          // Installed icon opens this shop directly, and stays inside it.
+          start_url: `${start}?source=homescreen`,
           scope: start,
           id: start,
+          lang: "en",
+          dir: "ltr",
+          orientation: "portrait-primary",
+          categories: ["shopping"],
+          prefer_related_applications: false,
+          shortcuts: [
+            { name: "Browse products", short_name: "Shop", url: start },
+          ],
           display: settings?.display_mode || "standalone",
+          display_override: ["standalone", "minimal-ui", "browser"],
           theme_color: settings?.theme_color || "#0B6E4F",
           background_color: settings?.background_color || "#0B6E4F",
           icons: [192, 512].flatMap((size) => [
