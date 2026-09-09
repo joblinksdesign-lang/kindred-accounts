@@ -140,6 +140,7 @@ export const getStorefront = createServerFn({ method: "GET" })
 
 const checkoutSchema = z.object({
   slug: z.string().min(1).max(120),
+  walkIn: z.boolean().optional(),
   code: z.string().trim().min(3).max(16).optional().or(z.literal("")),
   customer: z
     .object({
