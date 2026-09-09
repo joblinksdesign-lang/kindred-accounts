@@ -541,8 +541,18 @@ function Storefront() {
                   <div className={`text-[11px] font-medium ${out ? "text-destructive" : low ? "text-amber-600" : "text-muted-foreground"}`}>
                     {out ? "Out of stock" : low ? `Only ${stock} left` : `${stock} in stock`}
                   </div>
-                  <div className="mt-auto pt-2 text-base font-bold tabular-nums [overflow-wrap:anywhere]">
-                    {formatMoney(p.unit_price, symbol)}
+                  <div className="mt-auto pt-2 [overflow-wrap:anywhere]">
+                    {p.unit_discount > 0 ? (
+                      <div className="flex flex-wrap items-baseline gap-x-2">
+                        <span className="text-base font-bold tabular-nums text-emerald-600">{formatMoney(p.net_price, symbol)}</span>
+                        <span className="text-xs text-muted-foreground line-through tabular-nums">{formatMoney(p.unit_price, symbol)}</span>
+                        <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700">
+                          {p.discount_type === "percent" ? `${p.discount_value}% off` : `Save ${formatMoney(p.unit_discount, symbol)}`}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-base font-bold tabular-nums">{formatMoney(p.unit_price, symbol)}</span>
+                    )}
                   </div>
                   <Button
                     size="sm"
@@ -550,7 +560,7 @@ function Storefront() {
                     style={{ background: out || inCart >= stock ? undefined : accent }}
                     variant={out || inCart >= stock ? "secondary" : "default"}
                     disabled={out || inCart >= stock}
-                    onClick={() => add(p.id, p.name, p.unit_price)}
+                    onClick={() => add(p.id, p.name, p.unit_price, p.unit_discount)}
                   >
                     {out ? "Out of stock" : inCart >= stock ? "Max in cart" : "Add to cart"}
                   </Button>
