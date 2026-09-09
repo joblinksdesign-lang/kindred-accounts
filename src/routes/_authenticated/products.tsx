@@ -162,6 +162,9 @@ function ProductsPage() {
         cost_price: Number(form.cost_price || 0),
         quantity: Number(form.quantity || 0),
         reorder_level: Number(form.reorder_level || 0),
+        discount_type: String(form.discount_type || "none"),
+        discount_value:
+          String(form.discount_type || "none") === "none" ? 0 : Number(form.discount_value || 0),
         image_paths: images,
       };
 
