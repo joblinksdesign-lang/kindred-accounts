@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { ShoppingCart, Plus, Minus, Trash2, Send, Download, PackageSearch, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { formatMoney } from "@/lib/company";
 import { InstallAppPrompt } from "@/components/install-app-prompt";
+import { useStoreInstallTarget } from "@/lib/store-install";
 
 export const Route = createFileRoute("/store/$slug")({
   loader: async ({ params }) => {
@@ -79,6 +80,9 @@ function Storefront() {
   const { company, products, tenant } = store;
   const symbol = company.currency_symbol || tenant.currency_symbol;
   const accent = company.brand_color || "#0b6e4f";
+
+  // Installing from this page must save THIS shop to the home screen.
+  useStoreInstallTarget(tenant.slug, company.company_name, accent);
 
   const [cart, setCart] = useState<CartLine[]>([]);
   const [query, setQuery] = useState("");
