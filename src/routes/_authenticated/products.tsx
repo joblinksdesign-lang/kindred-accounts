@@ -380,6 +380,24 @@ function ProductsPage() {
             <div><Label>Cost price ({sym})</Label><Input name="cost_price" type="number" step="0.01" defaultValue={editing?.cost_price ?? 0} /></div>
             <div><Label>Quantity</Label><Input name="quantity" type="number" step="1" defaultValue={editing?.quantity ?? 0} /></div>
             <div><Label>Reorder level</Label><Input name="reorder_level" type="number" step="1" defaultValue={editing?.reorder_level ?? 0} /></div>
+            <div>
+              <Label>Discount</Label>
+              <Select name="discount_type" defaultValue={editing?.discount_type ?? "none"}>
+                <SelectTrigger><SelectValue placeholder="No discount" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No discount</SelectItem>
+                  <SelectItem value="percent">Percent off (%)</SelectItem>
+                  <SelectItem value="amount">Fixed amount off ({sym.trim()})</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Discount value</Label>
+              <Input name="discount_value" type="number" min="0" step="0.01" defaultValue={editing?.discount_value ?? 0} />
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Shoppers see the old price crossed out and the saving is taken off the total automatically.
+              </p>
+            </div>
             <div className="col-span-2">
               <Label>Product images (up to {MAX_PRODUCT_IMAGES})</Label>
               <div className="mt-1.5 flex flex-wrap gap-2">
