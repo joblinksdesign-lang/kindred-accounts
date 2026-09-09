@@ -78,7 +78,7 @@ function PosPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("id, name, sku, barcode, category, unit_price, quantity, image_url, image_paths")
+        .select("id, name, sku, barcode, category, unit_price, quantity, image_url, image_paths, discount_type, discount_value")
         .eq("is_active", true)
         .order("name");
       if (error) throw error;
@@ -111,7 +111,10 @@ function PosPage() {
 
   const taxRate = Number(company?.default_tax_rate ?? 0);
   const subtotal = cart.reduce((s, l) => s + l.unit_price * l.quantity, 0);
-  const taxable = Math.max(subtotal - discount, 0);
+  // Money taken off because products are on offer.
+  const itemDiscount = cart.reduce((s, l) => s + l.unit_discount * l.quantity, 0);
+  const totalDiscount = itemDiscount + discount;
+  const taxable = Math.max(subtotal - totalDiscount, 0);
   const taxAmount = (taxable * taxRate) / 100;
   const total = Math.max(taxable + taxAmount, 0);
   const count = cart.reduce((s, l) => s + l.quantity, 0);
@@ -126,7 +129,7 @@ function PosPage() {
     setCart((c) => {
       const found = c.find((l) => l.product_id === p.id);
       if (found) return c.map((l) => (l.product_id === p.id ? { ...l, quantity: l.quantity + 1 } : l));
-      return [...c, { product_id: p.id, name: p.name, unit_price: Number(p.unit_price), quantity: 1 }];
+      return [...c, { product_id: p.id, name: p.name, unit_price: Number(p.unit_price), quantity: 1, unit_discount: unitDiscount(p) }];
     });
   };
 
