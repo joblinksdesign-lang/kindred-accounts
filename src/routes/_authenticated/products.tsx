@@ -21,6 +21,7 @@ import { formatMoney, useCompanySettings } from "@/lib/company";
 import { useActiveTenantId } from "@/lib/tenant";
 import { MAX_PRODUCT_IMAGES, uploadProductImages, useProductImageUrls } from "@/lib/product-images";
 import { BarcodeScannerDialog, unlockAudio } from "@/components/barcode-scanner";
+import { discountBadge, netUnitPrice, unitDiscount } from "@/lib/discounts";
 
 
 export const Route = createFileRoute("/_authenticated/products")({
@@ -32,6 +33,7 @@ type Product = {
   id: string; name: string; sku: string | null; barcode: string | null; category: string | null;
   unit_price: number; cost_price: number; quantity: number; reorder_level: number;
   supplier: string | null; image_url: string | null; image_paths: string[] | null;
+  discount_type: string | null; discount_value: number | null;
 };
 
 
