@@ -51,6 +51,9 @@ function BillingPage() {
   const { tenantId, role } = useActiveTenant();
   const [annual, setAnnual] = useState(false);
   const isOwner = role === "owner";
+  const { data: planLimits } = usePlanLimits();
+  const { data: platform } = usePlatformSettings();
+  const expired = !!planLimits?.expired;
 
   const { data: plans = [] } = useQuery({
     queryKey: ["billing_plans"],
@@ -105,7 +108,7 @@ function BillingPage() {
       const cycle = annual ? "annual" : "monthly";
       if (sub) {
         // Same plan + cycle already active → nothing to do
-        if (sub.plan_id === planId && sub.billing_cycle === cycle && !sub.pending_plan_id) {
+        if (!expired && sub.plan_id === planId && sub.billing_cycle === cycle && !sub.pending_plan_id) {
           throw new Error("You are already on this plan");
         }
         const { error } = await supabase
