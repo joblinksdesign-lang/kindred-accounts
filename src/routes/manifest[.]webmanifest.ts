@@ -25,13 +25,11 @@ export const Route = createFileRoute("/manifest.webmanifest")({
             ...sizes.map((size) => ({
               src: iconSrc,
               sizes: `${size}x${size}`,
-              type: s?.icon_url ? "image/png" : "image/x-icon",
+              type: "image/png",
               purpose: "any" as const,
             })),
             // Full-bleed adaptive icon so Android does not letterbox it.
-            ...(s?.icon_url
-              ? [{ src: iconSrc, sizes: "512x512", type: "image/png", purpose: "maskable" as const }]
-              : []),
+            { src: iconSrc, sizes: "512x512", type: "image/png", purpose: "maskable" as const },
           ],
         };
         return new Response(JSON.stringify(manifest, null, 2), {

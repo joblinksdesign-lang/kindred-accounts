@@ -44,6 +44,13 @@ export const Route = createFileRoute("/store/$slug")({
         { property: "og:description", content: description },
         { property: "og:type", content: "website" },
         { name: "twitter:card", content: "summary_large_image" },
+        { name: "apple-mobile-web-app-title", content: loaderData.company.company_name.slice(0, 12) },
+        { name: "theme-color", content: loaderData.company.brand_color || "#0B6E4F" },
+      ],
+      links: [
+        { rel: "manifest", href: `/store/${loaderData.tenant.slug}/manifest.webmanifest` },
+        { rel: "apple-touch-icon", href: "/app-icon.png" },
+        { rel: "apple-touch-startup-image", href: "/app-splash.png" },
       ],
     };
   },
