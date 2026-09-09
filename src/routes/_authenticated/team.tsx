@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
 import { usePlanLimits, planBlockReason } from "@/lib/plan-limits";
+import { planBlockError, handlePlanBlockError } from "@/components/plan-block-dialog";
 import { UserPlus, Trash2 } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
@@ -65,7 +66,7 @@ function TeamPage() {
   const add = useMutation({
     mutationFn: async () => {
       const blocked = planBlockReason(planLimits, "users");
-      if (blocked) throw new Error(blocked);
+      if (blocked) throw planBlockError(blocked);
       return addFn({ data: { tenantId: tenantId!, ...form } });
     },
     onSuccess: () => {

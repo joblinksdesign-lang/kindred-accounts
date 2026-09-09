@@ -14,6 +14,7 @@ import { Plus, Mail, Phone, Trash2, Pencil, Send, Copy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { usePlanLimits, planBlockReason } from "@/lib/plan-limits";
+import { planBlockError, handlePlanBlockError } from "@/components/plan-block-dialog";
 import { formatDate } from "@/lib/company";
 import { useActiveTenantId } from "@/lib/tenant";
 
@@ -56,7 +57,7 @@ function CustomersPage() {
       const payload = { ...form };
       if (!editing) {
         const blocked = planBlockReason(planLimits, "customers");
-        if (blocked) throw new Error(blocked);
+        if (blocked) throw planBlockError(blocked);
       }
       if (editing) {
         const { error } = await supabase.from("customers").update(payload as never).eq("id", editing.id);

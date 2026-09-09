@@ -18,6 +18,7 @@ import { useProductImageUrls } from "@/lib/product-images";
 import { generateReceiptPdf, generateThermalReceiptPdf, loadCompanyLogo, savePdf, printPdf } from "@/lib/pdf";
 import { toast } from "sonner";
 import { usePlanLimits, planBlockReason } from "@/lib/plan-limits";
+import { planBlockError, handlePlanBlockError } from "@/components/plan-block-dialog";
 import { BarcodeScannerDialog, unlockAudio } from "@/components/barcode-scanner";
 import {
   ShoppingCart, Minus, Plus, Trash2, PackageSearch, Search, ScanLine, CheckCircle2, Printer, Download, Receipt as ReceiptIcon,
@@ -158,7 +159,7 @@ function PosPage() {
     mutationFn: async (): Promise<SaleResult> => {
       if (cart.length === 0) throw new Error("Cart is empty");
       const blocked = planBlockReason(planLimits, "invoices");
-      if (blocked) throw new Error(blocked);
+      if (blocked) throw planBlockError(blocked);
 
       // Re-check live stock before selling anything.
       const { data: fresh, error: freshErr } = await supabase
