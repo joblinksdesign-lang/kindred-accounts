@@ -598,7 +598,8 @@ function ProductGallery({ images, name, out }: { images: string[]; name: string;
             src={src}
             alt={`${name} image ${i + 1}`}
             loading="lazy"
-            className={`h-full w-full shrink-0 snap-center object-cover ${out ? "opacity-60 grayscale" : ""}`}
+            onClick={() => { setIndex(i); setZoom(true); }}
+            className={`h-full w-full shrink-0 cursor-zoom-in snap-center object-cover ${out ? "opacity-60 grayscale" : ""}`}
           />
         ))}
       </div>
