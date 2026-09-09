@@ -375,7 +375,7 @@ export const submitStoreOrder = createServerFn({ method: "POST" })
         subtotal,
         tax_rate: taxRate,
         tax_amount: taxAmount,
-        discount: 0,
+        discount: discountTotal,
         total,
         notes: ["Online store order", orderNotes].filter(Boolean).join(" — ") || null,
       })
@@ -412,13 +412,15 @@ export const submitStoreOrder = createServerFn({ method: "POST" })
       customerName: record?.name ?? "",
       customerPhone: record?.phone ?? "",
       customerAddress: record?.address ?? "",
-      items: priced.map(({ description, quantity, unit_price, line_total }) => ({
+      items: priced.map(({ description, quantity, unit_price, line_total, unit_discount: off }) => ({
         description,
         quantity,
         unit_price,
         line_total,
+        unit_discount: off,
       })),
       subtotal,
+      discount: discountTotal,
       taxRate,
       taxAmount,
       total,
