@@ -169,19 +169,18 @@ function AdminTenants() {
 
   const approveRequest = useMutation({
     mutationFn: async (row: { id: string; pending_plan_id: string; pending_billing_cycle: "monthly" | "annual"; tenant_id: string }) => {
-      const { error } = await supabase.from("subscriptions").update({
-        plan_id: row.pending_plan_id,
-        billing_cycle: row.pending_billing_cycle,
-        status: "active",
-        pending_plan_id: null,
-        pending_billing_cycle: null,
-        pending_requested_at: null,
-      }).eq("id", row.id);
+      const { data: periodEnd, error } = await supabase.rpc("approve_plan_request", {
+        _subscription_id: row.id,
+      });
       if (error) throw error;
-      await supabase.from("tenants").update({ plan_id: row.pending_plan_id }).eq("id", row.tenant_id);
+      return periodEnd;
     },
-    onSuccess: () => {
-      toast.success("Plan activated");
+    onSuccess: (periodEnd) => {
+      toast.success("Plan renewed and activated", {
+        description: periodEnd
+          ? `Selling is restored until ${new Date(periodEnd).toLocaleDateString()}.`
+          : "Selling is restored immediately.",
+      });
       qc.invalidateQueries({ queryKey: ["pending_plan_requests"] });
       qc.invalidateQueries({ queryKey: ["admin_tenants"] });
     },

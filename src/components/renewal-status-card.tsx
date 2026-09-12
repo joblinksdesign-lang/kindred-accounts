@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Clock, MessageCircle, Wallet } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -11,6 +12,7 @@ import { usePaymentMethods, usePlatformSettings, whatsappLink } from "@/lib/plat
  * Repeats how to pay so the business can settle before activation.
  */
 export function RenewalStatusCard() {
+  const queryClient = useQueryClient();
   const { tenantId, tenant } = useActiveTenant();
   const { data: methods = [] } = usePaymentMethods();
   const { data: settings } = usePlatformSettings();
@@ -36,6 +38,21 @@ export function RenewalStatusCard() {
       };
     },
   });
+
+  useEffect(() => {
+    if (!tenantId) return;
+    const channel = supabase
+      .channel(`renewal-status-${tenantId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "subscriptions", filter: `tenant_id=eq.${tenantId}` },
+        () => queryClient.invalidateQueries({ queryKey: ["pending_plan_request", tenantId] }),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient, tenantId]);
 
   if (!pending) return null;
 

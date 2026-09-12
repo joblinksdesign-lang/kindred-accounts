@@ -92,7 +92,11 @@ function BillingPage() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "subscriptions", filter: `tenant_id=eq.${tenantId}` },
-        () => qc.invalidateQueries({ queryKey: ["my_subscription", tenantId] }),
+        () => {
+          qc.invalidateQueries({ queryKey: ["my_subscription", tenantId] });
+          qc.invalidateQueries({ queryKey: ["plan_limits", tenantId] });
+          qc.invalidateQueries({ queryKey: ["pending_plan_request", tenantId] });
+        },
       )
       .subscribe();
     return () => {
