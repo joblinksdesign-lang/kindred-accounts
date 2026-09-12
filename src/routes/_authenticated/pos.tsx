@@ -293,16 +293,16 @@ function PosPage() {
   }
 
   return (
-    <div className="-mx-4 -my-6 md:-mx-8 md:-my-8">
-      <div className="grid lg:grid-cols-[minmax(0,1fr)_380px] min-h-[calc(100vh-3.5rem)]">
+    <div className="-mx-4 -my-6 min-w-0 overflow-hidden md:-mx-8 md:-my-8">
+      <div className="grid h-[calc(100dvh-3.5rem)] min-h-0 min-w-0 grid-rows-[minmax(0,44%)_minmax(0,56%)] overflow-hidden lg:grid-cols-[minmax(0,1fr)_380px] lg:grid-rows-1">
         {/* Catalogue */}
-        <div className="flex flex-col border-r">
-          <div className="sticky top-14 z-10 border-b bg-card/95 px-4 py-3 backdrop-blur">
+        <section className="flex min-h-0 min-w-0 flex-col overflow-hidden border-b lg:border-b-0 lg:border-r">
+          <div className="z-10 shrink-0 border-b bg-card/95 px-3 py-2 backdrop-blur sm:px-4 sm:py-3">
             <div className="flex items-center gap-2">
-              <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg gradient-emerald text-white shadow-soft">
+              <div className="hidden h-9 w-9 shrink-0 place-items-center rounded-lg gradient-emerald text-white shadow-soft sm:grid">
                 <ShoppingCart className="h-4 w-4" />
               </div>
-              <div className="relative flex-1">
+              <div className="relative min-w-0 flex-1">
                 <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   autoFocus
@@ -325,11 +325,11 @@ function PosPage() {
             )}
           </div>
 
-          <div className="flex-1 p-4">
+          <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain p-2 sm:p-3 lg:p-4">
             {visible.length === 0 ? (
               <EmptyState title="No products" message="Add products in Products & Inventory to start selling." />
             ) : (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+              <div className="grid min-w-0 grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
                 {visible.map((p) => {
                   const img = (p.image_paths ?? [])[0] ? urls[(p.image_paths ?? [])[0]] : p.image_url;
                   const stock = Number(p.quantity ?? 0);
@@ -343,9 +343,9 @@ function PosPage() {
                       type="button"
                       onClick={() => add(p)}
                       disabled={out || maxed}
-                      className="group overflow-hidden rounded-xl border bg-card text-left shadow-soft transition hover:border-primary hover:shadow-md active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:border-border disabled:active:scale-100"
+                      className="group min-w-0 overflow-hidden rounded-lg border bg-card text-left shadow-soft transition hover:border-primary hover:shadow-md active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:border-border disabled:active:scale-100"
                     >
-                      <div className="relative aspect-square w-full bg-muted">
+                      <div className="relative aspect-[4/3] w-full bg-muted">
                         {img ? (
                           <img src={img} alt={p.name} loading="lazy" className={`h-full w-full object-cover ${out ? "grayscale" : ""}`} />
                         ) : (
@@ -362,18 +362,18 @@ function PosPage() {
                           </span>
                         )}
                       </div>
-                      <div className="p-2.5">
-                        <div className="line-clamp-2 text-xs font-semibold leading-snug">{p.name}</div>
+                      <div className="min-w-0 p-2">
+                        <div className="line-clamp-2 min-h-8 text-[11px] font-semibold leading-4 sm:text-xs">{p.name}</div>
                         {unitDiscount(p) > 0 ? (
                           <div className="mt-1">
-                            <div className="text-[10px] text-muted-foreground line-through">{formatMoney(p.unit_price, sym)}</div>
-                            <div className="text-sm font-bold tabular-nums text-primary [overflow-wrap:anywhere]">{formatMoney(netUnitPrice(p), sym)}</div>
+                            <div className="truncate text-[9px] text-muted-foreground line-through sm:text-[10px]">{formatMoney(p.unit_price, sym)}</div>
+                            <div className="truncate text-xs font-bold tabular-nums text-primary sm:text-sm">{formatMoney(netUnitPrice(p), sym)}</div>
                             <span className="mt-0.5 inline-block rounded-full bg-success/15 px-1.5 py-0.5 text-[9px] font-bold text-success">{discountBadge(p, sym)}</span>
                           </div>
                         ) : (
-                          <div className="mt-1 text-sm font-bold tabular-nums text-primary [overflow-wrap:anywhere]">{formatMoney(p.unit_price, sym)}</div>
+                          <div className="mt-1 truncate text-xs font-bold tabular-nums text-primary sm:text-sm">{formatMoney(p.unit_price, sym)}</div>
                         )}
-                        <div className={`text-[10px] ${out ? "text-destructive" : low ? "text-amber-600" : "text-muted-foreground"}`}>
+                        <div className={`truncate text-[9px] sm:text-[10px] ${out ? "text-destructive" : low ? "text-amber-600" : "text-muted-foreground"}`}>
                           {out ? "Out of stock" : maxed ? `All ${stock} in cart` : `${stock} in stock`}
                         </div>
                       </div>
@@ -384,11 +384,11 @@ function PosPage() {
               </div>
             )}
           </div>
-        </div>
+        </section>
 
         {/* Ticket */}
-        <aside className="flex flex-col bg-card">
-          <div className="flex items-center justify-between border-b px-4 py-3">
+        <aside className="relative z-20 flex min-h-0 min-w-0 flex-col overflow-hidden bg-card shadow-[0_-8px_24px_-20px_var(--foreground)] lg:shadow-none">
+          <div className="flex shrink-0 items-center justify-between border-b px-3 py-2 sm:px-4 sm:py-3">
             <div className="font-bold">Current sale</div>
             <div className="flex items-center gap-2">
               <Badge variant="secondary">{count} item{count === 1 ? "" : "s"}</Badge>
@@ -396,11 +396,11 @@ function PosPage() {
             </div>
           </div>
 
-          <div className="flex-1 space-y-2 overflow-y-auto p-3">
+          <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain p-2 sm:p-3">
             {cart.length === 0 ? (
               <p className="py-10 text-center text-sm text-muted-foreground">Tap a product to start a sale.</p>
             ) : cart.map((l) => (
-              <div key={l.product_id} className="rounded-lg border p-2">
+              <div key={l.product_id} className="min-w-0 rounded-lg border p-2">
                 <div className="flex items-start gap-2">
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-medium">{l.name}</div>
@@ -415,7 +415,7 @@ function PosPage() {
                       )}
                     </div>
                   </div>
-                  <div className="text-sm font-semibold tabular-nums">{formatMoney((l.unit_price - l.unit_discount) * l.quantity, sym)}</div>
+                  <div className="max-w-[45%] shrink-0 truncate text-sm font-semibold tabular-nums">{formatMoney((l.unit_price - l.unit_discount) * l.quantity, sym)}</div>
                 </div>
                 <div className="mt-2 flex items-center gap-1.5">
                   <Button size="icon" variant="outline" className="h-7 w-7" onClick={() => setQty(l.product_id, l.quantity - 1)}><Minus className="h-3 w-3" /></Button>
@@ -431,7 +431,7 @@ function PosPage() {
             ))}
           </div>
 
-          <div className="space-y-2 border-t p-3">
+          <div className="shrink-0 space-y-1.5 border-t bg-card p-2 sm:space-y-2 sm:p-3">
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <Label className="text-[11px]">Customer</Label>
@@ -458,7 +458,7 @@ function PosPage() {
               </div>
             </div>
 
-            <Separator />
+            <Separator className="my-1" />
             <Row label="Subtotal" value={formatMoney(subtotal, sym)} />
             {itemDiscount > 0 && (
               <div className="flex justify-between text-sm font-medium text-success">
@@ -471,12 +471,12 @@ function PosPage() {
               <Input className="h-7 w-28 text-right" type="number" step="0.01" value={discount} onChange={(e) => setDiscount(Number(e.target.value) || 0)} />
             </div>
             {taxRate > 0 && <Row label={`Tax (${taxRate}%)`} value={formatMoney(taxAmount, sym)} />}
-            <div className="flex items-baseline justify-between border-t pt-2">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-2 border-t pt-2">
               <span className="font-bold">Total</span>
-              <span className="text-xl font-extrabold tabular-nums text-primary [overflow-wrap:anywhere]">{formatMoney(total, sym)}</span>
+              <span className="max-w-full truncate text-lg font-extrabold tabular-nums text-primary sm:text-xl">{formatMoney(total, sym)}</span>
             </div>
             {method === "cash" && (
-              <div className="rounded-md border bg-muted/40 p-2 text-xs text-muted-foreground">
+              <div className="hidden rounded-md border bg-muted/40 p-2 text-xs text-muted-foreground sm:block">
                 Cash sale — collect the full amount of {formatMoney(total, sym)}.
               </div>
             )}
@@ -487,7 +487,7 @@ function PosPage() {
               </div>
             )}
             <Button
-              className="h-12 w-full gradient-emerald text-base text-white"
+              className="h-10 w-full gradient-emerald text-sm text-white sm:h-12 sm:text-base"
               disabled={cart.length === 0 || checkout.isPending || !!stockProblem}
               onClick={() => checkout.mutate()}
             >
