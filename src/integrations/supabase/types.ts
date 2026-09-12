@@ -1313,6 +1313,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      approve_plan_request: {
+        Args: { _subscription_id: string }
+        Returns: string
+      }
       current_tenant_ids: { Args: never; Returns: string[] }
       generate_store_code: {
         Args: { _name: string; _tenant: string }

@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveTenantId } from "@/lib/tenant";
 
@@ -75,7 +76,8 @@ const over = (used: number, limit: number | null) =>
 
 export function usePlanLimits() {
   const tenantId = useActiveTenantId();
-  return useQuery<PlanLimits | null>({
+  const queryClient = useQueryClient();
+  const query = useQuery<PlanLimits | null>({
     queryKey: ["plan_limits", tenantId],
     enabled: !!tenantId,
     refetchInterval: 60_000,
@@ -155,4 +157,21 @@ export function usePlanLimits() {
       };
     },
   });
+
+  useEffect(() => {
+    if (!tenantId) return;
+    const channel = supabase
+      .channel(`plan-limits-${tenantId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "subscriptions", filter: `tenant_id=eq.${tenantId}` },
+        () => queryClient.invalidateQueries({ queryKey: ["plan_limits", tenantId] }),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient, tenantId]);
+
+  return query;
 }
