@@ -92,14 +92,16 @@ function ExpensesPage() {
   const set = (k: string, v: unknown) => setForm((p) => ({ ...p, [k]: v }));
 
   const { data: expenses = [], isLoading } = useQuery({
-    queryKey: ["expenses", tenantId],
+    queryKey: ["expenses", tenantId, filterBranchId],
     enabled: !!tenantId,
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q2 = supabase
         .from("expenses")
         .select("*")
         .eq("tenant_id", tenantId!)
         .order("expense_date", { ascending: false });
+      if (filterBranchId) q2 = q2.eq("branch_id", filterBranchId);
+      const { data, error } = await q2;
       if (error) throw error;
       return (data ?? []) as unknown as Expense[];
     },
