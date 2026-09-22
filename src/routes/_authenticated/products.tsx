@@ -226,13 +226,15 @@ function ProductsPage() {
       const { error } = await supabase.from("stock_movements").insert({
         product_id: form.product_id, change_qty: form.change_qty,
         reason: form.reason as "stock_in" | "stock_out" | "adjustment" | "sale" | "return",
-        notes: form.notes, created_by: u.user?.id, tenant_id: tenantId,
+        notes: form.notes, created_by: u.user?.id, tenant_id: tenantId, branch_id: branchId,
       } as never);
       if (error) throw error;
     },
     onSuccess: () => {
       toast.success("Stock updated");
       qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["branch_stock"] });
+      qc.invalidateQueries({ queryKey: ["branch_stock_rows"] });
       setMovement(null);
     },
     onError: (e: Error) => toast.error(e.message),
