@@ -18,13 +18,16 @@ function PaymentsPage() {
   const sym = company?.currency_symbol || "USh ";
   const [q, setQ] = useState("");
 
+  const { filterBranchId } = useBranchContext();
   const { data: payments = [] } = useQuery({
-    queryKey: ["payments"],
+    queryKey: ["payments", filterBranchId],
     queryFn: async () => {
-      const { data } = await supabase
+      let query = supabase
         .from("payments")
         .select("*, invoices(invoice_number, customer_id, customers(name, company_name))")
         .order("payment_date", { ascending: false });
+      if (filterBranchId) query = query.eq("branch_id", filterBranchId);
+      const { data } = await query;
       return data ?? [];
     },
   });

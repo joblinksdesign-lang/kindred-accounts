@@ -32,13 +32,16 @@ function InvoicesPage() {
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<string>("all");
 
+  const { filterBranchId } = useBranchContext();
   const { data: invoices = [] } = useQuery({
-    queryKey: ["invoices"],
+    queryKey: ["invoices", filterBranchId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("invoices")
         .select("*, customers(name, company_name)")
         .order("created_at", { ascending: false });
+      if (filterBranchId) query = query.eq("branch_id", filterBranchId);
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
