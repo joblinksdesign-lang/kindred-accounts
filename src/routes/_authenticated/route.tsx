@@ -30,7 +30,7 @@ export const Route = createFileRoute("/_authenticated")({
 
       // Counter-only staff never see the dashboard — decide before anything renders.
       const posOnly = memberships[0]?.role === "sales_agent";
-      const posAllowed = ["/pos", "/profile", "/notifications", "/manual"].some(
+      const posAllowed = ["/pos", "/profile", "/notifications", "/manual", "/assistant"].some(
         (p) => location.pathname === p || location.pathname.startsWith(p + "/"),
       );
       if (posOnly && !posAllowed) {
