@@ -1,5 +1,6 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
+import { PageLoader } from "@/components/route-progress";
 
 export const Route = createFileRoute("/")({
   ssr: false,
@@ -16,7 +17,7 @@ export const Route = createFileRoute("/")({
 
     const { data: memberships } = await supabase
       .from("tenant_users")
-      .select("tenant_id")
+      .select("tenant_id, role")
       .eq("user_id", data.user.id)
       .eq("is_active", true)
       .limit(1);
@@ -30,7 +31,13 @@ export const Route = createFileRoute("/")({
       .eq("status", "active")
       .limit(1);
     if (!activeTenants || activeTenants.length === 0) throw redirect({ to: "/onboarding" });
+
+    // Counter staff go straight to the till instead of bouncing via the dashboard.
+    if (memberships[0]?.role === "sales_agent") throw redirect({ to: "/pos" });
     throw redirect({ to: "/dashboard" });
   },
-  component: () => null,
+  // Shown while the checks above run, so sign-in never lands on a blank screen.
+  component: () => <PageLoader label="Signing you in…" />,
+  pendingComponent: () => <PageLoader label="Signing you in…" />,
+  errorComponent: () => <PageLoader label="Signing you in…" />,
 });
