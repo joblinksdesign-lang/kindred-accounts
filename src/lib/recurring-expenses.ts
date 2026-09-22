@@ -108,7 +108,7 @@ export function useRecurringExpenses(tenantId?: string | null, enabled = true) {
       .then((created) => {
         if (created > 0) {
           qc.invalidateQueries({ queryKey: ["expenses"] });
-          qc.invalidateQueries({ queryKey: ["dashboard"] });
+          qc.invalidateQueries({ queryKey: ["dashboard_stats"] });
           qc.invalidateQueries({ queryKey: ["reports"] });
         }
       })
