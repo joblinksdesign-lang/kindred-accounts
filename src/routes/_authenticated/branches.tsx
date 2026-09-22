@@ -288,7 +288,7 @@ function BranchesPage() {
         </TabsContent>
 
         <TabsContent value="transfer">
-          <Card className="space-y-4 border-0 p-4 shadow-soft">
+          <Card className="space-y-4 border-0 p-3 shadow-soft sm:p-4">
             {!canTransfer ? (
               <p className="text-sm text-muted-foreground">Only owners, managers and store managers can move stock.</p>
             ) : (
