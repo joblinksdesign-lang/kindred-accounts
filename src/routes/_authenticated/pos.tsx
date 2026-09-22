@@ -171,16 +171,29 @@ function PosPage() {
       const blocked = planBlockReason(planLimits, "invoices");
       if (blocked) throw planBlockError(blocked);
 
-      // Re-check live stock before selling anything.
-      const { data: fresh, error: freshErr } = await supabase
-        .from("products")
-        .select("id, name, quantity")
-        .in("id", cart.map((l) => l.product_id));
-      if (freshErr) throw freshErr;
+      if (branchesOn && !branchId) throw new Error("Pick the branch you are selling from first");
+
+      // Re-check live stock before selling anything — at this branch when branches are on.
+      const liveStock: Record<string, number> = {};
+      if (branchesOn) {
+        const { data: fresh, error: freshErr } = await supabase
+          .from("branch_stock")
+          .select("product_id, quantity")
+          .eq("branch_id", branchId!)
+          .in("product_id", cart.map((l) => l.product_id));
+        if (freshErr) throw freshErr;
+        for (const r of fresh ?? []) liveStock[r.product_id] = Number(r.quantity ?? 0);
+      } else {
+        const { data: fresh, error: freshErr } = await supabase
+          .from("products")
+          .select("id, quantity")
+          .in("id", cart.map((l) => l.product_id));
+        if (freshErr) throw freshErr;
+        for (const r of fresh ?? []) liveStock[r.id] = Number(r.quantity ?? 0);
+      }
       for (const l of cart) {
-        const p = (fresh ?? []).find((x) => x.id === l.product_id);
-        const stock = Number(p?.quantity ?? 0);
-        if (stock <= 0) throw new Error(`${l.name} is out of stock`);
+        const stock = liveStock[l.product_id] ?? 0;
+        if (stock <= 0) throw new Error(`${l.name} is out of stock${branchesOn && activeBranch ? ` at ${activeBranch.name}` : ""}`);
         if (l.quantity > stock) throw new Error(`Only ${stock} of ${l.name} left in stock`);
       }
 
