@@ -11,6 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { formatMoney, useCompanySettings, formatDate } from "@/lib/company";
 import { useBranchContext } from "@/lib/branches";
+import { useRecurringExpenses } from "@/lib/recurring-expenses";
 import { PlanLimitBanner } from "@/components/plan-limit-banner";
 import { RenewalStatusCard } from "@/components/renewal-status-card";
 import { useActiveTenant } from "@/lib/tenant";
@@ -34,7 +35,8 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 
 function Dashboard() {
   const navigate = useNavigate();
-  const { role, isLoading: rolesLoading } = useActiveTenant();
+  const { role, tenantId, isLoading: rolesLoading } = useActiveTenant();
+  useRecurringExpenses(tenantId, role === "owner" || role === "manager" || role === "accountant");
   useEffect(() => {
     // POS-only staff have no dashboard — send them to the counter.
     if (!rolesLoading && role === "sales_agent") navigate({ to: "/pos", replace: true });
@@ -230,6 +232,17 @@ function Dashboard() {
     const previous = stats?.prevPeriodInvoiced ?? 0;
     const changePct = previous > 0 ? ((current - previous) / previous) * 100 : 0;
     const salesDown = previous > 0 && current < previous && changePct <= -10;
+    if (current <= 0) {
+      const exp = stats?.pl.expenses ?? 0;
+      return {
+        tone: "warning" as const,
+        title: "No sales yet for this period",
+        body: exp > 0
+          ? `You have not recorded any sale in this period, so there is no profit to show. You have spent ${formatMoney(exp, sym)} so far — record your sales to see how the business is doing.`
+          : "You have not recorded any sale in this period yet. Once you make a sale, your profit will show here.",
+        Icon: TrendingDown,
+      };
+    }
     if (net < 0) {
       const cogs = stats?.pl.cogs ?? 0;
       const gross = stats?.pl.grossProfit ?? 0;
