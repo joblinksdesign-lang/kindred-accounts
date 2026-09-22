@@ -230,6 +230,17 @@ function Dashboard() {
     const previous = stats?.prevPeriodInvoiced ?? 0;
     const changePct = previous > 0 ? ((current - previous) / previous) * 100 : 0;
     const salesDown = previous > 0 && current < previous && changePct <= -10;
+    if (current <= 0) {
+      const exp = stats?.pl.expenses ?? 0;
+      return {
+        tone: "warning" as const,
+        title: "No sales yet for this period",
+        body: exp > 0
+          ? `You have not recorded any sale in this period, so there is no profit to show. You have spent ${formatMoney(exp, sym)} so far — record your sales to see how the business is doing.`
+          : "You have not recorded any sale in this period yet. Once you make a sale, your profit will show here.",
+        Icon: TrendingDown,
+      };
+    }
     if (net < 0) {
       const cogs = stats?.pl.cogs ?? 0;
       const gross = stats?.pl.grossProfit ?? 0;

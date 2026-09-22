@@ -339,6 +339,16 @@ function ReportsPage() {
     const previous = pl.prevRevenue ?? 0;
     const changePct = previous > 0 ? ((current - previous) / previous) * 100 : 0;
     const salesDown = previous > 0 && current < previous && changePct <= -10;
+    if (current <= 0) {
+      return {
+        tone: "warning" as const,
+        title: "No sales yet for this period",
+        body: pl.expenseTotal > 0
+          ? `You have not recorded any sale in this period, so there is no profit to show. You have spent ${formatMoney(pl.expenseTotal, sym)} so far — record your sales to see how the business is doing.`
+          : "You have not recorded any sale in this period yet. Once you make a sale, your profit will show here.",
+        Icon: TrendingDown,
+      };
+    }
     if (net < 0) {
       const topExpense = pl.expenseCategories[0];
       let cause = "Review your costs, prices, and sales to turn things around.";
