@@ -213,16 +213,70 @@ function BranchesPage() {
       />
 
       <Tabs defaultValue="list">
-        <TabsList>
-          <TabsTrigger value="list">Branches</TabsTrigger>
-          <TabsTrigger value="transfer">Stock transfer</TabsTrigger>
-          <TabsTrigger value="stock">Stock by branch</TabsTrigger>
-          <TabsTrigger value="history">Transfer history</TabsTrigger>
-        </TabsList>
+        <div className="-mx-1 overflow-x-auto px-1 pb-1">
+          <TabsList className="w-max min-w-full justify-start">
+            <TabsTrigger value="list" className="whitespace-nowrap">Branches</TabsTrigger>
+            <TabsTrigger value="transfer" className="whitespace-nowrap">Stock transfer</TabsTrigger>
+            <TabsTrigger value="stock" className="whitespace-nowrap">Stock by branch</TabsTrigger>
+            <TabsTrigger value="history" className="whitespace-nowrap">Transfer history</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="list">
-          <Card className="border-0 p-4 shadow-soft">
-            <div className="overflow-x-auto">
+          <Card className="border-0 p-3 shadow-soft sm:p-4">
+            {/* mobile cards */}
+            <div className="space-y-2 md:hidden">
+              {branches.length === 0 && (
+                <p className="py-4 text-center text-sm text-muted-foreground">No branches yet.</p>
+              )}
+              {branches.map((b) => (
+                <div key={b.id} className="rounded-lg border p-3">
+                  <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
+                    <div className="min-w-0">
+                      <div className="flex min-w-0 items-center gap-1.5 font-medium">
+                        <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        <span className="truncate">{b.name}</span>
+                        {b.is_default && <Badge variant="secondary" className="shrink-0 text-[10px]">Main</Badge>}
+                      </div>
+                      <div className="mt-1 space-y-0.5 text-xs text-muted-foreground">
+                        {b.code && <div>Code: {b.code}</div>}
+                        {b.phone && <div>{b.phone}</div>}
+                        {b.address && <div className="break-words">{b.address}</div>}
+                      </div>
+                    </div>
+                    <Badge variant={b.is_active ? "outline" : "destructive"} className="shrink-0">{b.is_active ? "Open" : "Closed"}</Badge>
+                  </div>
+                  {canManage && (
+                    <div className="mt-2 flex flex-wrap gap-2 border-t pt-2">
+                      {!b.is_default && (
+                        <Button variant="outline" size="sm" onClick={() => makeDefault.mutate(b)}>
+                          <Star className="mr-1.5 h-4 w-4" />Make main
+                        </Button>
+                      )}
+                      <Button
+                        variant="outline" size="sm"
+                        onClick={() => {
+                          setForm({
+                            id: b.id, name: b.name, code: b.code ?? "", phone: b.phone ?? "",
+                            address: b.address ?? "", is_active: b.is_active,
+                          });
+                          setOpen(true);
+                        }}
+                      >
+                        <Pencil className="mr-1.5 h-4 w-4" />Edit
+                      </Button>
+                      {!b.is_default && (
+                        <Button variant="outline" size="sm" onClick={() => remove.mutate(b)}>
+                          <Trash2 className="mr-1.5 h-4 w-4 text-destructive" />Remove
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="hidden overflow-x-auto md:block">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -288,7 +342,7 @@ function BranchesPage() {
         </TabsContent>
 
         <TabsContent value="transfer">
-          <Card className="space-y-4 border-0 p-4 shadow-soft">
+          <Card className="space-y-4 border-0 p-3 shadow-soft sm:p-4">
             {!canTransfer ? (
               <p className="text-sm text-muted-foreground">Only owners, managers and store managers can move stock.</p>
             ) : (
@@ -319,7 +373,7 @@ function BranchesPage() {
                   {items.map((it, idx) => {
                     const available = from && it.product_id ? stockAt(from, it.product_id) : null;
                     return (
-                      <div key={idx} className="grid grid-cols-[minmax(0,1fr)_100px_auto] items-end gap-2">
+                      <div key={idx} className="grid grid-cols-[minmax(0,1fr)_72px_auto] items-end gap-2 sm:grid-cols-[minmax(0,1fr)_100px_auto]">
                         <div>
                           <Select
                             value={it.product_id}
@@ -359,7 +413,7 @@ function BranchesPage() {
                 </div>
 
                 <Button
-                  className="gradient-emerald text-white"
+                  className="gradient-emerald w-full text-white sm:w-auto"
                   disabled={transfer.isPending}
                   onClick={() => transfer.mutate()}
                 >
@@ -372,8 +426,34 @@ function BranchesPage() {
         </TabsContent>
 
         <TabsContent value="stock">
-          <Card className="border-0 p-4 shadow-soft">
-            <div className="overflow-x-auto">
+          <Card className="border-0 p-3 shadow-soft sm:p-4">
+            {/* mobile cards */}
+            <div className="space-y-2 md:hidden">
+              {stockRows.length === 0 && (
+                <p className="py-4 text-center text-sm text-muted-foreground">No stock recorded yet.</p>
+              )}
+              {stockRows.map((p) => {
+                const total = branches.reduce((s, b) => s + stockAt(b.id, p.id), 0);
+                return (
+                  <div key={p.id} className="rounded-lg border p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 truncate font-medium">{p.name}</div>
+                      <Badge variant="secondary" className="shrink-0 tabular-nums">Total {total}</Badge>
+                    </div>
+                    <div className="mt-2 grid grid-cols-2 gap-1.5">
+                      {branches.map((b) => (
+                        <div key={b.id} className="flex items-center justify-between gap-2 rounded-md bg-muted/50 px-2 py-1 text-xs">
+                          <span className="min-w-0 truncate text-muted-foreground">{b.name}</span>
+                          <span className="shrink-0 font-semibold tabular-nums">{stockAt(b.id, p.id)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="hidden overflow-x-auto md:block">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -405,8 +485,32 @@ function BranchesPage() {
         </TabsContent>
 
         <TabsContent value="history">
-          <Card className="border-0 p-4 shadow-soft">
-            <div className="overflow-x-auto">
+          <Card className="border-0 p-3 shadow-soft sm:p-4">
+            {/* mobile cards */}
+            <div className="space-y-2 md:hidden">
+              {transfers.length === 0 && (
+                <p className="py-4 text-center text-sm text-muted-foreground">No transfers yet.</p>
+              )}
+              {transfers.map((t) => (
+                <div key={t.id} className="rounded-lg border p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="truncate font-medium">{productName(t.product_id)}</div>
+                      <div className="font-mono text-[11px] text-muted-foreground">{t.transfer_number}</div>
+                    </div>
+                    <Badge variant="secondary" className="shrink-0 tabular-nums">{Number(t.quantity)}</Badge>
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
+                    <span className="truncate">{branchName(t.from_branch_id)}</span>
+                    <ArrowLeftRight className="h-3 w-3 shrink-0" />
+                    <span className="truncate">{branchName(t.to_branch_id)}</span>
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">{formatDate(t.created_at)}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="hidden overflow-x-auto md:block">
               <Table>
                 <TableHeader>
                   <TableRow>
