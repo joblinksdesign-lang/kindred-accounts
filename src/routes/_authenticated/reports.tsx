@@ -66,6 +66,8 @@ function ReportsPage() {
   const [grouping, setGrouping] = useState<Grouping>("day");
 
   const { filterBranchId } = useBranchContext();
+  const { tenantId: plTenantId, role: plRole } = useActiveTenant();
+  useRecurringExpenses(plTenantId, plRole === "owner" || plRole === "manager" || plRole === "accountant");
 
   const { data } = useQuery({
     queryKey: ["reports", filterBranchId],

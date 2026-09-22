@@ -34,7 +34,8 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 
 function Dashboard() {
   const navigate = useNavigate();
-  const { role, isLoading: rolesLoading } = useActiveTenant();
+  const { role, tenantId, isLoading: rolesLoading } = useActiveTenant();
+  useRecurringExpenses(tenantId, role === "owner" || role === "manager" || role === "accountant");
   useEffect(() => {
     // POS-only staff have no dashboard — send them to the counter.
     if (!rolesLoading && role === "sales_agent") navigate({ to: "/pos", replace: true });
