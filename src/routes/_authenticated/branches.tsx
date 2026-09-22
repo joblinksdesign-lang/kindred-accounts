@@ -213,16 +213,70 @@ function BranchesPage() {
       />
 
       <Tabs defaultValue="list">
-        <TabsList>
-          <TabsTrigger value="list">Branches</TabsTrigger>
-          <TabsTrigger value="transfer">Stock transfer</TabsTrigger>
-          <TabsTrigger value="stock">Stock by branch</TabsTrigger>
-          <TabsTrigger value="history">Transfer history</TabsTrigger>
-        </TabsList>
+        <div className="-mx-1 overflow-x-auto px-1 pb-1">
+          <TabsList className="w-max min-w-full justify-start">
+            <TabsTrigger value="list" className="whitespace-nowrap">Branches</TabsTrigger>
+            <TabsTrigger value="transfer" className="whitespace-nowrap">Stock transfer</TabsTrigger>
+            <TabsTrigger value="stock" className="whitespace-nowrap">Stock by branch</TabsTrigger>
+            <TabsTrigger value="history" className="whitespace-nowrap">Transfer history</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="list">
-          <Card className="border-0 p-4 shadow-soft">
-            <div className="overflow-x-auto">
+          <Card className="border-0 p-3 shadow-soft sm:p-4">
+            {/* mobile cards */}
+            <div className="space-y-2 md:hidden">
+              {branches.length === 0 && (
+                <p className="py-4 text-center text-sm text-muted-foreground">No branches yet.</p>
+              )}
+              {branches.map((b) => (
+                <div key={b.id} className="rounded-lg border p-3">
+                  <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
+                    <div className="min-w-0">
+                      <div className="flex min-w-0 items-center gap-1.5 font-medium">
+                        <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        <span className="truncate">{b.name}</span>
+                        {b.is_default && <Badge variant="secondary" className="shrink-0 text-[10px]">Main</Badge>}
+                      </div>
+                      <div className="mt-1 space-y-0.5 text-xs text-muted-foreground">
+                        {b.code && <div>Code: {b.code}</div>}
+                        {b.phone && <div>{b.phone}</div>}
+                        {b.address && <div className="break-words">{b.address}</div>}
+                      </div>
+                    </div>
+                    <Badge variant={b.is_active ? "outline" : "destructive"} className="shrink-0">{b.is_active ? "Open" : "Closed"}</Badge>
+                  </div>
+                  {canManage && (
+                    <div className="mt-2 flex flex-wrap gap-2 border-t pt-2">
+                      {!b.is_default && (
+                        <Button variant="outline" size="sm" onClick={() => makeDefault.mutate(b)}>
+                          <Star className="mr-1.5 h-4 w-4" />Make main
+                        </Button>
+                      )}
+                      <Button
+                        variant="outline" size="sm"
+                        onClick={() => {
+                          setForm({
+                            id: b.id, name: b.name, code: b.code ?? "", phone: b.phone ?? "",
+                            address: b.address ?? "", is_active: b.is_active,
+                          });
+                          setOpen(true);
+                        }}
+                      >
+                        <Pencil className="mr-1.5 h-4 w-4" />Edit
+                      </Button>
+                      {!b.is_default && (
+                        <Button variant="outline" size="sm" onClick={() => remove.mutate(b)}>
+                          <Trash2 className="mr-1.5 h-4 w-4 text-destructive" />Remove
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="hidden overflow-x-auto md:block">
               <Table>
                 <TableHeader>
                   <TableRow>
