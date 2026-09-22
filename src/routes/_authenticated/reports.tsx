@@ -64,17 +64,21 @@ function ReportsPage() {
   const [to, setTo] = useState(iso(new Date()));
   const [grouping, setGrouping] = useState<Grouping>("day");
 
+  const { filterBranchId } = useBranchContext();
+
   const { data } = useQuery({
-    queryKey: ["reports"],
+    queryKey: ["reports", filterBranchId],
     queryFn: async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const byBranch = (q: any) => (filterBranchId ? q.eq("branch_id", filterBranchId) : q);
       const [inv, pay, cust, prod, exp, itm, stk, prf] = await Promise.all([
-        supabase.from("invoices").select("id, invoice_number, invoice_date, total, balance, amount_paid, status, customer_id, created_at, created_by"),
-        supabase.from("payments").select("amount, payment_date, method, reference, created_at, created_by, invoice_id"),
+        byBranch(supabase.from("invoices").select("id, invoice_number, invoice_date, total, balance, amount_paid, status, customer_id, created_at, created_by")),
+        byBranch(supabase.from("payments").select("amount, payment_date, method, reference, created_at, created_by, invoice_id")),
         supabase.from("customers").select("id, name, company_name, email, phone, city, store_code"),
         supabase.from("products").select("name, quantity, reorder_level, unit_price, cost_price"),
-        supabase.from("expenses").select("expense_date, amount, category, description, vendor, created_at, created_by"),
+        byBranch(supabase.from("expenses").select("expense_date, amount, category, description, vendor, created_at, created_by")),
         supabase.from("invoice_items").select("quantity, description, invoices(invoice_date, status), products(name, cost_price)"),
-        supabase.from("stock_movements").select("change_qty, reason, reference, created_at, created_by, products(name)").order("created_at", { ascending: false }).limit(1000),
+        byBranch(supabase.from("stock_movements").select("change_qty, reason, reference, created_at, created_by, products(name)").order("created_at", { ascending: false }).limit(1000)),
         supabase.from("profiles").select("id, full_name, email"),
       ]);
       const invoices = inv.data ?? [];

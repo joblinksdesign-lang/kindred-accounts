@@ -48,15 +48,19 @@ function Dashboard() {
   const customTo = period === "custom" && range?.to ? range.to : undefined;
   const rangeKey = `${customFrom?.toISOString() ?? ""}_${customTo?.toISOString() ?? ""}`;
 
+  const { filterBranchId } = useBranchContext();
+
   const { data: stats } = useQuery({
-    queryKey: ["dashboard_stats", period, rangeKey],
+    queryKey: ["dashboard_stats", period, rangeKey, filterBranchId],
     queryFn: async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const byBranch = (q: any) => (filterBranchId ? q.eq("branch_id", filterBranchId) : q);
       const [invoices, customers, products, payments, expensesRes, itemsRes] = await Promise.all([
-        supabase.from("invoices").select("id,total,balance,status,invoice_date,invoice_number,customer_id,created_at").order("created_at", { ascending: false }),
+        byBranch(supabase.from("invoices").select("id,total,balance,status,invoice_date,invoice_number,customer_id,created_at").order("created_at", { ascending: false })),
         supabase.from("customers").select("id", { count: "exact", head: true }),
         supabase.from("products").select("id,name,quantity,reorder_level"),
-        supabase.from("payments").select("amount,payment_date,created_at").order("created_at", { ascending: false }).limit(500),
-        supabase.from("expenses").select("amount,expense_date"),
+        byBranch(supabase.from("payments").select("amount,payment_date,created_at").order("created_at", { ascending: false }).limit(500)),
+        byBranch(supabase.from("expenses").select("amount,expense_date")),
         supabase.from("invoice_items").select("quantity,invoices(invoice_date,status),products(cost_price)"),
       ]);
       const invs = invoices.data ?? [];
