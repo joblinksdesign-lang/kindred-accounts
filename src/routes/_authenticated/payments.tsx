@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PageHeader, ListToolbar, EmptyState } from "@/components/page-helpers";
 import { formatMoney, formatDate, useCompanySettings } from "@/lib/company";
+import { useBranchContext } from "@/lib/branches";
 
 export const Route = createFileRoute("/_authenticated/payments")({
   head: () => ({ meta: [{ title: "Payments" }] }),

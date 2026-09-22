@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PageHeader, ListToolbar, EmptyState } from "@/components/page-helpers";
 import { formatMoney, formatDate, useCompanySettings } from "@/lib/company";
+import { useBranchContext } from "@/lib/branches";
 import { Plus, Pencil } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/invoices/")({
