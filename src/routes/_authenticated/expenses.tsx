@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveTenant } from "@/lib/tenant";
+import { useBranchContext } from "@/lib/branches";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -80,6 +81,7 @@ function ExpensesPage() {
   const qc = useQueryClient();
   const { tenantId, role } = useActiveTenant();
   const { data: company } = useCompanySettings();
+  const { branchId, filterBranchId } = useBranchContext();
   const sym = company?.currency_symbol || "USh ";
   const canWrite = role === "owner" || role === "manager" || role === "accountant";
   const canDelete = role === "owner" || role === "manager";
