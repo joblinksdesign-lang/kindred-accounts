@@ -191,6 +191,8 @@ function ProductsPage() {
       }
 
       const change = wantedQty - currentQty;
+      if (branchesOn && !branchId && change !== 0)
+        throw new Error("Pick a branch at the top of the page before setting stock quantities");
       if (productId && change !== 0) {
         const { error: moveErr } = await supabase.from("stock_movements").insert({
           tenant_id: tenantId, product_id: productId, branch_id: branchId,
@@ -222,6 +224,8 @@ function ProductsPage() {
 
   const stockMove = useMutation({
     mutationFn: async (form: { product_id: string; change_qty: number; reason: string; notes: string }) => {
+      if (branchesOn && !branchId)
+        throw new Error("Pick a branch at the top of the page before changing stock");
       const { data: u } = await supabase.auth.getUser();
       const { error } = await supabase.from("stock_movements").insert({
         product_id: form.product_id, change_qty: form.change_qty,
