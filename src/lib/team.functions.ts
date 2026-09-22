@@ -87,6 +87,7 @@ export const addTeamMember = createServerFn({ method: "POST" })
         fullName: z.string().max(120).optional(),
         password: z.string().min(6).max(72),
         role: roleSchema.default("sales_agent"),
+        branchId: z.string().uuid().nullable().optional(),
       })
       .parse(data),
   )
@@ -134,6 +135,7 @@ export const addTeamMember = createServerFn({ method: "POST" })
       role: data.role,
       is_active: true,
       accepted_at: new Date().toISOString(),
+      branch_id: data.branchId ?? null,
     });
     if (insertError) throw new Error(insertError.message);
 
@@ -149,6 +151,7 @@ export const updateTeamMember = createServerFn({ method: "POST" })
         memberId: z.string().uuid(),
         role: roleSchema.optional(),
         isActive: z.boolean().optional(),
+        branchId: z.string().uuid().nullable().optional(),
       })
       .parse(data),
   )
@@ -164,9 +167,10 @@ export const updateTeamMember = createServerFn({ method: "POST" })
     if (!member || member.tenant_id !== data.tenantId) throw new Error("Member not found");
     if (member.role === "owner") throw new Error("The owner's access cannot be changed");
 
-    const patch: { role?: TeamRole; is_active?: boolean } = {};
+    const patch: { role?: TeamRole; is_active?: boolean; branch_id?: string | null } = {};
     if (data.role) patch["role"] = data.role;
     if (typeof data.isActive === "boolean") patch["is_active"] = data.isActive;
+    if (data.branchId !== undefined) patch["branch_id"] = data.branchId;
     if (!Object.keys(patch).length) return { ok: true };
 
     const { error } = await supabaseAdmin.from("tenant_users").update(patch).eq("id", data.memberId);
