@@ -400,6 +400,55 @@ function AdminTenants() {
         </div>
       </Card>
 
+      <Dialog open={!!modulesTarget} onOpenChange={(o) => { if (!o) setModulesTarget(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Features for {modulesTarget?.business_name}</DialogTitle>
+            <DialogDescription>
+              Turn extra features on or off for this business, whatever their plan includes.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {MODULES.map((m) => {
+              const live = tenants.find((x) => x.id === modulesTarget?.id) ?? modulesTarget;
+              const planHas = (live?.plans?.modules ?? []).includes(m.key);
+              const override = live?.modules_override ?? null;
+              const value = override == null ? "plan" : override.includes(m.key) ? "on" : "off";
+              return (
+                <div key={m.key} className="space-y-1.5">
+                  <div className="font-medium text-sm">{m.name}</div>
+                  <p className="text-xs text-muted-foreground">{m.description}</p>
+                  <Select
+                    value={value}
+                    onValueChange={(v) => {
+                      if (!live) return;
+                      const current = live.modules_override ?? (live.plans?.modules ?? []);
+                      const next =
+                        v === "plan"
+                          ? null
+                          : v === "on"
+                            ? Array.from(new Set([...current, m.key]))
+                            : current.filter((k) => k !== m.key);
+                      updateModules.mutate({ id: live.id, modules_override: next });
+                    }}
+                  >
+                    <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="plan">Follow the plan ({planHas ? "on" : "off"})</SelectItem>
+                      <SelectItem value="on">Turn on for this business</SelectItem>
+                      <SelectItem value="off">Turn off for this business</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              );
+            })}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setModulesTarget(null)}>Done</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={!!purgeTarget} onOpenChange={(o) => { if (!o) { setPurgeTarget(null); setPurgePassword(""); } }}>
         <DialogContent>
           <DialogHeader>
