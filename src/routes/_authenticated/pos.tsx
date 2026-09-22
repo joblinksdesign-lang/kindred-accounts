@@ -226,7 +226,7 @@ function PosPage() {
           tenant_id: tenantId, customer_id: cid, invoice_number: "",
           invoice_date: today, due_date: today, status: "sent",
           subtotal, tax_rate: taxRate, tax_amount: taxAmount, discount: totalDiscount, total,
-          balance: total, notes: "POS sale", created_by: u.user?.id,
+          balance: total, notes: "POS sale", created_by: u.user?.id, branch_id: branchId,
         } as never)
         .select("id, invoice_number").single();
       if (invErr) throw invErr;
@@ -242,7 +242,7 @@ function PosPage() {
       const { error: payErr } = await supabase.from("payments").insert({
         tenant_id: tenantId, invoice_id: inv.id, amount: total,
         method: method as "cash" | "bank_transfer" | "mobile_money" | "credit_card" | "cheque",
-        payment_date: today, reference: "POS", notes: "Point of sale", created_by: u.user?.id,
+        payment_date: today, reference: "POS", notes: "Point of sale", created_by: u.user?.id, branch_id: branchId,
       } as never);
       if (payErr) throw payErr;
 
@@ -265,6 +265,8 @@ function PosPage() {
       reset();
       toast.success(`Sale complete — receipt ${res.receiptNumber}`);
       qc.invalidateQueries({ queryKey: ["pos_products"] });
+      qc.invalidateQueries({ queryKey: ["branch_stock"] });
+      qc.invalidateQueries({ queryKey: ["branch_stock_rows"] });
       qc.invalidateQueries({ queryKey: ["products"] });
       qc.invalidateQueries({ queryKey: ["receipts"] });
       qc.invalidateQueries({ queryKey: ["invoices"] });
