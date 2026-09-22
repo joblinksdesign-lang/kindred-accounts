@@ -359,7 +359,7 @@ function BranchesPage() {
                 </div>
 
                 <Button
-                  className="gradient-emerald text-white"
+                  className="gradient-emerald w-full text-white sm:w-auto"
                   disabled={transfer.isPending}
                   onClick={() => transfer.mutate()}
                 >
