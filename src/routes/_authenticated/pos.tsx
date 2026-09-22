@@ -409,7 +409,12 @@ function PosPage() {
         {/* Ticket */}
         <aside className="relative z-20 flex min-h-0 min-w-0 flex-col overflow-hidden bg-card shadow-[0_-8px_24px_-20px_var(--foreground)] lg:shadow-none">
           <div className="flex shrink-0 items-center justify-between border-b px-3 py-2 sm:px-4 sm:py-3">
-            <div className="font-bold">Current sale</div>
+            <div className="min-w-0">
+              <div className="font-bold">Current sale</div>
+              {branchesOn && activeBranch && (
+                <div className="truncate text-[11px] text-muted-foreground">Selling from {activeBranch.name}</div>
+              )}
+            </div>
             <div className="flex items-center gap-2">
               <Badge variant="secondary">{count} item{count === 1 ? "" : "s"}</Badge>
               {cart.length > 0 && <Button size="sm" variant="ghost" onClick={reset}>Clear</Button>}
