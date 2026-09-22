@@ -63,8 +63,8 @@ function PosPage() {
   const tenantId = useActiveTenantId();
   const { data: company } = useCompanySettings();
   const { data: modules } = useTenantModules();
-  const { enabled: branchesOn, branchId, activeBranch } = useBranchContext();
-  const { data: branchQty = {} } = useBranchStock(branchesOn ? branchId : null);
+  const { enabled: branchesOn, branchId, activeBranch, isLoading: branchLoading } = useBranchContext();
+  const { data: branchQty = {}, isLoading: stockLoading } = useBranchStock(branchesOn ? branchId : null);
   const sym = company?.currency_symbol || "USh ";
 
   const [q, setQ] = useState("");
@@ -76,7 +76,7 @@ function PosPage() {
   const [sale, setSale] = useState<SaleResult | null>(null);
   const [scanOpen, setScanOpen] = useState(false);
 
-  const { data: products = [] } = useQuery({
+  const { data: products = [], isLoading: productsLoading } = useQuery({
     queryKey: ["pos_products"],
     queryFn: async () => {
       const { data, error } = await supabase
