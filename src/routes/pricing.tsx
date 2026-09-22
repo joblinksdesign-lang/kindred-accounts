@@ -9,6 +9,7 @@ import { Check, Sparkles, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 
 export const Route = createFileRoute("/pricing")({
+  ssr: false,
   head: () => ({
     meta: [
       { title: "Pricing — Softtrack Pos" },

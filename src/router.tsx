@@ -4,7 +4,17 @@ import { routeTree } from "./routeTree.gen";
 import { PageLoader } from "./components/route-progress";
 
 export const getRouter = () => {
-  const queryClient = new QueryClient();
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        // Avoid refetching the same lists on every page switch / tab focus.
+        staleTime: 30_000,
+        gcTime: 5 * 60_000,
+        refetchOnWindowFocus: false,
+        retry: 1,
+      },
+    },
+  });
 
   const router = createRouter({
     routeTree,

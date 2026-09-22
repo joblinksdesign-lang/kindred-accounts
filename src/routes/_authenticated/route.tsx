@@ -22,10 +22,19 @@ export const Route = createFileRoute("/_authenticated")({
 
     if (!isSuper) {
       const { data: memberships } = await supabase
-        .from("tenant_users").select("tenant_id")
+        .from("tenant_users").select("tenant_id, role")
         .eq("user_id", data.user.id).eq("is_active", true).limit(1);
       if (!memberships || memberships.length === 0) {
         throw redirect({ to: "/onboarding" });
+      }
+
+      // Counter-only staff never see the dashboard — decide before anything renders.
+      const posOnly = memberships[0]?.role === "sales_agent";
+      const posAllowed = ["/pos", "/profile", "/notifications", "/manual"].some(
+        (p) => location.pathname === p || location.pathname.startsWith(p + "/"),
+      );
+      if (posOnly && !posAllowed) {
+        throw redirect({ to: "/pos" });
       }
 
       const tenantIds = memberships.map((m) => m.tenant_id);
