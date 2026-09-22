@@ -372,8 +372,34 @@ function BranchesPage() {
         </TabsContent>
 
         <TabsContent value="stock">
-          <Card className="border-0 p-4 shadow-soft">
-            <div className="overflow-x-auto">
+          <Card className="border-0 p-3 shadow-soft sm:p-4">
+            {/* mobile cards */}
+            <div className="space-y-2 md:hidden">
+              {stockRows.length === 0 && (
+                <p className="py-4 text-center text-sm text-muted-foreground">No stock recorded yet.</p>
+              )}
+              {stockRows.map((p) => {
+                const total = branches.reduce((s, b) => s + stockAt(b.id, p.id), 0);
+                return (
+                  <div key={p.id} className="rounded-lg border p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 truncate font-medium">{p.name}</div>
+                      <Badge variant="secondary" className="shrink-0 tabular-nums">Total {total}</Badge>
+                    </div>
+                    <div className="mt-2 grid grid-cols-2 gap-1.5">
+                      {branches.map((b) => (
+                        <div key={b.id} className="flex items-center justify-between gap-2 rounded-md bg-muted/50 px-2 py-1 text-xs">
+                          <span className="min-w-0 truncate text-muted-foreground">{b.name}</span>
+                          <span className="shrink-0 font-semibold tabular-nums">{stockAt(b.id, p.id)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="hidden overflow-x-auto md:block">
               <Table>
                 <TableHeader>
                   <TableRow>
