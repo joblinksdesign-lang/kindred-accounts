@@ -14,6 +14,7 @@ import { EmptyState } from "@/components/page-helpers";
 import { formatMoney, formatDate, useCompanySettings } from "@/lib/company";
 import { useActiveTenantId } from "@/lib/tenant";
 import { useTenantModules } from "@/lib/modules";
+import { useBranchContext, useBranchStock } from "@/lib/branches";
 import { useProductImageUrls } from "@/lib/product-images";
 import { generateReceiptPdf, generateThermalReceiptPdf, loadCompanyLogo, savePdf, printPdf } from "@/lib/pdf";
 import { toast } from "sonner";
