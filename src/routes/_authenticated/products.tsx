@@ -22,6 +22,7 @@ import { useActiveTenantId } from "@/lib/tenant";
 import { MAX_PRODUCT_IMAGES, uploadProductImages, useProductImageUrls } from "@/lib/product-images";
 import { BarcodeScannerDialog, unlockAudio } from "@/components/barcode-scanner";
 import { discountBadge, netUnitPrice, unitDiscount } from "@/lib/discounts";
+import { useBranchContext, useBranchStock } from "@/lib/branches";
 
 
 export const Route = createFileRoute("/_authenticated/products")({
@@ -42,6 +43,8 @@ function ProductsPage() {
   const productParam = useRouterState({ select: (s) => (s.location.search as Record<string, string | undefined>).product });
   const tenantId = useActiveTenantId();
   const { data: company } = useCompanySettings();
+  const { enabled: branchesOn, branchId, activeBranch } = useBranchContext();
+  const { data: branchQty = {} } = useBranchStock(branchesOn ? branchId : null);
   const sym = company?.currency_symbol || "USh ";
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
