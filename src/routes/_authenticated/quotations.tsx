@@ -50,9 +50,11 @@ function QuotationsPage() {
   });
 
   const { data: quotations = [] } = useQuery({
-    queryKey: ["quotations"],
+    queryKey: ["quotations", filterBranchId],
     queryFn: async () => {
-      const { data } = await supabase.from("quotations").select("*, customers(name, company_name)").order("created_at", { ascending: false });
+      let query = supabase.from("quotations").select("*, customers(name, company_name)").order("created_at", { ascending: false });
+      if (filterBranchId) query = query.eq("branch_id", filterBranchId);
+      const { data } = await query;
       return data ?? [];
     },
   });
