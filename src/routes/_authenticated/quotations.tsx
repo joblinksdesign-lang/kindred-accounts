@@ -16,6 +16,7 @@ import { Plus, ArrowRight, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatMoney, formatDate, useCompanySettings } from "@/lib/company";
 import { useActiveTenantId } from "@/lib/tenant";
+import { useBranchContext } from "@/lib/branches";
 
 export const Route = createFileRoute("/_authenticated/quotations")({
   head: () => ({ meta: [{ title: "Quotations" }] }),
@@ -28,6 +29,7 @@ function QuotationsPage() {
   const qc = useQueryClient();
   const tenantId = useActiveTenantId();
   const { data: company } = useCompanySettings();
+  const { branchId, filterBranchId } = useBranchContext();
   const sym = company?.currency_symbol || "USh ";
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
