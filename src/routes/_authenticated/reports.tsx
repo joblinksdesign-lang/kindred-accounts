@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/page-helpers";
 import { formatMoney, useCompanyLogoUrl, useCompanySettings } from "@/lib/company";
+import { useBranchContext } from "@/lib/branches";
 import { downloadCsv, downloadReportPdf, toCsv, type ReportColumn } from "@/lib/report-pdf";
 import { BarChart, Bar, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
 import { toast } from "sonner";

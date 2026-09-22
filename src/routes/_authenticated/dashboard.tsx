@@ -10,6 +10,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { formatMoney, useCompanySettings, formatDate } from "@/lib/company";
+import { useBranchContext } from "@/lib/branches";
 import { PlanLimitBanner } from "@/components/plan-limit-banner";
 import { RenewalStatusCard } from "@/components/renewal-status-card";
 import { useActiveTenant } from "@/lib/tenant";
