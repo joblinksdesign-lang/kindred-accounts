@@ -55,6 +55,7 @@ function AdminTenants() {
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<string>("all");
   const [purgeTarget, setPurgeTarget] = useState<{ id: string; name: string } | null>(null);
+  const [modulesTarget, setModulesTarget] = useState<TenantRow | null>(null);
   const [purgePassword, setPurgePassword] = useState("");
   const purgeFn = useServerFn(purgeTenantData);
 
