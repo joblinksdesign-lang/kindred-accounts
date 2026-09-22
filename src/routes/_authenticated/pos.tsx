@@ -14,6 +14,7 @@ import { EmptyState } from "@/components/page-helpers";
 import { formatMoney, formatDate, useCompanySettings } from "@/lib/company";
 import { useActiveTenantId } from "@/lib/tenant";
 import { useTenantModules } from "@/lib/modules";
+import { useBranchContext, useBranchStock } from "@/lib/branches";
 import { useProductImageUrls } from "@/lib/product-images";
 import { generateReceiptPdf, generateThermalReceiptPdf, loadCompanyLogo, savePdf, printPdf } from "@/lib/pdf";
 import { toast } from "sonner";
@@ -62,6 +63,8 @@ function PosPage() {
   const tenantId = useActiveTenantId();
   const { data: company } = useCompanySettings();
   const { data: modules } = useTenantModules();
+  const { enabled: branchesOn, branchId, activeBranch } = useBranchContext();
+  const { data: branchQty = {} } = useBranchStock(branchesOn ? branchId : null);
   const sym = company?.currency_symbol || "USh ";
 
   const [q, setQ] = useState("");
@@ -119,10 +122,12 @@ function PosPage() {
   const total = Math.max(taxable + taxAmount, 0);
   const count = cart.reduce((s, l) => s + l.quantity, 0);
 
-  const stockOf = (id: string) => Number(products.find((p) => p.id === id)?.quantity ?? 0);
+  // With branches on, the counter only sells what is physically at this branch.
+  const stockOf = (id: string) =>
+    branchesOn ? Number(branchQty[id] ?? 0) : Number(products.find((p) => p.id === id)?.quantity ?? 0);
 
   const add = (p: PosProduct) => {
-    const stock = Number(p.quantity ?? 0);
+    const stock = stockOf(p.id);
     const inCart = cart.find((l) => l.product_id === p.id)?.quantity ?? 0;
     if (stock <= 0) { toast.error(`${p.name} is out of stock`); return; }
     if (inCart + 1 > stock) { toast.error(`Only ${stock} of ${p.name} left in stock`); return; }
@@ -166,16 +171,29 @@ function PosPage() {
       const blocked = planBlockReason(planLimits, "invoices");
       if (blocked) throw planBlockError(blocked);
 
-      // Re-check live stock before selling anything.
-      const { data: fresh, error: freshErr } = await supabase
-        .from("products")
-        .select("id, name, quantity")
-        .in("id", cart.map((l) => l.product_id));
-      if (freshErr) throw freshErr;
+      if (branchesOn && !branchId) throw new Error("Pick the branch you are selling from first");
+
+      // Re-check live stock before selling anything — at this branch when branches are on.
+      const liveStock: Record<string, number> = {};
+      if (branchesOn) {
+        const { data: fresh, error: freshErr } = await supabase
+          .from("branch_stock")
+          .select("product_id, quantity")
+          .eq("branch_id", branchId!)
+          .in("product_id", cart.map((l) => l.product_id));
+        if (freshErr) throw freshErr;
+        for (const r of fresh ?? []) liveStock[r.product_id] = Number(r.quantity ?? 0);
+      } else {
+        const { data: fresh, error: freshErr } = await supabase
+          .from("products")
+          .select("id, quantity")
+          .in("id", cart.map((l) => l.product_id));
+        if (freshErr) throw freshErr;
+        for (const r of fresh ?? []) liveStock[r.id] = Number(r.quantity ?? 0);
+      }
       for (const l of cart) {
-        const p = (fresh ?? []).find((x) => x.id === l.product_id);
-        const stock = Number(p?.quantity ?? 0);
-        if (stock <= 0) throw new Error(`${l.name} is out of stock`);
+        const stock = liveStock[l.product_id] ?? 0;
+        if (stock <= 0) throw new Error(`${l.name} is out of stock${branchesOn && activeBranch ? ` at ${activeBranch.name}` : ""}`);
         if (l.quantity > stock) throw new Error(`Only ${stock} of ${l.name} left in stock`);
       }
 
@@ -208,7 +226,7 @@ function PosPage() {
           tenant_id: tenantId, customer_id: cid, invoice_number: "",
           invoice_date: today, due_date: today, status: "sent",
           subtotal, tax_rate: taxRate, tax_amount: taxAmount, discount: totalDiscount, total,
-          balance: total, notes: "POS sale", created_by: u.user?.id,
+          balance: total, notes: "POS sale", created_by: u.user?.id, branch_id: branchId,
         } as never)
         .select("id, invoice_number").single();
       if (invErr) throw invErr;
@@ -224,7 +242,7 @@ function PosPage() {
       const { error: payErr } = await supabase.from("payments").insert({
         tenant_id: tenantId, invoice_id: inv.id, amount: total,
         method: method as "cash" | "bank_transfer" | "mobile_money" | "credit_card" | "cheque",
-        payment_date: today, reference: "POS", notes: "Point of sale", created_by: u.user?.id,
+        payment_date: today, reference: "POS", notes: "Point of sale", created_by: u.user?.id, branch_id: branchId,
       } as never);
       if (payErr) throw payErr;
 
@@ -247,6 +265,8 @@ function PosPage() {
       reset();
       toast.success(`Sale complete — receipt ${res.receiptNumber}`);
       qc.invalidateQueries({ queryKey: ["pos_products"] });
+      qc.invalidateQueries({ queryKey: ["branch_stock"] });
+      qc.invalidateQueries({ queryKey: ["branch_stock_rows"] });
       qc.invalidateQueries({ queryKey: ["products"] });
       qc.invalidateQueries({ queryKey: ["receipts"] });
       qc.invalidateQueries({ queryKey: ["invoices"] });
@@ -332,7 +352,7 @@ function PosPage() {
               <div className="grid min-w-0 grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
                 {visible.map((p) => {
                   const img = (p.image_paths ?? [])[0] ? urls[(p.image_paths ?? [])[0]] : p.image_url;
-                  const stock = Number(p.quantity ?? 0);
+                  const stock = stockOf(p.id);
                   const out = stock <= 0;
                   const inCart = cart.find((l) => l.product_id === p.id)?.quantity ?? 0;
                   const low = !out && stock <= 5;
@@ -389,7 +409,12 @@ function PosPage() {
         {/* Ticket */}
         <aside className="relative z-20 flex min-h-0 min-w-0 flex-col overflow-hidden bg-card shadow-[0_-8px_24px_-20px_var(--foreground)] lg:shadow-none">
           <div className="flex shrink-0 items-center justify-between border-b px-3 py-2 sm:px-4 sm:py-3">
-            <div className="font-bold">Current sale</div>
+            <div className="min-w-0">
+              <div className="font-bold">Current sale</div>
+              {branchesOn && activeBranch && (
+                <div className="truncate text-[11px] text-muted-foreground">Selling from {activeBranch.name}</div>
+              )}
+            </div>
             <div className="flex items-center gap-2">
               <Badge variant="secondary">{count} item{count === 1 ? "" : "s"}</Badge>
               {cart.length > 0 && <Button size="sm" variant="ghost" onClick={reset}>Clear</Button>}

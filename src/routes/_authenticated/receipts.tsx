@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { PageHeader, ListToolbar, EmptyState } from "@/components/page-helpers";
 import { formatMoney, formatDate, useCompanySettings } from "@/lib/company";
+import { useBranchContext } from "@/lib/branches";
 import { generateReceiptPdf, generateThermalReceiptPdf, loadCompanyLogo, savePdf, printPdf } from "@/lib/pdf";
 import { toast } from "sonner";
 import { Download, Printer, Receipt as ReceiptIcon } from "lucide-react";
@@ -23,13 +24,16 @@ function ReceiptsPage() {
   const sym = company?.currency_symbol || "USh ";
   const [q, setQ] = useState("");
 
+  const { filterBranchId } = useBranchContext();
   const { data: receipts = [] } = useQuery({
-    queryKey: ["receipts"],
+    queryKey: ["receipts", filterBranchId],
     queryFn: async () => {
-      const { data } = await supabase
+      let query = supabase
         .from("receipts")
         .select("*, customers(name, company_name, email), invoices(invoice_number, subtotal, tax_amount, discount, invoice_items(description, quantity, unit_price, line_total))")
         .order("created_at", { ascending: false });
+      if (filterBranchId) query = query.eq("branch_id", filterBranchId);
+      const { data } = await query;
       return data ?? [];
     },
   });

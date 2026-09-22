@@ -21,6 +21,7 @@ export type TeamMember = {
   created_at: string;
   email: string | null;
   full_name: string | null;
+  branch_id: string | null;
 };
 
 /** Confirms the caller is the owner (or a manager) of the tenant. Returns nothing on success. */
@@ -53,7 +54,7 @@ export const listTeamMembers = createServerFn({ method: "POST" })
 
     const { data: rows, error } = await supabaseAdmin
       .from("tenant_users")
-      .select("id, user_id, role, is_active, created_at")
+      .select("id, user_id, role, is_active, created_at, branch_id")
       .eq("tenant_id", data.tenantId)
       .order("created_at", { ascending: true });
     if (error) throw error;
@@ -72,6 +73,7 @@ export const listTeamMembers = createServerFn({ method: "POST" })
       created_at: r.created_at,
       email: byId.get(r.user_id)?.email ?? null,
       full_name: byId.get(r.user_id)?.full_name ?? null,
+      branch_id: (r as { branch_id?: string | null }).branch_id ?? null,
     }));
   });
 
@@ -85,6 +87,7 @@ export const addTeamMember = createServerFn({ method: "POST" })
         fullName: z.string().max(120).optional(),
         password: z.string().min(6).max(72),
         role: roleSchema.default("sales_agent"),
+        branchId: z.string().uuid().nullable().optional(),
       })
       .parse(data),
   )
@@ -132,6 +135,7 @@ export const addTeamMember = createServerFn({ method: "POST" })
       role: data.role,
       is_active: true,
       accepted_at: new Date().toISOString(),
+      branch_id: data.branchId ?? null,
     });
     if (insertError) throw new Error(insertError.message);
 
@@ -147,6 +151,7 @@ export const updateTeamMember = createServerFn({ method: "POST" })
         memberId: z.string().uuid(),
         role: roleSchema.optional(),
         isActive: z.boolean().optional(),
+        branchId: z.string().uuid().nullable().optional(),
       })
       .parse(data),
   )
@@ -162,9 +167,10 @@ export const updateTeamMember = createServerFn({ method: "POST" })
     if (!member || member.tenant_id !== data.tenantId) throw new Error("Member not found");
     if (member.role === "owner") throw new Error("The owner's access cannot be changed");
 
-    const patch: { role?: TeamRole; is_active?: boolean } = {};
+    const patch: { role?: TeamRole; is_active?: boolean; branch_id?: string | null } = {};
     if (data.role) patch["role"] = data.role;
     if (typeof data.isActive === "boolean") patch["is_active"] = data.isActive;
+    if (data.branchId !== undefined) patch["branch_id"] = data.branchId;
     if (!Object.keys(patch).length) return { ok: true };
 
     const { error } = await supabaseAdmin.from("tenant_users").update(patch).eq("id", data.memberId);

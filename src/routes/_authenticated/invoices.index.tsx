@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PageHeader, ListToolbar, EmptyState } from "@/components/page-helpers";
 import { formatMoney, formatDate, useCompanySettings } from "@/lib/company";
+import { useBranchContext } from "@/lib/branches";
 import { Plus, Pencil } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/invoices/")({
@@ -32,13 +33,16 @@ function InvoicesPage() {
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<string>("all");
 
+  const { filterBranchId } = useBranchContext();
   const { data: invoices = [] } = useQuery({
-    queryKey: ["invoices"],
+    queryKey: ["invoices", filterBranchId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("invoices")
         .select("*, customers(name, company_name)")
         .order("created_at", { ascending: false });
+      if (filterBranchId) query = query.eq("branch_id", filterBranchId);
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },

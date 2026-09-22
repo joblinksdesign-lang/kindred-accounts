@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveTenant } from "@/lib/tenant";
+import { useBranchContext } from "@/lib/branches";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -80,6 +81,7 @@ function ExpensesPage() {
   const qc = useQueryClient();
   const { tenantId, role } = useActiveTenant();
   const { data: company } = useCompanySettings();
+  const { branchId, filterBranchId } = useBranchContext();
   const sym = company?.currency_symbol || "USh ";
   const canWrite = role === "owner" || role === "manager" || role === "accountant";
   const canDelete = role === "owner" || role === "manager";
@@ -90,14 +92,16 @@ function ExpensesPage() {
   const set = (k: string, v: unknown) => setForm((p) => ({ ...p, [k]: v }));
 
   const { data: expenses = [], isLoading } = useQuery({
-    queryKey: ["expenses", tenantId],
+    queryKey: ["expenses", tenantId, filterBranchId],
     enabled: !!tenantId,
     queryFn: async () => {
-      const { data, error } = await supabase
+      let q2 = supabase
         .from("expenses")
         .select("*")
         .eq("tenant_id", tenantId!)
         .order("expense_date", { ascending: false });
+      if (filterBranchId) q2 = q2.eq("branch_id", filterBranchId);
+      const { data, error } = await q2;
       if (error) throw error;
       return (data ?? []) as unknown as Expense[];
     },
@@ -137,6 +141,7 @@ function ExpensesPage() {
               notes: tpl.notes,
               recurrence: "none",
               parent_expense_id: tpl.id,
+              branch_id: (tpl as unknown as { branch_id?: string | null }).branch_id ?? null,
             } as never);
             if (error) throw error;
             posted.add(next);
@@ -193,6 +198,7 @@ function ExpensesPage() {
         recurrence: form.recurrence,
         recurrence_end: form.recurrence === "none" ? null : form.recurrence_end || null,
         next_run_date: form.recurrence === "none" ? null : advance(form.expense_date, form.recurrence),
+        branch_id: branchId,
       };
       if (form.id) {
         const { error } = await supabase.from("expenses").update(payload as never).eq("id", form.id);

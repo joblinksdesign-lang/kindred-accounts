@@ -16,6 +16,7 @@ import { Plus, ArrowRight, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatMoney, formatDate, useCompanySettings } from "@/lib/company";
 import { useActiveTenantId } from "@/lib/tenant";
+import { useBranchContext } from "@/lib/branches";
 
 export const Route = createFileRoute("/_authenticated/quotations")({
   head: () => ({ meta: [{ title: "Quotations" }] }),
@@ -28,6 +29,7 @@ function QuotationsPage() {
   const qc = useQueryClient();
   const tenantId = useActiveTenantId();
   const { data: company } = useCompanySettings();
+  const { branchId, filterBranchId } = useBranchContext();
   const sym = company?.currency_symbol || "USh ";
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
@@ -48,9 +50,11 @@ function QuotationsPage() {
   });
 
   const { data: quotations = [] } = useQuery({
-    queryKey: ["quotations"],
+    queryKey: ["quotations", filterBranchId],
     queryFn: async () => {
-      const { data } = await supabase.from("quotations").select("*, customers(name, company_name)").order("created_at", { ascending: false });
+      let query = supabase.from("quotations").select("*, customers(name, company_name)").order("created_at", { ascending: false });
+      if (filterBranchId) query = query.eq("branch_id", filterBranchId);
+      const { data } = await query;
       return data ?? [];
     },
   });
@@ -67,7 +71,7 @@ function QuotationsPage() {
         tenant_id: tenantId,
         customer_id: customerId, valid_until: validUntil || null, status: "draft" as const,
         subtotal, tax_rate: taxRate, tax_amount: taxAmount, discount, total, notes,
-        created_by: u.user?.id, quote_number: "",
+        created_by: u.user?.id, quote_number: "", branch_id: branchId,
       } as never).select().single();
       if (error) throw error;
       const inserted = quote as { id: string };
@@ -99,6 +103,7 @@ function QuotationsPage() {
         subtotal: quote.subtotal, tax_rate: quote.tax_rate, tax_amount: quote.tax_amount,
         discount: quote.discount, total: quote.total, balance: quote.total,
         notes: quote.notes, created_by: u.user?.id, invoice_number: "",
+        branch_id: (quote as { branch_id?: string | null }).branch_id ?? branchId,
       } as never).select().single();
       if (error) throw error;
       const insertedInv = inv as { id: string };

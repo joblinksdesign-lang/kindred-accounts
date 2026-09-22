@@ -2,8 +2,9 @@ import { PlanBlockDialogHost } from "@/components/plan-block-dialog";
 import { createFileRoute, Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, Users, Package, FileText, Receipt, CreditCard, FileSignature,
-  BarChart3, Settings, LogOut, Search, Building2, ShieldCheck, LayoutGrid, Tag, Sparkles, Bell, Wallet, Store, ScanBarcode, UsersRound, UserRound, Smartphone, Download, BookOpen,
+  BarChart3, Settings, LogOut, Search, Building2, ShieldCheck, LayoutGrid, Tag, Sparkles, Bell, Wallet, Store, ScanBarcode, UsersRound, UserRound, Smartphone, Download, BookOpen, Network,
 } from "lucide-react";
+import { BranchSwitcher } from "@/components/branch-switcher";
 
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
@@ -67,6 +68,7 @@ function AppSidebar() {
   const { data: modules } = useTenantModules();
   const hasStore = modules?.has("storefront") ?? false;
   const hasPos = modules?.has("pos") ?? false;
+  const hasBranches = modules?.has("branches") ?? false;
 
   const isActive = (to: string) =>
     to === "/admin"
@@ -164,6 +166,15 @@ function AppSidebar() {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )}
+                {hasBranches && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={isActive("/branches")} tooltip="Branches">
+                      <MobileNavLink to="/branches" className="flex items-center gap-2">
+                        <Network className="h-4 w-4" /><span>Branches</span>
+                      </MobileNavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild isActive={isActive("/team")} tooltip="Users & access">
                     <MobileNavLink to="/team" className="flex items-center gap-2">
@@ -247,6 +258,7 @@ function Topbar() {
         <Input placeholder="Search…" className="h-9 pl-8 bg-background" />
       </div>
       <div className="ml-auto flex items-center gap-2">
+        <BranchSwitcher />
         {modules?.has("pos") && (
           <Button asChild size="sm" className="gradient-emerald text-white shadow-soft">
             <Link to="/pos"><ScanBarcode className="h-4 w-4 md:mr-1.5" /><span className="hidden md:inline">POS</span></Link>

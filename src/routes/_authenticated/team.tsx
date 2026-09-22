@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { PageHeader } from "@/components/page-helpers";
 import { useActiveTenant } from "@/lib/tenant";
+import { useBranchContext } from "@/lib/branches";
 import { formatDate } from "@/lib/company";
 import {
   TENANT_ROLES, addTeamMember, listTeamMembers, removeTeamMember, updateTeamMember,
@@ -50,8 +51,11 @@ function TeamPage() {
   const updateFn = useServerFn(updateTeamMember);
   const removeFn = useServerFn(removeTeamMember);
 
+  const { enabled: branchesOn, branches } = useBranchContext();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ email: "", fullName: "", password: "", role: "sales_agent" as TeamRole });
+  const [form, setForm] = useState({
+    email: "", fullName: "", password: "", role: "sales_agent" as TeamRole, branchId: "all" as string,
+  });
 
   const { data: members = [], isLoading } = useQuery({
     queryKey: ["team_members", tenantId],
@@ -67,19 +71,22 @@ function TeamPage() {
     mutationFn: async () => {
       const blocked = planBlockReason(planLimits, "users");
       if (blocked) throw planBlockError(blocked);
-      return addFn({ data: { tenantId: tenantId!, ...form } });
+      const { branchId, ...rest } = form;
+      return addFn({
+        data: { tenantId: tenantId!, ...rest, branchId: branchId === "all" ? null : branchId },
+      });
     },
     onSuccess: () => {
       toast.success("User added", { description: "Share the email and password with them so they can sign in." });
       setOpen(false);
-      setForm({ email: "", fullName: "", password: "", role: "sales_agent" });
+      setForm({ email: "", fullName: "", password: "", role: "sales_agent", branchId: "all" });
       invalidate();
     },
     onError: (e: Error) => { if (handlePlanBlockError(e)) return; toast.error("Could not add user", { description: e.message }); },
   });
 
   const update = useMutation({
-    mutationFn: (v: { memberId: string; role?: TeamRole; isActive?: boolean }) =>
+    mutationFn: (v: { memberId: string; role?: TeamRole; isActive?: boolean; branchId?: string | null }) =>
       updateFn({ data: { tenantId: tenantId!, ...v } }),
     onSuccess: () => { toast.success("Access updated"); invalidate(); },
     onError: (e: Error) => toast.error(e.message),
@@ -132,6 +139,21 @@ function TeamPage() {
                       {TENANT_ROLES.find((r) => r.value === form.role)?.description}
                     </p>
                   </div>
+                  {branchesOn && branches.length > 0 && (
+                    <div>
+                      <Label>Branch</Label>
+                      <Select value={form.branchId} onValueChange={(v) => setForm({ ...form, branchId: v })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All branches</SelectItem>
+                          {branches.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Staff tied to one branch only see and sell that branch's stock.
+                      </p>
+                    </div>
+                  )}
                 </div>
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
@@ -158,6 +180,7 @@ function TeamPage() {
               <TableRow>
                 <TableHead>User</TableHead>
                 <TableHead>Role</TableHead>
+                {branchesOn && <TableHead>Branch</TableHead>}
                 <TableHead>Active</TableHead>
                 <TableHead>Added</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -192,6 +215,25 @@ function TeamPage() {
                       </Select>
                     )}
                   </TableCell>
+                  {branchesOn && (
+                    <TableCell>
+                      {m.role === "owner" ? (
+                        <span className="text-xs text-muted-foreground">All branches</span>
+                      ) : (
+                        <Select
+                          value={m.branch_id ?? "all"}
+                          disabled={!isOwner || update.isPending}
+                          onValueChange={(v) => update.mutate({ memberId: m.id, branchId: v === "all" ? null : v })}
+                        >
+                          <SelectTrigger className="h-8 w-40"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All branches</SelectItem>
+                            {branches.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </TableCell>
+                  )}
                   <TableCell>
                     <Switch
                       checked={m.is_active}

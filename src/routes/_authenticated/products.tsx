@@ -22,6 +22,7 @@ import { useActiveTenantId } from "@/lib/tenant";
 import { MAX_PRODUCT_IMAGES, uploadProductImages, useProductImageUrls } from "@/lib/product-images";
 import { BarcodeScannerDialog, unlockAudio } from "@/components/barcode-scanner";
 import { discountBadge, netUnitPrice, unitDiscount } from "@/lib/discounts";
+import { useBranchContext, useBranchStock } from "@/lib/branches";
 
 
 export const Route = createFileRoute("/_authenticated/products")({
@@ -42,6 +43,8 @@ function ProductsPage() {
   const productParam = useRouterState({ select: (s) => (s.location.search as Record<string, string | undefined>).product });
   const tenantId = useActiveTenantId();
   const { data: company } = useCompanySettings();
+  const { enabled: branchesOn, branchId, activeBranch } = useBranchContext();
+  const { data: branchQty = {} } = useBranchStock(branchesOn ? branchId : null);
   const sym = company?.currency_symbol || "USh ";
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
@@ -156,30 +159,55 @@ function ProductsPage() {
         const blocked = planBlockReason(planLimits, "products");
         if (blocked) throw planBlockError(blocked);
       }
+      const wantedQty = Number(form.quantity || 0);
       const payload = {
         ...form,
         unit_price: Number(form.unit_price || 0),
         cost_price: Number(form.cost_price || 0),
-        quantity: Number(form.quantity || 0),
         reorder_level: Number(form.reorder_level || 0),
         discount_type: String(form.discount_type || "none"),
         discount_value:
           String(form.discount_type || "none") === "none" ? 0 : Number(form.discount_value || 0),
         image_paths: images,
       };
+      delete (payload as Record<string, unknown>).quantity;
+
+      const { data: u } = await supabase.auth.getUser();
+      // Quantity is always applied as a stock movement so the branch it belongs to is recorded.
+      let productId = editing?.id ?? null;
+      let currentQty = editing ? Number(editing.quantity ?? 0) : 0;
 
       if (editing) {
         const { error } = await supabase.from("products").update(payload as never).eq("id", editing.id);
         if (error) throw error;
       } else {
-        const { data: u } = await supabase.auth.getUser();
-        const { error } = await supabase.from("products").insert({ ...payload, created_by: u.user?.id, tenant_id: tenantId } as never);
+        const { data: created, error } = await supabase
+          .from("products")
+          .insert({ ...payload, quantity: 0, created_by: u.user?.id, tenant_id: tenantId } as never)
+          .select("id").single();
         if (error) throw error;
+        productId = created.id;
+        currentQty = 0;
+      }
+
+      const change = wantedQty - currentQty;
+      if (branchesOn && !branchId && change !== 0)
+        throw new Error("Pick a branch at the top of the page before setting stock quantities");
+      if (productId && change !== 0) {
+        const { error: moveErr } = await supabase.from("stock_movements").insert({
+          tenant_id: tenantId, product_id: productId, branch_id: branchId,
+          change_qty: change, reason: change > 0 ? "stock_in" : "adjustment",
+          notes: editing ? "Stock corrected from the product form" : "Opening stock",
+          created_by: u.user?.id,
+        } as never);
+        if (moveErr) throw moveErr;
       }
     },
     onSuccess: () => {
       toast.success(editing ? "Product updated" : "Product created");
       qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["branch_stock"] });
+      qc.invalidateQueries({ queryKey: ["branch_stock_rows"] });
       setOpen(false); setEditing(null); setImages([]);
     },
     onError: (e: Error) => { if (handlePlanBlockError(e)) return; toast.error(e.message); },
@@ -196,17 +224,21 @@ function ProductsPage() {
 
   const stockMove = useMutation({
     mutationFn: async (form: { product_id: string; change_qty: number; reason: string; notes: string }) => {
+      if (branchesOn && !branchId)
+        throw new Error("Pick a branch at the top of the page before changing stock");
       const { data: u } = await supabase.auth.getUser();
       const { error } = await supabase.from("stock_movements").insert({
         product_id: form.product_id, change_qty: form.change_qty,
         reason: form.reason as "stock_in" | "stock_out" | "adjustment" | "sale" | "return",
-        notes: form.notes, created_by: u.user?.id, tenant_id: tenantId,
+        notes: form.notes, created_by: u.user?.id, tenant_id: tenantId, branch_id: branchId,
       } as never);
       if (error) throw error;
     },
     onSuccess: () => {
       toast.success("Stock updated");
       qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["branch_stock"] });
+      qc.invalidateQueries({ queryKey: ["branch_stock_rows"] });
       setMovement(null);
     },
     onError: (e: Error) => toast.error(e.message),
@@ -286,8 +318,10 @@ function ProductsPage() {
               </TableHeader>
               <TableBody>
                 {filtered.map((p) => {
-                  const low = Number(p.quantity) <= Number(p.reorder_level);
-                  const out = Number(p.quantity) <= 0;
+                  const showBranch = branchesOn && !!branchId;
+                  const qty = showBranch ? Number(branchQty[p.id] ?? 0) : Number(p.quantity);
+                  const low = qty <= Number(p.reorder_level);
+                  const out = qty <= 0;
                   return (
                     <TableRow key={p.id} className={productParam === p.id ? "bg-primary/10 ring-1 ring-primary/30" : ""}>
                       <TableCell>
@@ -320,7 +354,14 @@ function ProductsPage() {
                           formatMoney(p.unit_price, sym)
                         )}
                       </TableCell>
-                      <TableCell className="text-right tabular-nums font-medium">{Number(p.quantity)}</TableCell>
+                      <TableCell className="text-right tabular-nums font-medium">
+                        {qty}
+                        {showBranch && (
+                          <div className="text-[10px] font-normal text-muted-foreground">
+                            all branches: {Number(p.quantity)}
+                          </div>
+                        )}
+                      </TableCell>
                       <TableCell>
                         {out ? <Badge variant="destructive">Out of stock</Badge>
                           : low ? <Badge className="bg-[var(--gold)] text-[var(--gold-foreground)]">Low stock</Badge>
