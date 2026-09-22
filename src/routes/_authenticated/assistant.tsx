@@ -104,7 +104,7 @@ function AssistantPage() {
     <div className="flex h-full min-h-0 flex-col gap-4 p-4 sm:p-6">
       <PageHeader
         title="Ask your shop assistant"
-        description="Questions about your stock, sales and expenses — answered in plain language."
+        subtitle="Questions about your stock, sales and expenses — answered in plain language."
       />
 
       <div className="flex flex-wrap items-center gap-2">
