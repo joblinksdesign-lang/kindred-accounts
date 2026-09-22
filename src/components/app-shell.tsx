@@ -68,6 +68,7 @@ function AppSidebar() {
   const { data: modules } = useTenantModules();
   const hasStore = modules?.has("storefront") ?? false;
   const hasPos = modules?.has("pos") ?? false;
+  const hasBranches = modules?.has("branches") ?? false;
 
   const isActive = (to: string) =>
     to === "/admin"
@@ -161,6 +162,15 @@ function AppSidebar() {
                     <SidebarMenuButton asChild isActive={isActive("/online-store")} tooltip="Online store">
                       <MobileNavLink to="/online-store" className="flex items-center gap-2">
                         <Store className="h-4 w-4" /><span>Online store</span>
+                      </MobileNavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+                {hasBranches && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={isActive("/branches")} tooltip="Branches">
+                      <MobileNavLink to="/branches" className="flex items-center gap-2">
+                        <Network className="h-4 w-4" /><span>Branches</span>
                       </MobileNavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
