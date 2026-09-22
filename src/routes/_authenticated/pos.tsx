@@ -63,6 +63,8 @@ function PosPage() {
   const tenantId = useActiveTenantId();
   const { data: company } = useCompanySettings();
   const { data: modules } = useTenantModules();
+  const { enabled: branchesOn, branchId, activeBranch } = useBranchContext();
+  const { data: branchQty = {} } = useBranchStock(branchesOn ? branchId : null);
   const sym = company?.currency_symbol || "USh ";
 
   const [q, setQ] = useState("");
@@ -120,10 +122,12 @@ function PosPage() {
   const total = Math.max(taxable + taxAmount, 0);
   const count = cart.reduce((s, l) => s + l.quantity, 0);
 
-  const stockOf = (id: string) => Number(products.find((p) => p.id === id)?.quantity ?? 0);
+  // With branches on, the counter only sells what is physically at this branch.
+  const stockOf = (id: string) =>
+    branchesOn ? Number(branchQty[id] ?? 0) : Number(products.find((p) => p.id === id)?.quantity ?? 0);
 
   const add = (p: PosProduct) => {
-    const stock = Number(p.quantity ?? 0);
+    const stock = stockOf(p.id);
     const inCart = cart.find((l) => l.product_id === p.id)?.quantity ?? 0;
     if (stock <= 0) { toast.error(`${p.name} is out of stock`); return; }
     if (inCart + 1 > stock) { toast.error(`Only ${stock} of ${p.name} left in stock`); return; }
