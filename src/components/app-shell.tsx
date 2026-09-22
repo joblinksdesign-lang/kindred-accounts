@@ -2,7 +2,7 @@ import { PlanBlockDialogHost } from "@/components/plan-block-dialog";
 import { createFileRoute, Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard, Users, Package, FileText, Receipt, CreditCard, FileSignature,
-  BarChart3, Settings, LogOut, Search, Building2, ShieldCheck, LayoutGrid, Tag, Sparkles, Bell, Wallet, Store, ScanBarcode, UsersRound, UserRound, Smartphone, Download, BookOpen, Network,
+  BarChart3, Settings, LogOut, Search, Building2, ShieldCheck, LayoutGrid, Tag, Sparkles, Bell, Wallet, Store, ScanBarcode, UsersRound, UserRound, Smartphone, Download, BookOpen, Network, Bot,
 } from "lucide-react";
 import { BranchSwitcher } from "@/components/branch-switcher";
 
@@ -122,6 +122,13 @@ function AppSidebar() {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )}
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={isActive("/assistant")} tooltip="Ask assistant">
+                    <MobileNavLink to="/assistant" className="flex items-center gap-2">
+                      <Bot className="h-4 w-4" /><span>Ask assistant</span>
+                    </MobileNavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
                 {visibleWorkspaceNav.map((item) => (
 
                   <SidebarMenuItem key={item.to}>
