@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { PageHeader } from "@/components/page-helpers";
 import { useActiveTenant } from "@/lib/tenant";
+import { useBranchContext } from "@/lib/branches";
 import { formatDate } from "@/lib/company";
 import {
   TENANT_ROLES, addTeamMember, listTeamMembers, removeTeamMember, updateTeamMember,
@@ -50,8 +51,11 @@ function TeamPage() {
   const updateFn = useServerFn(updateTeamMember);
   const removeFn = useServerFn(removeTeamMember);
 
+  const { enabled: branchesOn, branches } = useBranchContext();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ email: "", fullName: "", password: "", role: "sales_agent" as TeamRole });
+  const [form, setForm] = useState({
+    email: "", fullName: "", password: "", role: "sales_agent" as TeamRole, branchId: "all" as string,
+  });
 
   const { data: members = [], isLoading } = useQuery({
     queryKey: ["team_members", tenantId],
