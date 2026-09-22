@@ -141,6 +141,7 @@ function ExpensesPage() {
               notes: tpl.notes,
               recurrence: "none",
               parent_expense_id: tpl.id,
+              branch_id: (tpl as unknown as { branch_id?: string | null }).branch_id ?? null,
             } as never);
             if (error) throw error;
             posted.add(next);
@@ -197,6 +198,7 @@ function ExpensesPage() {
         recurrence: form.recurrence,
         recurrence_end: form.recurrence === "none" ? null : form.recurrence_end || null,
         next_run_date: form.recurrence === "none" ? null : advance(form.expense_date, form.recurrence),
+        branch_id: branchId,
       };
       if (form.id) {
         const { error } = await supabase.from("expenses").update(payload as never).eq("id", form.id);

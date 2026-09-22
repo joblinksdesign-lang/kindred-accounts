@@ -15,6 +15,7 @@ import { usePlanLimits, planBlockReason } from "@/lib/plan-limits";
 import { planBlockError, handlePlanBlockError } from "@/components/plan-block-dialog";
 import { formatMoney, useCompanySettings } from "@/lib/company";
 import { useActiveTenantId } from "@/lib/tenant";
+import { useBranchContext } from "@/lib/branches";
 
 export const Route = createFileRoute("/_authenticated/invoices/new")({
   head: () => ({ meta: [{ title: "New invoice" }] }),
@@ -27,6 +28,7 @@ function NewInvoicePage() {
   const navigate = useNavigate();
   const tenantId = useActiveTenantId();
   const { data: company } = useCompanySettings();
+  const { branchId } = useBranchContext();
   const sym = company?.currency_symbol || "USh ";
 
   const { data: customers = [] } = useQuery({
@@ -89,7 +91,7 @@ function NewInvoicePage() {
           status: status as "draft" | "sent" | "pending" | "partial" | "paid" | "overdue" | "cancelled",
           subtotal, tax_rate: taxRate, tax_amount: taxAmount, discount, total,
           balance: total, notes, created_by: u.user?.id,
-          invoice_number: "",
+          invoice_number: "", branch_id: branchId,
         } as never)
         .select()
         .single();
