@@ -139,6 +139,21 @@ function TeamPage() {
                       {TENANT_ROLES.find((r) => r.value === form.role)?.description}
                     </p>
                   </div>
+                  {branchesOn && branches.length > 0 && (
+                    <div>
+                      <Label>Branch</Label>
+                      <Select value={form.branchId} onValueChange={(v) => setForm({ ...form, branchId: v })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All branches</SelectItem>
+                          {branches.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Staff tied to one branch only see and sell that branch's stock.
+                      </p>
+                    </div>
+                  )}
                 </div>
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
