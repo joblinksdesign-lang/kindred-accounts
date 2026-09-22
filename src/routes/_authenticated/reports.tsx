@@ -69,8 +69,8 @@ function ReportsPage() {
   const { data } = useQuery({
     queryKey: ["reports", filterBranchId],
     queryFn: async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const byBranch = (q: any) => (filterBranchId ? q.eq("branch_id", filterBranchId) : q);
+      const byBranch = <T extends { eq: (col: string, val: string) => T }>(q: T): T =>
+        filterBranchId ? q.eq("branch_id", filterBranchId) : q;
       const [inv, pay, cust, prod, exp, itm, stk, prf] = await Promise.all([
         byBranch(supabase.from("invoices").select("id, invoice_number, invoice_date, total, balance, amount_paid, status, customer_id, created_at, created_by")),
         byBranch(supabase.from("payments").select("amount, payment_date, method, reference, created_at, created_by, invoice_id")),

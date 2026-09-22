@@ -53,8 +53,8 @@ function Dashboard() {
   const { data: stats } = useQuery({
     queryKey: ["dashboard_stats", period, rangeKey, filterBranchId],
     queryFn: async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const byBranch = (q: any) => (filterBranchId ? q.eq("branch_id", filterBranchId) : q);
+      const byBranch = <T extends { eq: (col: string, val: string) => T }>(q: T): T =>
+        filterBranchId ? q.eq("branch_id", filterBranchId) : q;
       const [invoices, customers, products, payments, expensesRes, itemsRes] = await Promise.all([
         byBranch(supabase.from("invoices").select("id,total,balance,status,invoice_date,invoice_number,customer_id,created_at").order("created_at", { ascending: false })),
         supabase.from("customers").select("id", { count: "exact", head: true }),
