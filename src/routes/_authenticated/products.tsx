@@ -159,30 +159,53 @@ function ProductsPage() {
         const blocked = planBlockReason(planLimits, "products");
         if (blocked) throw planBlockError(blocked);
       }
+      const wantedQty = Number(form.quantity || 0);
       const payload = {
         ...form,
         unit_price: Number(form.unit_price || 0),
         cost_price: Number(form.cost_price || 0),
-        quantity: Number(form.quantity || 0),
         reorder_level: Number(form.reorder_level || 0),
         discount_type: String(form.discount_type || "none"),
         discount_value:
           String(form.discount_type || "none") === "none" ? 0 : Number(form.discount_value || 0),
         image_paths: images,
       };
+      delete (payload as Record<string, unknown>).quantity;
+
+      const { data: u } = await supabase.auth.getUser();
+      // Quantity is always applied as a stock movement so the branch it belongs to is recorded.
+      let productId = editing?.id ?? null;
+      let currentQty = editing ? Number(editing.quantity ?? 0) : 0;
 
       if (editing) {
         const { error } = await supabase.from("products").update(payload as never).eq("id", editing.id);
         if (error) throw error;
       } else {
-        const { data: u } = await supabase.auth.getUser();
-        const { error } = await supabase.from("products").insert({ ...payload, created_by: u.user?.id, tenant_id: tenantId } as never);
+        const { data: created, error } = await supabase
+          .from("products")
+          .insert({ ...payload, quantity: 0, created_by: u.user?.id, tenant_id: tenantId } as never)
+          .select("id").single();
         if (error) throw error;
+        productId = created.id;
+        currentQty = 0;
+      }
+
+      const change = wantedQty - currentQty;
+      if (productId && change !== 0) {
+        const { error: moveErr } = await supabase.from("stock_movements").insert({
+          tenant_id: tenantId, product_id: productId, branch_id: branchId,
+          change_qty: change, reason: change > 0 ? "stock_in" : "adjustment",
+          notes: editing ? "Stock corrected from the product form" : "Opening stock",
+          created_by: u.user?.id,
+        } as never);
+        if (moveErr) throw moveErr;
       }
     },
     onSuccess: () => {
       toast.success(editing ? "Product updated" : "Product created");
       qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["branch_stock"] });
+      qc.invalidateQueries({ queryKey: ["branch_stock_rows"] });
       setOpen(false); setEditing(null); setImages([]);
     },
     onError: (e: Error) => { if (handlePlanBlockError(e)) return; toast.error(e.message); },
