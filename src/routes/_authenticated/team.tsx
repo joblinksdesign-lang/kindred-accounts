@@ -180,6 +180,7 @@ function TeamPage() {
               <TableRow>
                 <TableHead>User</TableHead>
                 <TableHead>Role</TableHead>
+                {branchesOn && <TableHead>Branch</TableHead>}
                 <TableHead>Active</TableHead>
                 <TableHead>Added</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -214,6 +215,25 @@ function TeamPage() {
                       </Select>
                     )}
                   </TableCell>
+                  {branchesOn && (
+                    <TableCell>
+                      {m.role === "owner" ? (
+                        <span className="text-xs text-muted-foreground">All branches</span>
+                      ) : (
+                        <Select
+                          value={m.branch_id ?? "all"}
+                          disabled={!isOwner || update.isPending}
+                          onValueChange={(v) => update.mutate({ memberId: m.id, branchId: v === "all" ? null : v })}
+                        >
+                          <SelectTrigger className="h-8 w-40"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All branches</SelectItem>
+                            {branches.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </TableCell>
+                  )}
                   <TableCell>
                     <Switch
                       checked={m.is_active}
