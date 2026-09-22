@@ -405,8 +405,32 @@ function BranchesPage() {
         </TabsContent>
 
         <TabsContent value="history">
-          <Card className="border-0 p-4 shadow-soft">
-            <div className="overflow-x-auto">
+          <Card className="border-0 p-3 shadow-soft sm:p-4">
+            {/* mobile cards */}
+            <div className="space-y-2 md:hidden">
+              {transfers.length === 0 && (
+                <p className="py-4 text-center text-sm text-muted-foreground">No transfers yet.</p>
+              )}
+              {transfers.map((t) => (
+                <div key={t.id} className="rounded-lg border p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="truncate font-medium">{productName(t.product_id)}</div>
+                      <div className="font-mono text-[11px] text-muted-foreground">{t.transfer_number}</div>
+                    </div>
+                    <Badge variant="secondary" className="shrink-0 tabular-nums">{Number(t.quantity)}</Badge>
+                  </div>
+                  <div className="mt-2 flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
+                    <span className="truncate">{branchName(t.from_branch_id)}</span>
+                    <ArrowLeftRight className="h-3 w-3 shrink-0" />
+                    <span className="truncate">{branchName(t.to_branch_id)}</span>
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">{formatDate(t.created_at)}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="hidden overflow-x-auto md:block">
               <Table>
                 <TableHeader>
                   <TableRow>
