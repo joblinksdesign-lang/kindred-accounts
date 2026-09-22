@@ -71,7 +71,10 @@ function TeamPage() {
     mutationFn: async () => {
       const blocked = planBlockReason(planLimits, "users");
       if (blocked) throw planBlockError(blocked);
-      return addFn({ data: { tenantId: tenantId!, ...form } });
+      const { branchId, ...rest } = form;
+      return addFn({
+        data: { tenantId: tenantId!, ...rest, branchId: branchId === "all" ? null : branchId },
+      });
     },
     onSuccess: () => {
       toast.success("User added", { description: "Share the email and password with them so they can sign in." });
