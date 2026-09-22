@@ -86,7 +86,7 @@ function TeamPage() {
   });
 
   const update = useMutation({
-    mutationFn: (v: { memberId: string; role?: TeamRole; isActive?: boolean }) =>
+    mutationFn: (v: { memberId: string; role?: TeamRole; isActive?: boolean; branchId?: string | null }) =>
       updateFn({ data: { tenantId: tenantId!, ...v } }),
     onSuccess: () => { toast.success("Access updated"); invalidate(); },
     onError: (e: Error) => toast.error(e.message),
