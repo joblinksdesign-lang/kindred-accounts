@@ -14,6 +14,11 @@ export const MODULES = [
     name: "Point of sale",
     description: "Fast counter selling: tap products, take payment, print a thermal receipt.",
   },
+  {
+    key: "branches",
+    name: "Multiple branches",
+    description: "Run several shops: stock, sales and reports per branch, plus stock transfers between them.",
+  },
 ] as const;
 
 
