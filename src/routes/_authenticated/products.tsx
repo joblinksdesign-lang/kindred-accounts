@@ -314,8 +314,10 @@ function ProductsPage() {
               </TableHeader>
               <TableBody>
                 {filtered.map((p) => {
-                  const low = Number(p.quantity) <= Number(p.reorder_level);
-                  const out = Number(p.quantity) <= 0;
+                  const showBranch = branchesOn && !!branchId;
+                  const qty = showBranch ? Number(branchQty[p.id] ?? 0) : Number(p.quantity);
+                  const low = qty <= Number(p.reorder_level);
+                  const out = qty <= 0;
                   return (
                     <TableRow key={p.id} className={productParam === p.id ? "bg-primary/10 ring-1 ring-primary/30" : ""}>
                       <TableCell>
@@ -348,7 +350,14 @@ function ProductsPage() {
                           formatMoney(p.unit_price, sym)
                         )}
                       </TableCell>
-                      <TableCell className="text-right tabular-nums font-medium">{Number(p.quantity)}</TableCell>
+                      <TableCell className="text-right tabular-nums font-medium">
+                        {qty}
+                        {showBranch && (
+                          <div className="text-[10px] font-normal text-muted-foreground">
+                            all branches: {Number(p.quantity)}
+                          </div>
+                        )}
+                      </TableCell>
                       <TableCell>
                         {out ? <Badge variant="destructive">Out of stock</Badge>
                           : low ? <Badge className="bg-[var(--gold)] text-[var(--gold-foreground)]">Low stock</Badge>
