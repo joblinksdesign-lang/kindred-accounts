@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveTenantId } from "@/lib/tenant";
@@ -17,6 +17,37 @@ export type Branch = {
 };
 
 const storageKey = (tenantId: string) => `softtrack.active_branch.${tenantId}`;
+
+/**
+ * Shared, app-wide selection so every screen reacts the moment the branch is
+ * switched in the top bar (per-component state only updated the switcher).
+ */
+const branchSelection = new Map<string, string | null>();
+const listeners = new Set<() => void>();
+const emit = () => listeners.forEach((l) => l());
+
+function subscribeBranch(listener: () => void) {
+  listeners.add(listener);
+  return () => { listeners.delete(listener); };
+}
+
+function readBranch(tenantId: string | null | undefined): string | null {
+  if (!tenantId) return null;
+  if (!branchSelection.has(tenantId)) {
+    const fromStorage = typeof window === "undefined" ? null : localStorage.getItem(storageKey(tenantId));
+    branchSelection.set(tenantId, fromStorage);
+  }
+  return branchSelection.get(tenantId) ?? null;
+}
+
+function writeBranch(tenantId: string, id: string | null) {
+  branchSelection.set(tenantId, id);
+  if (typeof window !== "undefined") {
+    if (id) localStorage.setItem(storageKey(tenantId), id);
+    else localStorage.removeItem(storageKey(tenantId));
+  }
+  emit();
+}
 
 export function useBranches() {
   const tenantId = useActiveTenantId();
