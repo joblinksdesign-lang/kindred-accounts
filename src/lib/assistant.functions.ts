@@ -51,7 +51,7 @@ export const askBusinessAssistant = createServerFn({ method: "POST" })
     if (!apiKey) throw new Error("The AI assistant is not configured yet.");
 
     const [tenantRes, branchRes, productsRes, stockRes, invoicesRes, expensesRes] = await Promise.all([
-      supabase.from("tenants").select("name").eq("id", data.tenantId).maybeSingle(),
+      supabase.from("tenants").select("business_name").eq("id", data.tenantId).maybeSingle(),
       branchId
         ? supabase.from("branches").select("name").eq("id", branchId).maybeSingle()
         : Promise.resolve({ data: null as { name: string } | null }),
@@ -135,7 +135,7 @@ export const askBusinessAssistant = createServerFn({ method: "POST" })
       .slice(0, 25)
       .map((p) => `- ${p.name}: ${qtyOf(p)} in stock, sells at ${money(Number(p.unit_price))}`);
 
-    const businessContext = `Business: ${tenantRes.data?.name ?? "This business"}
+    const businessContext = `Business: ${tenantRes.data?.business_name ?? "This business"}
 Scope: ${branchRes.data?.name ? `${branchRes.data.name} branch only` : "all branches"}
 Today: ${new Date().toISOString().slice(0, 10)}
 Currency: Ugandan Shillings, written as "USh 12,000".
