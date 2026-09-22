@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/page-helpers";
+import { PageLoader } from "@/components/route-progress";
 import { formatMoney, formatDate, useCompanySettings } from "@/lib/company";
 import { useActiveTenantId } from "@/lib/tenant";
 import { useTenantModules } from "@/lib/modules";
@@ -63,8 +64,8 @@ function PosPage() {
   const tenantId = useActiveTenantId();
   const { data: company } = useCompanySettings();
   const { data: modules } = useTenantModules();
-  const { enabled: branchesOn, branchId, activeBranch } = useBranchContext();
-  const { data: branchQty = {} } = useBranchStock(branchesOn ? branchId : null);
+  const { enabled: branchesOn, branchId, activeBranch, isLoading: branchLoading } = useBranchContext();
+  const { data: branchQty = {}, isLoading: stockLoading } = useBranchStock(branchesOn ? branchId : null);
   const sym = company?.currency_symbol || "USh ";
 
   const [q, setQ] = useState("");
@@ -76,7 +77,7 @@ function PosPage() {
   const [sale, setSale] = useState<SaleResult | null>(null);
   const [scanOpen, setScanOpen] = useState(false);
 
-  const { data: products = [] } = useQuery({
+  const { data: products = [], isLoading: productsLoading } = useQuery({
     queryKey: ["pos_products"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -310,6 +311,12 @@ function PosPage() {
         />
       </div>
     );
+  }
+
+  // Wait for products AND the branch's own stock, so quantities are never
+  // shown business-wide first and then corrected.
+  if (productsLoading || branchLoading || (branchesOn && stockLoading)) {
+    return <PageLoader label="Preparing the counter…" />;
   }
 
   return (
