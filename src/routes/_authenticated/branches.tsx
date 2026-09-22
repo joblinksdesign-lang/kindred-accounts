@@ -319,7 +319,7 @@ function BranchesPage() {
                   {items.map((it, idx) => {
                     const available = from && it.product_id ? stockAt(from, it.product_id) : null;
                     return (
-                      <div key={idx} className="grid grid-cols-[minmax(0,1fr)_100px_auto] items-end gap-2">
+                      <div key={idx} className="grid grid-cols-[minmax(0,1fr)_72px_auto] items-end gap-2 sm:grid-cols-[minmax(0,1fr)_100px_auto]">
                         <div>
                           <Select
                             value={it.product_id}
