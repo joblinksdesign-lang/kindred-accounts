@@ -269,6 +269,14 @@ function AdminTenants() {
                   <TableCell>
                     <div className="font-medium">{t.business_name}</div>
                     <div className="text-xs text-muted-foreground">{t.email}</div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="mt-2 h-7 text-xs"
+                      onClick={() => setModulesTarget(t)}
+                    >
+                      Features
+                    </Button>
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">{t.country || "—"} • {t.currency}</TableCell>
                   <TableCell>
