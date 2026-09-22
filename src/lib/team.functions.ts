@@ -21,6 +21,7 @@ export type TeamMember = {
   created_at: string;
   email: string | null;
   full_name: string | null;
+  branch_id: string | null;
 };
 
 /** Confirms the caller is the owner (or a manager) of the tenant. Returns nothing on success. */
@@ -53,7 +54,7 @@ export const listTeamMembers = createServerFn({ method: "POST" })
 
     const { data: rows, error } = await supabaseAdmin
       .from("tenant_users")
-      .select("id, user_id, role, is_active, created_at")
+      .select("id, user_id, role, is_active, created_at, branch_id")
       .eq("tenant_id", data.tenantId)
       .order("created_at", { ascending: true });
     if (error) throw error;
@@ -72,6 +73,7 @@ export const listTeamMembers = createServerFn({ method: "POST" })
       created_at: r.created_at,
       email: byId.get(r.user_id)?.email ?? null,
       full_name: byId.get(r.user_id)?.full_name ?? null,
+      branch_id: (r as { branch_id?: string | null }).branch_id ?? null,
     }));
   });
 
