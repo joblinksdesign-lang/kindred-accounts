@@ -71,7 +71,7 @@ function QuotationsPage() {
         tenant_id: tenantId,
         customer_id: customerId, valid_until: validUntil || null, status: "draft" as const,
         subtotal, tax_rate: taxRate, tax_amount: taxAmount, discount, total, notes,
-        created_by: u.user?.id, quote_number: "",
+        created_by: u.user?.id, quote_number: "", branch_id: branchId,
       } as never).select().single();
       if (error) throw error;
       const inserted = quote as { id: string };
@@ -103,6 +103,7 @@ function QuotationsPage() {
         subtotal: quote.subtotal, tax_rate: quote.tax_rate, tax_amount: quote.tax_amount,
         discount: quote.discount, total: quote.total, balance: quote.total,
         notes: quote.notes, created_by: u.user?.id, invoice_number: "",
+        branch_id: (quote as { branch_id?: string | null }).branch_id ?? branchId,
       } as never).select().single();
       if (error) throw error;
       const insertedInv = inv as { id: string };
