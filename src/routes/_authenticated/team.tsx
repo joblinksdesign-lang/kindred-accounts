@@ -79,7 +79,7 @@ function TeamPage() {
     onSuccess: () => {
       toast.success("User added", { description: "Share the email and password with them so they can sign in." });
       setOpen(false);
-      setForm({ email: "", fullName: "", password: "", role: "sales_agent" });
+      setForm({ email: "", fullName: "", password: "", role: "sales_agent", branchId: "all" });
       invalidate();
     },
     onError: (e: Error) => { if (handlePlanBlockError(e)) return; toast.error("Could not add user", { description: e.message }); },
