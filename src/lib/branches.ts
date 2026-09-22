@@ -109,17 +109,16 @@ export function useBranchContext(): BranchContext {
   const { data: modules } = useTenantModules();
   const enabled = modules?.has("branches") ?? false;
 
-  const [stored, setStored] = useState<string | null>(null);
-  useEffect(() => {
-    if (tenantId) setStored(localStorage.getItem(storageKey(tenantId)));
-  }, [tenantId]);
+  const stored = useSyncExternalStore(
+    subscribeBranch,
+    () => readBranch(tenantId),
+    () => null,
+  );
 
   const setBranch = useCallback(
     (id: string | null) => {
       if (!tenantId) return;
-      if (id) localStorage.setItem(storageKey(tenantId), id);
-      else localStorage.removeItem(storageKey(tenantId));
-      setStored(id);
+      writeBranch(tenantId, id);
     },
     [tenantId],
   );
