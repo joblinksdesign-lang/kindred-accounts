@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/page-helpers";
+import { PageLoader } from "@/components/route-progress";
 import { formatMoney, formatDate, useCompanySettings } from "@/lib/company";
 import { useActiveTenantId } from "@/lib/tenant";
 import { useTenantModules } from "@/lib/modules";
@@ -310,6 +311,12 @@ function PosPage() {
         />
       </div>
     );
+  }
+
+  // Wait for products AND the branch's own stock, so quantities are never
+  // shown business-wide first and then corrected.
+  if (productsLoading || branchLoading || (branchesOn && stockLoading)) {
+    return <PageLoader label="Preparing the counter…" />;
   }
 
   return (
