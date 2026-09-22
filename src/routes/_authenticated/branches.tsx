@@ -164,7 +164,7 @@ function BranchesPage() {
         _from: from,
         _to: to,
         _items: clean as never,
-        _notes: notes.trim() || null,
+        _notes: notes.trim() || undefined,
       });
       if (error) throw error;
       return data as string;
