@@ -352,7 +352,7 @@ function PosPage() {
               <div className="grid min-w-0 grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
                 {visible.map((p) => {
                   const img = (p.image_paths ?? [])[0] ? urls[(p.image_paths ?? [])[0]] : p.image_url;
-                  const stock = Number(p.quantity ?? 0);
+                  const stock = stockOf(p.id);
                   const out = stock <= 0;
                   const inCart = cart.find((l) => l.product_id === p.id)?.quantity ?? 0;
                   const low = !out && stock <= 5;
